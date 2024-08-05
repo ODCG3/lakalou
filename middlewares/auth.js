@@ -1,6 +1,5 @@
 import jwt from 'jsonwebtoken';
 
-const SECRET_KEY = process.env.SECRET_KEY;
 
 export default (req, res, next) => {
     // Extraire le token des en-têtes de la requête
@@ -12,7 +11,7 @@ export default (req, res, next) => {
     }
 
     try {
-        const decoded = jwt.verify(token, SECRET_KEY);
+        const decoded = jwt.verify(token, process.env.TokenKey);
         req.user = decoded; 
         next();
     } catch (error) {
