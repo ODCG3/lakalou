@@ -109,7 +109,7 @@ export default class UserController {
       // secure: true,
       path: "/",
     });
-    
+
     res.json({ token, user });
   }
 
@@ -132,44 +132,32 @@ export default class UserController {
     res.json(data);
   }
 
-
-//------------------- RÉCUPÉRATION DE L'ID DE L'UTILISATEUR CONNECTÉ: 
-  static getConnectedUserId(req){
+  //------------------- RÉCUPÉRATION DE L'ID DE L'UTILISATEUR CONNECTÉ:
+  static getConnectedUserId(req) {
     const token = req.cookies.token;
-    if(!token){
-      res.status(400).json({message: "Aucun token en cours"})
-    } 
-    try{
+    if (!token) {
+      res.status(400).json({ message: "Aucun token en cours" });
+    }
+    try {
       const decodedToken = jwt.verify(token, process.env.TokenKey);
       return decodedToken.userID;
-    }catch(err){
-      res.status(400).json({message: 'Erreur récupération Token: ' + err})
+    } catch (err) {
+      res.status(400).json({ message: "Erreur récupération Token: " + err });
     }
   }
 
-
-//-------------------- AJOUTER FOLLOWING DE L'UTILISATEUR CONNECTÉ: 
+  //-------------------- AJOUTER FOLLOWING DE L'UTILISATEUR CONNECTÉ:
   static async followUser(req, res) {
     if (
-      !ObjectId.isValid(req.params.id) ||
-      !ObjectId.isValid(req.body.follower)
+      !ObjectId.isValid(req.params.id)
     ) {
       return res.status(400).json({ message: "Id Non trouvé" });
     }
-    
-    // try{
-    //   const userId = this.getConnectedUserId(req);
-    //   console.log(userId);
-    //   res.json({message: "Utilisateur iD: " + userId})
-    // }
-    // catch (error) {
-    //   res.status(401).json({ error: error.message }); 
-    // }
-    
+
     try {
       const userId = this.getConnectedUserId(req);
-      if(!userId){
-        return res.status(401).json({message: "Aucun Token en cours"})
+      if (!userId) {
+        return res.status(401).json({ message: "Aucun Token en cours" });
       }
       await UserModel.findByIdAndUpdate(
         req.params.id,
@@ -185,6 +173,38 @@ export default class UserController {
       res.status(201).json({ message: "Follower ajouté avec succès !" });
     } catch (err) {
       res.status(400).json({ message: "Erreur ajout follower: " + err });
+    }
+  }
+
+
+
+//--------------------  UNFOLLOWING DE L'UTILISATEUR CONNECTÉ:
+  static async unfollowUser(req, res) {
+    if (
+      !ObjectId.isValid(req.params.id)
+    ) {
+      return res.status(400).json({ message: "Id Non trouvé" });
+    }
+
+    try {
+      const userId = this.getConnectedUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Aucun Token en cours" });
+      }
+      await UserModel.findByIdAndUpdate(
+        req.params.id,
+        { $pull: { followers: userId } },
+        { new: true, upsert: true }
+      );
+
+      await UserModel.findByIdAndUpdate(
+        req.body.follower,
+        { $pull: { followings: req.params.id } },
+        { new: true, upsert: true }
+      );
+      res.status(201).json({ message: "Unfollowing ajouté avec succès !" });
+    } catch (err) {
+      res.status(400).json({ message: "Erreur Unfollowing " + err });
     }
   }
 }
