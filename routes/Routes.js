@@ -4,6 +4,8 @@ import express from "express";
 // import auth from "../middlewares/auth.js";
 import UserController from "../controllers/UserController.js";
 import auth from "../middlewares/auth.js";
+import ModelController from "../controllers/ModelController.js";
+import PostController from "../controllers/PostController.js";
 
 const router = express.Router();
 
@@ -18,6 +20,13 @@ router.route('/login')
 
 router.route('/logout')
     .post((req, res) => UserController.logout(req, res));
+
+router.route('/model/create')
+    .post(auth,(req, res) => ModelController.create(req, res));
+
+router.route('/post/create')
+    .post(auth,(req, res) => PostController.create(req, res));
+
 
 router.route('/test')
     .get(auth, (req, res) => UserController.test(req, res));
