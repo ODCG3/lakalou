@@ -29,7 +29,7 @@ npm install
 ```
 ou
 ```
-    yarn install
+yarn install
 ```
 
 # Utilisation
