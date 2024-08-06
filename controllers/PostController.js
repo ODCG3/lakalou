@@ -6,6 +6,11 @@ export default class PostController {
 
     static async create(req, res) {
         
+        const connectedUser = user.findById(req.user.userID);
+        if(connectedUser.role != "tailleur" ) {
+            return res.status(403).json({ error: 'Vous n\'êtes pas un tailleur' });
+        }
+        
         const { contenues,model,description,titre } = req.body;
 
         const utilisateur = req.user.userID;

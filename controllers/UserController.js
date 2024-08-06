@@ -4,6 +4,7 @@ import validateName, { validateImageExtension } from "../utils/Validator.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
+import user from "../models/UserModel.js";
 const ObjectId = mongoose.Types.ObjectId;
 
 export default class UserController {
@@ -133,6 +134,11 @@ export default class UserController {
         }
 
          const userToRate = await UserModel.findById(id);
+
+         if(userToRate.role != "tailleur"){
+            return res.status(403).json({ error: 'Vous ne pouvez pas noter un visiteur' });
+         }
+    
         if (!userToRate) {
             return res.status(404).json({ error: 'Utilisateur non trouvé' });
         }
