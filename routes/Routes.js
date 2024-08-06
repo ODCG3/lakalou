@@ -28,6 +28,12 @@ router
   .route("/unfollow/:id")
   .post((req, res) => UserController.unfollowUser(req, res));
 
+router.route('/add-note/:id')
+    .post(auth, (req, res) => UserController.addNote(req, res));
+
+router.route('/signal/:id')
+    .post(auth, (req, res) => UserController.reportUser(req, res));
+
 router.route('/model/create')
     .post(auth, (req, res) => ModelController.create(req, res));
 

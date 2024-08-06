@@ -113,6 +113,7 @@ export default class UserController {
         res.json({ token, user });
     }
 
+
     static logout(req, res) {
         res.clearCookie("token", {
             // secure: true,
@@ -121,6 +122,86 @@ export default class UserController {
         });
 
         res.json("logged out");
+    }
+
+    static async addNote(req, res) {
+        const { id } = req.params;  
+        const { rate } = req.body; 
+
+        if (typeof rate !== 'number' || rate < 1 || rate > 5) {
+            return res.status(400).json({ error: 'La note doit être un nombre entre 1 et 5' });
+        }
+
+         const userToRate = await UserModel.findById(id);
+        if (!userToRate) {
+            return res.status(404).json({ error: 'Utilisateur non trouvé' });
+        }
+
+        try {
+            
+            const raterId = req.user.userID;
+
+             if (userToRate._id.toString() === raterId) {
+                return res.status(400).json({ error: 'Vous ne pouvez pas vous noter vous-même' });
+            }
+
+             const existingNote = userToRate.notes.find(note => note.idTailleur.toString() === raterId.toString());
+            if (existingNote) {
+                return res.status(400).json({ error: 'Vous avez déjà noté cet utilisateur' });
+            }
+
+             const note = {
+                rate,
+                idTailleur: raterId
+            };
+
+            userToRate.notes.push(note);
+            await userToRate.save();
+
+            res.status(200).json({ message: 'Note ajoutée avec succès' });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    static async reportUser(req, res) {
+        const { id } = req.params;  
+        const { reason } = req.body;  
+
+        if (!reason || typeof reason !== 'string') {
+            return res.status(400).json({ error: 'La raison du signalement est requise' });
+        }
+
+         const userToReport = await UserModel.findById(id);
+        if (!userToReport) {
+            return res.status(404).json({ error: 'Utilisateur non trouvé' });
+        }
+
+        try {
+            
+            const reporterId = req.user.userID;
+
+             if (userToReport._id.toString() === reporterId) {
+                return res.status(400).json({ error: 'Vous ne pouvez pas vous signaler vous-même' });
+            }
+
+             const alreadyReported = userToReport.signals.some(signal => signal.idReporter.toString() === reporterId.toString());
+            if (alreadyReported) {
+                return res.status(400).json({ error: 'Vous avez déjà signalé cet utilisateur' });
+            }
+
+             const signal = {
+                reason,
+                idReporter: reporterId
+            };
+
+            userToReport.signals.push(signal);
+            await userToReport.save();
+
+            res.status(200).json({ message: 'Signalement ajouté avec succès' });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
     }
 
     static test(req, res) {
