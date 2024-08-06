@@ -17,9 +17,16 @@ router.route("/logout").post((req, res) => UserController.logout(req, res));
 
 router.route("/test").get(auth, (req, res) => UserController.test(req, res));
 
+// FOLLOW USER
+
 router
   .route("/follow/:id")
   .post((req, res) => UserController.followUser(req, res));
+
+// UNFOLLOW USER:
+router
+  .route("/unfollow/:id")
+  .post((req, res) => UserController.unfollowUser(req, res));
 
 router.route('/model/create')
     .post(auth, (req, res) => ModelController.create(req, res));

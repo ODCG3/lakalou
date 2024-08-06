@@ -132,75 +132,76 @@ export default class UserController {
         res.json(data);
     }
 
-    //------------ MÉTHODE DE RÉCUPÉRATION DE L'ID DE L'UTILISATEUR CONNECTÉ EN UTILISANT SON TOKEN:
 
-
-    //-------------------- MÉTHODE D'AJOUT FOLLOWING DE L'UTILISATEUR CONNECTÉ:
-    static async followUser(req, res) {
-        if (!ObjectId.isValid(req.params.id)) {
-            return res.status(400).json({ message: "Id Non trouvé" });
-        }
-
-        try {
-            const userId = req.user.userID;
-            if (!userId) {
-                return res.status(401).json({ message: "Aucun Token en cours" });
-            }
-            const userToFollow = await UserModel.findById(req.params.id);
-            if (userToFollow.role != "tailleur") {
-                res
-                    .status(402)
-                    .json({ message: "Vous ne pouvez pas suivre un visiteur" });
-            } else {
-                await UserModel.findByIdAndUpdate(
-                    req.params.id,
-                    { $addToSet: { followers: userId } },
-                    { new: true, upsert: true }
-                );
-
-                await UserModel.findByIdAndUpdate(
-                    req.body.follower,
-                    { $addToSet: { followings: req.params.id } },
-                    { new: true, upsert: true }
-                );
-                res.status(201).json({ message: "Follower ajouté avec succès !" });
-            }
-        } catch (err) {
-            res.status(400).json({ message: "Erreur ajout follower: " + err });
-        }
+  
+  //-------------------- MÉTHODE D'AJOUT FOLLOWING DE L'UTILISATEUR CONNECTÉ:
+  static async followUser(req, res) {
+    if (!ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "Id Non trouvé" });
     }
 
-    //--------------------MÉTHODE UNFOLLOWING DE L'UTILISATEUR CONNECTÉ:
-    static async unfollowUser(req, res) {
-        if (!ObjectId.isValid(req.params.id)) {
-            return res.status(400).json({ message: "Id Non trouvé" });
-        }
+    try {
+      const userId = req.user.userID; 
+      if (!userId) {
+        return res.status(401).json({ message: "Aucun Token en cours" });
+      }
+      const userToFollow = await UserModel.findById(req.params.id);
+      if (userToFollow.role != "tailleur") {
+        res
+          .status(402)
+          .json({ message: "Vous ne pouvez pas suivre un visiteur" });
+      } else {
+        await UserModel.findByIdAndUpdate(
+          req.params.id,
+          { $addToSet: { followers: userId } },
+          { new: true, upsert: true }
+        );
 
-        try {
-            const userId = this.getConnectedUserId(req);
-            if (!userId) {
-                return res.status(401).json({
-                    message: "Vous devez vous connecter pour suivre un Vendeur",
-                });
-            }
-            await UserModel.findByIdAndUpdate(
-                req.params.id,
-                { $pull: { followers: userId } },
-                { new: true, upsert: true }
-            );
+        await UserModel.findByIdAndUpdate(
+          req.body.follower, 
+          { $addToSet: { followings: req.params.id } },
+          { new: true, upsert: true }
+        );
+        res.status(201).json({ message: "Follower ajouté avec succès !" });
+      }
+    } catch (err) {
+      res.status(400).json({ message: "Erreur ajout follower: " + err });
+    }
+  }
 
-            await UserModel.findByIdAndUpdate(
-                req.body.follower,
-                { $pull: { followings: req.params.id } },
-                { new: true, upsert: true }
-            );
-            res.status(201).json({ message: "Unfollowing ajouté avec succès !" });
-        } catch (err) {
-            res.status(400).json({ message: "Erreur Unfollowing " + err });
-        }
+  //--------------------MÉTHODE UNFOLLOWING DE L'UTILISATEUR CONNECTÉ:
+  static async unfollowUser(req, res) {
+    if (!ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "Id Non trouvé" });
     }
-    static async profile(req, res) {
-        const user = await UserModel.findOne({ _id: req.user.userID });
-        res.json(user);
+
+    try {
+      const userId = req.user.userID; 
+
+      if (!userId) {
+        return res.status(401).json({
+          message: "Vous devez vous connecter pour suivre un Vendeur",
+        });
+      }
+      await UserModel.findByIdAndUpdate(
+        req.params.id,
+        { $pull: { followers: userId } },
+        { new: true, upsert: true }
+      );
+
+      await UserModel.findByIdAndUpdate(
+        req.body.follower,
+        { $pull: { followings: req.params.id } },
+        { new: true, upsert: true }
+      );
+      res.status(201).json({ message: "Unfollowing ajouté avec succès !" });
+    } catch (err) {
+      res.status(400).json({ message: "Erreur Unfollowing " + err });
     }
+  }
+
+  static async profile(req,res){
+    const user = await UserModel.findOne({_id: req.user.userID});
+    res.json(user)
+  }
 }
