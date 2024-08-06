@@ -7,7 +7,12 @@ import auth from "../middlewares/auth.js";
 import ModelController from "../controllers/ModelController.js";
 import PostController from "../controllers/PostController.js";
 
+import { likePost, unlikePost, getPostLikes } from '../controllers/LikeController.js';
+
+
+
 const router = express.Router();
+
 
 
 
@@ -31,4 +36,13 @@ router.route('/post/create')
 router.route('/test')
     .get(auth, (req, res) => UserController.test(req, res));
 
-export default router;
+// Route pour aimer un post
+router.post('/post/:postId/like', likePost);
+
+// Route pour ne pas aimer un post
+router.delete('/post/:postId/unlike', unlikePost);
+
+// Route pour récupérer les likes d'un post
+router.get('/post/:postId/likes', getPostLikes);
+
+export default router; 
