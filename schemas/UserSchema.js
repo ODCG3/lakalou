@@ -9,7 +9,7 @@ const UserSchema = new Schema({
     role: { type: String, required: true },
     notes: [{ 
         rate: { type: Number, min: 1, max: 5 },
-        idTailleur: { type: Schema.Types.ObjectId, ref: 'User' }
+        idUser: { type: Schema.Types.ObjectId, ref: 'User' }
     }],
     signals: [{ 
         reason: { type: String, required: true },

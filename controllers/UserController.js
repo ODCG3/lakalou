@@ -113,13 +113,8 @@ export default class UserController {
         }
 
         try {
-            const token = req.cookies.token;
-            if (!token) {
-                return res.status(401).json({ error: 'Token manquant' });
-            }
-
-            const decoded = jwt.verify(token, process.env.TokenKey);
-            const raterId = decoded.userID;
+            
+            const raterId = req.user.userID;
 
              if (userToRate._id.toString() === raterId) {
                 return res.status(400).json({ error: 'Vous ne pouvez pas vous noter vous-même' });
@@ -158,13 +153,8 @@ export default class UserController {
         }
 
         try {
-            const token = req.cookies.token;
-            if (!token) {
-                return res.status(401).json({ error: 'Token manquant' });
-            }
-
-            const decoded = jwt.verify(token, process.env.TokenKey);
-            const reporterId = decoded.userID;
+            
+            const reporterId = req.user.userID;
 
              if (userToReport._id.toString() === reporterId) {
                 return res.status(400).json({ error: 'Vous ne pouvez pas vous signaler vous-même' });
