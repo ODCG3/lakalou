@@ -35,7 +35,6 @@ export default class PostController {
 
         try {
             const postData = await post.findById(req.params.id);
-
             
             if (!postData) {
                 return res.status(404).json({ error: 'Post not found' });
@@ -75,6 +74,7 @@ export default class PostController {
     }
 
 
+
     static async addFavorite(req, res) {
         const { id } = req.params;
         const utilisateurId = req.user.userID;
@@ -105,8 +105,4 @@ export default class PostController {
     }
 
 
-    
-    
-
-    
 }

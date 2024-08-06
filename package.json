@@ -8,9 +8,10 @@
   },
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "# Prérequis",
   "dependencies": {
     "bcrypt": "^5.1.1",
+    "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.6",
     "cookieparser": "^0.1.0",
     "dotenv": "^16.4.5",
@@ -18,10 +19,11 @@
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.8.0",
     "mongoose": "^8.5.2",
-    "multer": "^1.4.5-lts.1",
+    "nodemod": "^3.0.6",
     "validator": "^13.12.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.4"
-  }
+  },
+  "keywords": []
 }
