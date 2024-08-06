@@ -1,11 +1,12 @@
 import Story from '../models/StoryModel.js';
 
-const createStory = (req, res, next) => {
+const createStory = (req, res) => {
   const currentTime = new Date();
   const expirationTime = new Date(currentTime.getTime() + 24 * 60 * 60 * 1000); // 24 heures plus tard
+  const userID = req.user.userID;
 
   const story = new Story({
-    userId: req.auth.userId, // Supposons que l'ID de l'utilisateur est extrait du token d'authentification
+    userId: userID,
     content: req.body.content,
     mediaUrl: req.body.mediaUrl,
     expiresAt: expirationTime
