@@ -198,5 +198,8 @@ export default class UserController {
     } catch (err) {
       res.status(400).json({ message: "Erreur Unfollowing " + err });
     }
-  }
+    static async profile(req, res){
+        const user = await UserModel.findOne({_id:req.user.userID});
+        res.json(user);
+    }
 }

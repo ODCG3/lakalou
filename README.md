@@ -25,7 +25,7 @@ gh repo clone ODCG3/lakalou
   - Installez les dépendances:
 
 ```
-npm install
+npm install && npm install -g nodemon
 ```
 ou
 ```
@@ -36,5 +36,5 @@ yarn install
 
 Pour démarrer le serveur en mode développement:
 ```
-npm run dev
+nodemon app.js
 ```
