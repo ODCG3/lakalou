@@ -57,4 +57,9 @@ router.route('/story/create')
 router.route('/profile')
     .get(auth, (req, res) => UserController.profile(req, res));
 
+
+router.route('/post/favorite/create/:id')
+    .post(auth, (req, res) => PostController.addFavorite(req, res));
+
+
 export default router;
