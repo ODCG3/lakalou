@@ -129,6 +129,31 @@ export default class PostController {
         }
     }
 
+
+
+
+    static async getAllFavorites(req, res) {
+        const utilisateurId = req.user.userID;
+        console.log(utilisateurId);
+        
+        try {
+            
+            // Récupérer tous les favoris de l'utilisateur sans les détails du post
+            const favoris = await favori.find({ utilisateur: utilisateurId });
+    
+            // Vérifier si des favoris ont été trouvés
+            if (!favoris.length) {
+                return res.status(404).json({ error: "No favorites found" });
+            }
+    
+            // Retourner les favoris
+            res.status(200).json(favoris);
+        } catch (error) {
+            console.error('Error retrieving favorites:', error);
+            res.status(500).json({ error: error.message });
+        }
+    }
+    
     
 
 

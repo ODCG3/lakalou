@@ -71,6 +71,9 @@ router.route('/post/favorite/create/:id')
 router.route('/post/favorite/remove/:id')
     .delete(auth, (req, res) => PostController.removeFavorite(req, res));
 
+router.route('/post/favorites/:id')
+    .get(auth, (req, res) => PostController.getAllFavorites(req, res));
+
 
 router.route('/post')
 .get(auth, (req, res) => PostController.getAllPosts(req, res));
