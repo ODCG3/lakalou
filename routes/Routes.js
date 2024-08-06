@@ -15,8 +15,6 @@ router.route("/logout").post((req, res) => UserController.logout(req, res));
 
 router.route("/test").get(auth, (req, res) => UserController.test(req, res));
 
-router; 
-
 
 // FOLLOW USER
 router

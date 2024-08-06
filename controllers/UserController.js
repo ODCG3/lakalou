@@ -132,20 +132,7 @@ export default class UserController {
     res.json(data);
   }
 
-  //------------ MÉTHODE DE RÉCUPÉRATION DE L'ID DE L'UTILISATEUR CONNECTÉ EN UTILISANT SON TOKEN:
-  static getConnectedUserId(req) {
-    const token = req.cookies.token;
-    if (!token) {
-      res.status(400).json({ message: "Aucun token en cours" });
-    }
-    try {
-      const decodedToken = jwt.verify(token, process.env.TokenKey);
-      return decodedToken.userID;
-    } catch (err) {
-      res.status(400).json({ message: "Erreur récupération Token: " + err });
-    }
-  }
-
+  
   //-------------------- MÉTHODE D'AJOUT FOLLOWING DE L'UTILISATEUR CONNECTÉ:
   static async followUser(req, res) {
     if (!ObjectId.isValid(req.params.id)) {
@@ -153,7 +140,7 @@ export default class UserController {
     }
 
     try {
-      const userId = this.getConnectedUserId(req); 
+      const userId = req.user.userID; 
       if (!userId) {
         return res.status(401).json({ message: "Aucun Token en cours" });
       }
@@ -188,7 +175,8 @@ export default class UserController {
     }
 
     try {
-      const userId = this.getConnectedUserId(req);
+      const userId = req.user.userID; 
+
       if (!userId) {
         return res.status(401).json({
           message: "Vous devez vous connecter pour suivre un Vendeur",
@@ -209,5 +197,10 @@ export default class UserController {
     } catch (err) {
       res.status(400).json({ message: "Erreur Unfollowing " + err });
     }
+  }
+
+  static async profile(req,res){
+    const user = await UserModel.findOne({_id: req.user.userID});
+    res.json(user)
   }
 }
