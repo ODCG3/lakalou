@@ -34,6 +34,7 @@ export default class PostController {
 
         try {
             const postData = await post.findById(req.params.id);
+
             
             if (!postData) {
                 return res.status(404).json({ error: 'Post not found' });

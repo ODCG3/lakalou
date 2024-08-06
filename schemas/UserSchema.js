@@ -1,4 +1,4 @@
-import { Schema } from 'mongoose';
+import { Schema } from "mongoose";
 
 const UserSchema = new Schema({
     nom: { type: String, required: true },
@@ -14,6 +14,12 @@ const UserSchema = new Schema({
     signals: [{ 
         reason: { type: String, required: true },
         idReporter: { type: Schema.Types.ObjectId, ref: 'User' }
-    }]
+    }],
+  followers: {
+    type: [String],
+  },
+  followings: {
+    type: [String],
+  },
 });
 export default UserSchema;
