@@ -9,7 +9,6 @@ export default class PostController {
         const { contenues,model,description,titre } = req.body;
 
         const utilisateur = req.user.userID;
-        console.log(utilisateur);
         
 
         try {
@@ -36,7 +35,7 @@ export default class PostController {
 
         try {
             const postData = await post.findById(req.params.id);
-            console.log(postData, req.params.id);
+
             
             if (!postData) {
                 return res.status(404).json({ error: 'Post not found' });
