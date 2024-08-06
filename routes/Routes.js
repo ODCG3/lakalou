@@ -28,7 +28,7 @@ router.route('/post/create')
     .post(auth,(req, res) => PostController.create(req, res));
 
 
-router.route('/test')
-    .get(auth, (req, res) => UserController.test(req, res));
+router.route('/profile')
+    .get(auth, (req, res) => UserController.profile(req, res));
 
 export default router;
