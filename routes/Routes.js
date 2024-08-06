@@ -22,4 +22,10 @@ router.route('/logout')
 router.route('/test')
     .get(auth, (req, res) => UserController.test(req, res));
 
+router.route('/add-note/:id')
+    .post(auth, (req, res) => UserController.addNote(req, res));
+
+router.route('/signal/:id')
+    .post(auth, (req, res) => UserController.reportUser(req, res));
+
 export default router;

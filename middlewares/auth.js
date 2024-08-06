@@ -5,7 +5,7 @@ export default (req, res, next) => {
     // Extraire le token des en-têtes de la requête
     console.log(req.cookies);
     const token = req.cookies.token ? req.cookies.token : null;
-
+    //console.log(token);
     if (!token) {
         return res.status(401).json({ message: 'No token, authorization denied' });
     }
