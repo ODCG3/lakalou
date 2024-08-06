@@ -6,6 +6,7 @@ import PostController from "../controllers/PostController.js";
 import StoryController from '../controllers/StoryController.js';
 
 import { likePost, unlikePost, getPostLikes } from '../controllers/LikeController.js';
+import { dislikePost, getPostDislike, undislikePost } from "../controllers/DislikeController.js";
 
 
 
@@ -90,5 +91,16 @@ router.post('/post/:postId/like/:likeID/unlike',auth, unlikePost);
 
 // Route pour récupérer les likes d'un post
 router.get('/post/:postId/likes',auth, getPostLikes);
+
+
+// Route pour disliker un post
+router.post('/post/:postId/Dislike',auth, dislikePost);
+
+// Route pour retirer un dislike
+router.post('/post/:postId/dislike/:dislikeID/undislike',auth, undislikePost);
+// Route pour afficher les dislikes
+router.get('/post/:postId/Dislike',auth, getPostDislike);
+
+
 
 export default router; 
