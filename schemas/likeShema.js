@@ -1,15 +1,15 @@
 import mongoose from 'mongoose';
 
 const likeSchema = new mongoose.Schema({
-    user: {
+    users: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User', // Assurez-vous que c'est le nom correct de votre modèle utilisateur
-        required: true
+        ref: 'user', // Assurez-vous que c'est le nom correct de votre modèle utilisateur
+        /* required: true */
     },
     post: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Post', // Assurez-vous que c'est le nom correct de votre modèle de post
-        required: true
+        /* required: true */
     },
     createdAt: {
         type: Date,

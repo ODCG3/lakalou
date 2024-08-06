@@ -33,11 +33,23 @@ router.route('/post/create')
     .post(auth,(req, res) => PostController.create(req, res));
 
 
+router.route('/post')
+.get(auth, (req, res) => PostController.getAllPosts(req, res));
+
+router.route('/post/:id')
+    .get(auth, (req, res) => PostController.getPostById(req, res));
+
+router.route('/post/:id/model')
+        .get(auth, (req, res) => PostController.getModel(req, res));
+
+
+        
 router.route('/test')
     .get(auth, (req, res) => UserController.test(req, res));
 
 // Route pour aimer un post
-router.post('/post/:postId/like', likePost);
+/* router.post('/post/:postId/like', likePost); */
+router.post('/post/:postId/like', auth, likePost);
 
 // Route pour ne pas aimer un post
 router.delete('/post/:postId/unlike', unlikePost);

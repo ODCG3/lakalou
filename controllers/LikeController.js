@@ -5,10 +5,10 @@ import User from '../models/UserModel.js'; // Assurez-vous que c'est le bon chem
 // Ajouter un like
 export const likePost = async (req, res) => {
     try {
-        const { postId } = req.params; // Récupérer l'ID du post depuis l'URL
-        const userId = req.user._id; // Récupérer l'ID de l'utilisateur connecté depuis le token ou session
+        const { postId } = req.params; // Récupérer l'ID du post
+        const userId = req.user.id; // Récupérer l'ID de l'utilisateur depuis le token
 
-        // Vérifier si l'utilisateur a déjà aimé le post
+        // Vérifier si l'utilisateur a déjà liké le post
         const existingLike = await Like.findOne({ user: userId, post: postId });
 
         if (existingLike) {
@@ -19,9 +19,10 @@ export const likePost = async (req, res) => {
         const like = new Like({ user: userId, post: postId });
         await like.save();
 
-        // Optionnel : Mettre à jour le nombre de likes dans le post
+        // Mettre à jour le compteur de likes du post
         await Post.findByIdAndUpdate(postId, { $inc: { likesCount: 1 } });
 
+        // Envoyer un message de succès
         res.status(201).json({ message: 'Post aimé avec succès.', like });
     } catch (error) {
         res.status(500).json({ message: 'Erreur du serveur.', error });
@@ -55,7 +56,7 @@ export const getPostLikes = async (req, res) => {
     try {
         const { postId } = req.params;
 
-        const likes = await Like.find({ post: postId }).populate('user', 'username email'); // Populate pour obtenir les détails de l'utilisateur
+        const likes = await Like.find({ post: postId }).populate('users', 'name', 'email'); // Populate pour obtenir les détails de l'utilisateur
 
         res.status(200).json({ likes });
     } catch (error) {
