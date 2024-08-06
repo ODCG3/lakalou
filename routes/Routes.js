@@ -66,6 +66,10 @@ router.route('/profile')
 router.route('/post/favorite/create/:id')
     .post(auth, (req, res) => PostController.addFavorite(req, res));
 
+// Route pour supprimer un favori
+router.route('/post/favorite/remove/:id')
+    .delete(auth, (req, res) => PostController.removeFavorite(req, res));
+
 
 router.route('/post')
 .get(auth, (req, res) => PostController.getAllPosts(req, res));

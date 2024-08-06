@@ -110,4 +110,26 @@ export default class PostController {
     }
 
 
+    static async removeFavorite(req, res) {
+        const { id } = req.params; // id du favori à supprimer
+        const utilisateurId = req.user.userID;
+    
+        try {
+            // Vérifier si le favori existe
+            const favoriToRemove = await favori.findOne({ utilisateur: utilisateurId, post: id });
+            if (!favoriToRemove) {
+                return res.status(404).json({ error: "Favorite not found" });
+            }
+    
+            // Supprimer le favori
+            await favoriToRemove.deleteOne();
+            res.status(200).json({ message: "Favorite removed successfully" });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    
+
+
 }
