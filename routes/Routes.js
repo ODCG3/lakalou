@@ -52,9 +52,9 @@ router.route('/test')
 router.post('/post/:postId/like', auth, likePost);
 
 // Route pour ne pas aimer un post
-router.delete('/post/:postId/unlike', unlikePost);
+router.post('/post/:postId/like/:likeID/unlike',auth, unlikePost);
 
 // Route pour récupérer les likes d'un post
-router.get('/post/:postId/likes', getPostLikes);
+router.get('/post/:postId/likes',auth, getPostLikes);
 
 export default router; 

@@ -6,7 +6,7 @@ import User from '../models/UserModel.js'; // Assurez-vous que c'est le bon chem
 export const likePost = async (req, res) => {
     try {
         const { postId } = req.params; // Récupérer l'ID du post
-        const userId = req.user.id; // Récupérer l'ID de l'utilisateur depuis le token
+        const userId = req.user.userID; // Récupérer l'ID de l'utilisateur depuis le token
 
         // Vérifier si l'utilisateur a déjà liké le post
         const existingLike = await Like.findOne({ user: userId, post: postId });
@@ -19,8 +19,10 @@ export const likePost = async (req, res) => {
         const like = new Like({ user: userId, post: postId });
         await like.save();
 
-        // Mettre à jour le compteur de likes du post
-        await Post.findByIdAndUpdate(postId, { $inc: { likesCount: 1 } });
+        const post = await Post.findById(postId);
+        post.likes.push(userId);
+        await post.save();
+
 
         // Envoyer un message de succès
         res.status(201).json({ message: 'Post aimé avec succès.', like });
@@ -32,20 +34,27 @@ export const likePost = async (req, res) => {
 // Retirer un like
 export const unlikePost = async (req, res) => {
     try {
-        const { postId } = req.params;
-        const userId = req.user._id;
+        const { postId, likeID } = req.params;
+        const userId = req.user.userID;
 
-        // Trouver et supprimer le like
-        const like = await Like.findOneAndDelete({ user: userId, post: postId });
+        const likeExist = await Like.findById(likeID);
+        console.log(likeExist);
 
-        if (!like) {
+
+        if (!likeExist) {
             return res.status(400).json({ message: 'Vous n\'avez pas aimé ce post.' });
         }
 
-        // Optionnel : Mettre à jour le nombre de likes dans le post
-        await Post.findByIdAndUpdate(postId, { $inc: { likesCount: -1 } });
+        const like = await Like.findOneAndDelete({ _id: likeID, post: postId });
 
-        res.status(200).json({ message: 'Like retiré avec succès.' });
+        const post = await Post.findById(postId);
+
+        post.likes = post.likes.filter((like) => !like.equals(userId));
+
+        // Sauvegarder le document mis à jour
+        await post.save();
+
+        res.status(200).json({ message: 'Like retiré avec succès.', data: { like, post } });
     } catch (error) {
         res.status(500).json({ message: 'Erreur du serveur.', error });
     }
@@ -56,7 +65,7 @@ export const getPostLikes = async (req, res) => {
     try {
         const { postId } = req.params;
 
-        const likes = await Like.find({ post: postId }).populate('users', 'name', 'email'); // Populate pour obtenir les détails de l'utilisateur
+        const likes = await Like.find({ post: postId });
 
         res.status(200).json({ likes });
     } catch (error) {
