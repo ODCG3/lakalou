@@ -22,10 +22,19 @@ router.route('/logout')
     .post((req, res) => UserController.logout(req, res));
 
 router.route('/model/create')
-    .post(auth,(req, res) => ModelController.create(req, res));
+    .post(auth, (req, res) => ModelController.create(req, res));
 
 router.route('/post/create')
-    .post(auth,(req, res) => PostController.create(req, res));
+    .post(auth, (req, res) => PostController.create(req, res));
+
+router.route('/post')
+    .get(auth, (req, res) => PostController.getAllPosts(req, res));
+
+router.route('/post/:id')
+    .get(auth, (req, res) => PostController.getPostById(req, res));
+
+router.route('/post/:id/model')
+    .get(auth, (req, res) => PostController.getModel(req, res));
 
 
 router.route('/profile')
