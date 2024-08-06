@@ -109,4 +109,9 @@ export default class UserController {
 
         res.json(data);
     }
+
+    static async profile(req, res){
+        const user = await UserModel.findOne({_id:req.user.userID});
+        res.json(user);
+    }
 }
