@@ -24,13 +24,13 @@ router.route("/test").get(auth, (req, res) => UserController.test(req, res));
 // FOLLOW USER
 
 router
-  .route("/follow/:id")
-  .post((req, res) => UserController.followUser(req, res));
+    .route("/follow/:id")
+    .post((req, res) => UserController.followUser(req, res));
 
 // UNFOLLOW USER:
 router
-  .route("/unfollow/:id")
-  .post((req, res) => UserController.unfollowUser(req, res));
+    .route("/unfollow/:id")
+    .post((req, res) => UserController.unfollowUser(req, res));
 
 router.route('/add-note/:id')
     .post(auth, (req, res) => UserController.addNote(req, res));
@@ -73,16 +73,19 @@ router.route('/post/favorite/remove/:id')
 
 
 router.route('/post')
-.get(auth, (req, res) => PostController.getAllPosts(req, res));
+    .get(auth, (req, res) => PostController.getAllPosts(req, res));
 
 router.route('/post/:id')
     .get(auth, (req, res) => PostController.getPostById(req, res));
 
 router.route('/post/:id/model')
-        .get(auth, (req, res) => PostController.getModel(req, res));
+    .get(auth, (req, res) => PostController.getModel(req, res));
+
+router.route('/post/:id')
+    .delete(auth, (req, res) => PostController.deletePost(req, res));
 
 
-        
+
 router.route('/test')
     .get(auth, (req, res) => UserController.test(req, res));
 
@@ -91,19 +94,19 @@ router.route('/test')
 router.post('/post/:postId/like', auth, likePost);
 
 // Route pour ne pas aimer un post
-router.post('/post/:postId/like/:likeID/unlike',auth, unlikePost);
+router.post('/post/:postId/like/:likeID/unlike', auth, unlikePost);
 
 // Route pour récupérer les likes d'un post
-router.get('/post/:postId/likes',auth, getPostLikes);
+router.get('/post/:postId/likes', auth, getPostLikes);
 
 
 // Route pour disliker un post
-router.post('/post/:postId/Dislike',auth, dislikePost);
+router.post('/post/:postId/Dislike', auth, dislikePost);
 
 // Route pour retirer un dislike
-router.post('/post/:postId/dislike/:dislikeID/undislike',auth, undislikePost);
+router.post('/post/:postId/dislike/:dislikeID/undislike', auth, undislikePost);
 // Route pour afficher les dislikes
-router.get('/post/:postId/Dislike',auth, getPostDislike);
+router.get('/post/:postId/Dislike', auth, getPostDislike);
 
 
 

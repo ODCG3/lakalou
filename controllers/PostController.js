@@ -51,10 +51,16 @@ export default class PostController {
     }
 
     static async deletePost(req, res) {
-        const { id } = req.params.id;
+        const id  = req.params.id;
+
+        const testpost = await post.findById(id);
+        console.log(testpost);
+        
 
         try {
-            const deletedPost = await post.findByIdAndDelete(id);
+            const deletedPost = await post.findOneAndDelete({_id: id,utilisateur: req.user.userID});
+            console.log(deletedPost);
+            
             if (!deletedPost) {
                 return res.status(404).json({ error: 'Post not found' });
             }
