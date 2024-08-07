@@ -174,4 +174,25 @@ export default class PostController {
         }
     }
 
+    static async marquerVue(req,res){
+        const { postId } = req.params;
+        const utilisateurId = req.user.userID;
+
+        try {
+            const postData = await post.findById(postId);
+            if (!postData) {
+                return res.status(404).json({ error: "Post not found" });
+            }
+
+            // Ajouter le post à la liste des vues de l'utilisateur
+            postData.vues.push(utilisateurId);
+            await postData.save();
+
+            res.status(200).json({ message: "Post viewed successfully", post: postData });
+        }
+        catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
 }

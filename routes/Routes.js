@@ -104,6 +104,7 @@ router.post('/user/changeRole',auth, UserController.changeRole);
 router.post('/user/:userID/bloquer',auth, UserController.bloquerUsers);
 router.post('/user/:userID/debloquer',auth, UserController.debloquerUsers);
 router.get('/user/bloquer',auth, UserController.getUserBloquer);
+router.post('/post/:postId',auth, PostController.marquerVue);
 
 
 export default router;
