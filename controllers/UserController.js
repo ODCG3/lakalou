@@ -5,7 +5,6 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import user from "../models/UserModel.js";
-import { use } from "bcrypt/promises.js";
 const ObjectId = mongoose.Types.ObjectId;
 
 export default class UserController {
@@ -125,6 +124,7 @@ export default class UserController {
         res.json("logged out");
     }
 
+
     static async addNote(req, res) {
         const { id } = req.params;
         const { rate } = req.body;
@@ -134,6 +134,7 @@ export default class UserController {
                 .status(400)
                 .json({ error: "La note doit être un nombre entre 1 et 5" });
         }
+
 
 
 
@@ -170,6 +171,7 @@ export default class UserController {
                 idTailleur: raterId,
             };
 
+
             userToRate.notes.push(note);
             await userToRate.save();
 
@@ -179,10 +181,9 @@ export default class UserController {
         }
     }
 
-    static async reportUser(req, res) {
-        const { id } = req.params;
-        const { reason } = req.body;
-
+  static async reportUser(req, res) {
+    const { id } = req.params;
+    const { reason } = req.body;
 
         if (!reason || typeof reason !== "string") {
             return res
@@ -428,7 +429,9 @@ export default class UserController {
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
+
     }
+  }
 
     static async getDiscussionsByUser(req, res) {
         try {
@@ -468,6 +471,7 @@ export default class UserController {
             res.status(500).json({ error: error.message });
         }
     }
+  }
 
     // static async profile(req, res) {
     //     const user = await UserModel.findOne({ _id: req.user.userID });
@@ -576,6 +580,8 @@ export default class UserController {
             }
         }
     }
+
+
 
 }
 
