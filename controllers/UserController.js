@@ -291,4 +291,43 @@ export default class UserController {
     const user = await UserModel.findOne({_id: req.user.userID});
     res.json(user)
   }
+
+  static async getTailleurRanking(req, res) {
+    try {
+         const ranking = await UserModel.aggregate([
+            { $unwind: "$notes" },
+            { $group: {
+                _id: "$_id",
+                nom: { $first: "$nom" },
+                prenom: { $first: "$prenom" },
+                email: { $first: "$email" },
+                photoProfile: { $first: "$photoProfile" },
+                role: { $first: "$role" },
+                note: { $avg: "$notes.rate" }
+            }},
+            { $sort: { note: -1 } }
+        ]);
+
+         let currentRank = 1;
+        let previousNote = null;
+        ranking.forEach((item, index) => {
+            if (previousNote === null || item.note < previousNote) {
+                 item.rang = currentRank;
+            } else {
+                 item.rang = currentRank - 1;
+            }
+            previousNote = item.note;
+            currentRank++;
+        });
+
+         res.status(200).json(ranking);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 }
+
+
+
+}
+
+
