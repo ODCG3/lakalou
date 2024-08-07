@@ -37,6 +37,7 @@ router.route('/post/favorite/create/:id').post(auth, (req, res) => PostControlle
 // Routes pour les histoires
 router.route('/story/create').post(auth, StoryController.createStory);
 
+
 // Routes pour les likes
 router.post('/post/:postId/like', auth, likePost);
 router.post('/post/:postId/like/:likeID/unlike',auth, unlikePost);
@@ -46,6 +47,52 @@ router.get('/post/:postId/likes',auth, getPostLikes);
 router.post('/post/:postId/Dislike',auth, dislikePost);
 router.post('/post/:postId/dislike/:dislikeID/undislike',auth, undislikePost);
 router.get('/post/:postId/Dislike',auth, getPostDislike);
+
+
+router.route('/post/favorite/create/:id')
+    .post(auth, (req, res) => PostController.addFavorite(req, res));
+
+// Route pour supprimer un favori
+router.route('/post/favorite/remove/:id')
+    .delete(auth, (req, res) => PostController.removeFavorite(req, res));
+
+
+router.route('/post')
+    .get(auth, (req, res) => PostController.getAllPosts(req, res));
+
+router.route('/post/:id')
+    .get(auth, (req, res) => PostController.getPostById(req, res));
+
+router.route('/post/:id/model')
+    .get(auth, (req, res) => PostController.getModel(req, res));
+
+router.route('/post/:id')
+    .delete(auth, (req, res) => PostController.deletePost(req, res));
+
+
+
+router.route('/test')
+    .get(auth, (req, res) => UserController.test(req, res));
+
+// Route pour aimer un post
+/* router.post('/post/:postId/like', likePost); */
+router.post('/post/:postId/like', auth, likePost);
+
+// Route pour ne pas aimer un post
+router.post('/post/:postId/like/:likeID/unlike', auth, unlikePost);
+
+// Route pour récupérer les likes d'un post
+router.get('/post/:postId/likes', auth, getPostLikes);
+
+
+// Route pour disliker un post
+router.post('/post/:postId/Dislike', auth, dislikePost);
+
+// Route pour retirer un dislike
+router.post('/post/:postId/dislike/:dislikeID/undislike', auth, undislikePost);
+// Route pour afficher les dislikes
+router.get('/post/:postId/Dislike', auth, getPostDislike);
+
 
 // Routes pour les commentaires
 router.post('/post/:postId/comment', auth, addComment);
