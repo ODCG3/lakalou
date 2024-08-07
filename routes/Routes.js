@@ -49,8 +49,8 @@ router.post('/post/:postId/dislike/:dislikeID/undislike',auth, undislikePost);
 router.get('/post/:postId/Dislike',auth, getPostDislike);
 
 
-router.route('/post/favorite/create/:id')
-    .post(auth, (req, res) => PostController.addFavorite(req, res));
+router.route('/post/favorite/:id')
+    .post(auth, (req, res) => PostController.getAllFavorites(req, res));
 
 // Route pour supprimer un favori
 router.route('/post/favorite/remove/:id')
