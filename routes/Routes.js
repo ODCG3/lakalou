@@ -105,6 +105,7 @@ router.post('/user/:userID/bloquer',auth, UserController.bloquerUsers);
 router.post('/user/:userID/debloquer',auth, UserController.debloquerUsers);
 router.get('/user/bloquer',auth, UserController.getUserBloquer);
 router.post('/post/:postId',auth, PostController.marquerVue);
+router.get('/post/:postId/vues',auth, PostController.getVues);
 
 
 export default router;

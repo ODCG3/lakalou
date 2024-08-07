@@ -195,4 +195,20 @@ export default class PostController {
         }
     }
 
+    static async getVues(req, res){
+        const { postId } = req.params;
+
+        try {
+            const postData = await post.findById(postId);
+            if (!postData) {
+                return res.status(404).json({ error: "Post not found" });
+            }
+
+            res.status(200).json(postData.vues.length);
+        }
+        catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
 }
