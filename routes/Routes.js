@@ -171,5 +171,15 @@ router.get('/post/:postId/Dislike', auth, getPostDislike);
 router.post('/post/:postId/comment', auth, addComment);
 router.delete('/comment/:commentId', auth, deleteComment);
 router.get('/post/:postId/comments', auth, getPostComments);
+router.post('/user/changeRole',auth, UserController.changeRole);
+router.post('/user/:userID/bloquer',auth, UserController.bloquerUsers);
+router.post('/user/:userID/debloquer',auth, UserController.debloquerUsers);
+router.get('/user/bloquer',auth, UserController.getUserBloquer);
+router.post('/post/:postId',auth, PostController.marquerVue);
+router.get('/post/:postId/vues',auth, PostController.getVues);
+router.post('/user/discussion/:userId/create',auth, UserController.createDiscussion);
+router.post('/user/discussion/:discussionUser/createMessage',auth, UserController.sendMessageToDiscussion);
+router.get('/user/discussions',auth, UserController.getDiscussions);
+
 
 export default router;
