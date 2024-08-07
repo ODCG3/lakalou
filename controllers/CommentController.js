@@ -62,7 +62,7 @@ export const deleteComment = async (req, res) => {
 // Récupérer les commentaires d'un post
 export const getPostComments = async (req, res) => {
     try {
-        const post = await Post.findById(req.params.postId).populate('comments');
+        const post = await Post.findById(req.params.postId);
 
         if (!post) return res.status(404).json({ msg: 'Post non trouvé' });
 
