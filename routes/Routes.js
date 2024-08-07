@@ -19,7 +19,7 @@ router.route("/login").post((req, res) => UserController.login(req, res));
 router.route("/logout").post((req, res) => UserController.logout(req, res));
 router.route("/test").get(auth, (req, res) => UserController.test(req, res));
 
-
+router.get('/classement', UserController.getTailleurRanking);
 // FOLLOW USER
 
 // Routes pour suivre/désuivre des utilisateurs
