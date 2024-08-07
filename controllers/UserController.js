@@ -9,137 +9,132 @@ import { use } from "bcrypt/promises.js";
 const ObjectId = mongoose.Types.ObjectId;
 
 export default class UserController {
-  static async create(req, res) {
-    const {
-      nom,
-      prenom,
-      email,
-      password,
-      confirmationPassword,
-      photoProfile,
-      role,
-    } = req.body;
+    static async create(req, res) {
+        const {
+            nom,
+            prenom,
+            email,
+            password,
+            confirmationPassword,
+            photoProfile,
+            role,
+        } = req.body;
 
-    console.log(req.body);
+        console.log(req.body);
 
-    if (
-      !nom ||
-      !prenom ||
-      !email ||
-      !password ||
-      !confirmationPassword ||
-      !photoProfile ||
-      !role
-    ) {
-      return res
-        .status(400)
-        .json({ error: "Tous les champs sont obligatoires" });
+        if (
+            !nom ||
+            !prenom ||
+            !email ||
+            !password ||
+            !confirmationPassword ||
+            !photoProfile ||
+            !role
+        ) {
+            return res
+                .status(400)
+                .json({ error: "Tous les champs sont obligatoires" });
+        }
+
+        if (password !== confirmationPassword) {
+            return res
+                .status(400)
+                .json({ error: "Les mots de passe ne correspondent pas" });
+        }
+
+        if (!isEmail(email)) {
+            return res.status(400).json({ error: "Cet email n'est pas valide" });
+        }
+
+        if (!validateName(nom)) {
+            return res.status(400).json({ error: "Le nom n'est pas valide" });
+        }
+
+        if (!validateName(prenom)) {
+            return res.status(400).json({ error: "Le prénom n'est pas valide" });
+        }
+
+        if (!validateImageExtension(photoProfile)) {
+            return res
+                .status(400)
+                .json({ error: "L'extension de l'image n'est pas valide" });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const existingUser = await UserModel.findOne({ email });
+
+        if (existingUser) {
+            return res.status(400).json({ error: "Cet email est déjà utilisé" });
+        }
+
+        try {
+            const user = UserModel.create({
+                nom,
+                prenom,
+                email,
+                password: hashedPassword,
+                photoProfile,
+                role,
+            });
+            res.status(201).json(user);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
     }
 
-    if (password !== confirmationPassword) {
-      return res
-        .status(400)
-        .json({ error: "Les mots de passe ne correspondent pas" });
+    static async login(req, res) {
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            return res
+                .status(400)
+                .json({ error: "Tous les champs sont obligatoires" });
+        }
+
+        const user = await UserModel.findOne({ email });
+
+        if (!user) {
+            return res.status(401).json({ error: "Utilisateur inconnu" });
+        }
+
+        const isValidPassword = await bcrypt.compare(password, user.password);
+
+        if (!isValidPassword) {
+            return res.status(401).json({ error: "Mot de passe incorrect" });
+        }
+
+        const token = jwt.sign({ userID: user._id }, process.env.TokenKey);
+
+        res.cookie("token", token, {
+            httpOnly: true,
+            // secure: true,
+            path: "/",
+        });
+
+        res.json({ token, user });
     }
 
-    if (!isEmail(email)) {
-      return res.status(400).json({ error: "Cet email n'est pas valide" });
+    static logout(req, res) {
+        res.clearCookie("token", {
+            // secure: true,
+            httpOnly: true,
+            path: "/",
+        });
+
+        res.json("logged out");
     }
-
-    if (!validateName(nom)) {
-      return res.status(400).json({ error: "Le nom n'est pas valide" });
-    }
-
-    if (!validateName(prenom)) {
-      return res.status(400).json({ error: "Le prénom n'est pas valide" });
-    }
-
-    if (!validateImageExtension(photoProfile)) {
-      return res
-        .status(400)
-        .json({ error: "L'extension de l'image n'est pas valide" });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const existingUser = await UserModel.findOne({ email });
-
-    if (existingUser) {
-      return res.status(400).json({ error: "Cet email est déjà utilisé" });
-    }
-
-    try {
-      const user = UserModel.create({
-        nom,
-        prenom,
-        email,
-        password: hashedPassword,
-        photoProfile,
-        role,
-      });
-      res.status(201).json(user);
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  }
-
-  static async login(req, res) {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res
-        .status(400)
-        .json({ error: "Tous les champs sont obligatoires" });
-    }
-
-    const user = await UserModel.findOne({ email });
-
-    if (!user) {
-      return res.status(401).json({ error: "Utilisateur inconnu" });
-    }
-
-    const isValidPassword = await bcrypt.compare(password, user.password);
-
-    if (!isValidPassword) {
-      return res.status(401).json({ error: "Mot de passe incorrect" });
-    }
-
-    const token = jwt.sign({ userID: user._id }, process.env.TokenKey);
-
-    res.cookie("token", token, {
-      httpOnly: true,
-      // secure: true,
-      path: "/",
-    });
-
-    res.json({ token, user });
-  }
-
-  static logout(req, res) {
-    res.clearCookie("token", {
-      // secure: true,
-      httpOnly: true,
-      path: "/",
-    });
-
-    res.json("logged out");
-  }
-
-  static async addNote(req, res) {
-    const { id } = req.params;
-    const { rate } = req.body;
 
     static async addNote(req, res) {
         const { id } = req.params;
         const { rate } = req.body;
 
-    if (typeof rate !== "number" || rate < 1 || rate > 5) {
-      return res
-        .status(400)
-        .json({ error: "La note doit être un nombre entre 1 et 5" });
-    }
+        if (typeof rate !== "number" || rate < 1 || rate > 5) {
+            return res
+                .status(400)
+                .json({ error: "La note doit être un nombre entre 1 et 5" });
+        }
 
-    const userToRate = await UserModel.findById(id);
 
 
         const userToRate = await UserModel.findById(id);
@@ -153,121 +148,93 @@ export default class UserController {
         }
 
         try {
-
             const raterId = req.user.userID;
 
             if (userToRate._id.toString() === raterId) {
-                return res.status(400).json({ error: 'Vous ne pouvez pas vous noter vous-même' });
+                return res
+                    .status(400)
+                    .json({ error: "Vous ne pouvez pas vous noter vous-même" });
             }
 
-            const existingNote = userToRate.notes.find(note => note.idTailleur.toString() === raterId.toString());
+            const existingNote = userToRate.notes.find(
+                (note) => note.idTailleur.toString() === raterId.toString()
+            );
             if (existingNote) {
-                return res.status(400).json({ error: 'Vous avez déjà noté cet utilisateur' });
+                return res
+                    .status(400)
+                    .json({ error: "Vous avez déjà noté cet utilisateur" });
             }
 
             const note = {
                 rate,
-                idTailleur: raterId
+                idTailleur: raterId,
             };
-          
-    if (userToRate.role != "tailleur") {
-      return res
-        .status(403)
-        .json({ error: "Vous ne pouvez pas noter un visiteur" });
+
+            userToRate.notes.push(note);
+            await userToRate.save();
+
+            res.status(200).json({ message: "Note ajoutée avec succès" });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
     }
-
-    if (!userToRate) {
-      return res.status(404).json({ error: "Utilisateur non trouvé" });
-    }
-
-    try {
-      const raterId = req.user.userID;
-
-      if (userToRate._id.toString() === raterId) {
-        return res
-          .status(400)
-          .json({ error: "Vous ne pouvez pas vous noter vous-même" });
-      }
-
-      const existingNote = userToRate.notes.find(
-        (note) => note.idTailleur.toString() === raterId.toString()
-      );
-      if (existingNote) {
-        return res
-          .status(400)
-          .json({ error: "Vous avez déjà noté cet utilisateur" });
-      }
-
-      const note = {
-        rate,
-        idTailleur: raterId,
-      };
-
-      userToRate.notes.push(note);
-      await userToRate.save();
-
-      res.status(200).json({ message: "Note ajoutée avec succès" });
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  }
 
     static async reportUser(req, res) {
         const { id } = req.params;
         const { reason } = req.body;
 
 
-    if (!reason || typeof reason !== "string") {
-      return res
-        .status(400)
-        .json({ error: "La raison du signalement est requise" });
+        if (!reason || typeof reason !== "string") {
+            return res
+                .status(400)
+                .json({ error: "La raison du signalement est requise" });
+        }
+
+        const userToReport = await UserModel.findById(id);
+        if (!userToReport) {
+            return res.status(404).json({ error: "Utilisateur non trouvé" });
+        }
+
+        try {
+            const reporterId = req.user.userID;
+
+            if (userToReport._id.toString() === reporterId) {
+                return res
+                    .status(400)
+                    .json({ error: "Vous ne pouvez pas vous signaler vous-même" });
+            }
+
+            const alreadyReported = userToReport.signals.some(
+                (signal) => signal.idReporter.toString() === reporterId.toString()
+            );
+            if (alreadyReported) {
+                return res
+                    .status(400)
+                    .json({ error: "Vous avez déjà signalé cet utilisateur" });
+            }
+
+            const signal = {
+                reason,
+                idReporter: reporterId,
+            };
+
+            userToReport.signals.push(signal);
+            await userToReport.save();
+
+            res.status(200).json({ message: "Signalement ajouté avec succès" });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
     }
 
-    const userToReport = await UserModel.findById(id);
-    if (!userToReport) {
-      return res.status(404).json({ error: "Utilisateur non trouvé" });
+    static test(req, res) {
+        const data = {
+            name: "jdzk",
+            idfiez: "jkfzfjz",
+        };
+
+        res.json(data);
     }
-
-    try {
-      const reporterId = req.user.userID;
-
-      if (userToReport._id.toString() === reporterId) {
-        return res
-          .status(400)
-          .json({ error: "Vous ne pouvez pas vous signaler vous-même" });
-      }
-
-      const alreadyReported = userToReport.signals.some(
-        (signal) => signal.idReporter.toString() === reporterId.toString()
-      );
-      if (alreadyReported) {
-        return res
-          .status(400)
-          .json({ error: "Vous avez déjà signalé cet utilisateur" });
-      }
-
-      const signal = {
-        reason,
-        idReporter: reporterId,
-      };
-
-      userToReport.signals.push(signal);
-      await userToReport.save();
-
-      res.status(200).json({ message: "Signalement ajouté avec succès" });
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  }
-
-  static test(req, res) {
-    const data = {
-      name: "jdzk",
-      idfiez: "jkfzfjz",
-    };
-
-    res.json(data);
-  }
 
 
     //-------------------- MÉTHODE D'AJOUT FOLLOWING DE L'UTILISATEUR CONNECTÉ:
@@ -358,21 +325,21 @@ export default class UserController {
 
     static async bloquerUsers(req, res) {
         try {
-            
+
             const userToBlock = await UserModel.findById(req.params.userID);
             if (!userToBlock) {
                 return res.status(404).json({ error: "Utilisateur non trouvé" });
             }
 
-            console.log(userToBlock._id.toString(),req.user.userID.toString());
-            
-            
+            console.log(userToBlock._id.toString(), req.user.userID.toString());
+
+
             if (userToBlock._id.toString() === req.user.userID.toString()) {
                 return res.status(400).json({ error: "Vous ne pouvez pas vous bloquer vous-même" });
             }
 
             const alreadyBlocked = userToBlock.utilisateurBloque.some(blockedUser => blockedUser.toString() === req.user.userID.toString());
-            
+
             if (alreadyBlocked) {
                 return res.status(400).json({ error: "Vous avez déjà bloqué cet utilisateur" });
             }
@@ -399,7 +366,7 @@ export default class UserController {
             }
 
 
-            currentUser.utilisateurBloque = currentUser.utilisateurBloque.filter(blockedUser => blockedUser.toString()!== userToUnblock._id.toString());
+            currentUser.utilisateurBloque = currentUser.utilisateurBloque.filter(blockedUser => blockedUser.toString() !== userToUnblock._id.toString());
             await currentUser.save();
             res.status(200).json({ message: "Utilisateur débloqué avec succès" });
         } catch (error) {
@@ -422,58 +389,58 @@ export default class UserController {
 
     static async createDiscussion(req, res) {
         try {
-        const userId = req.params.userId;
+            const userId = req.params.userId;
 
-        const user = await UserModel.findById(req.user.userID);
-        if (!user) {
-            return res.status(400).json({ message: "Utilisateur non trouvé" });
-        }
-        
-        if(userId.toString() === req.user.userID.toString()) {
-            return res.status(400).json({ message: "Vous ne pouvez pas vous créer une discussion avec vous-même" });
-        }
+            const user = await UserModel.findById(req.user.userID);
+            if (!user) {
+                return res.status(400).json({ message: "Utilisateur non trouvé" });
+            }
 
-        // check if a discussion with the given user already exists
-        const discussionExists = user.discussions.some(discussion => discussion.user.toString() === userId.toString());
-        if(discussionExists) {
-            return res.status(400).json({ message: "Une discussion avec cet utilisateur existe déjà" });
-        }
-        
-        user.discussions.push({user: userId,messages: []});
-        await user.save();
+            if (userId.toString() === req.user.userID.toString()) {
+                return res.status(400).json({ message: "Vous ne pouvez pas vous créer une discussion avec vous-même" });
+            }
 
-        res.status(201).json({ message: "Discussion créée avec succès" });
+            // check if a discussion with the given user already exists
+            const discussionExists = user.discussions.some(discussion => discussion.user.toString() === userId.toString());
+            if (discussionExists) {
+                return res.status(400).json({ message: "Une discussion avec cet utilisateur existe déjà" });
+            }
+
+            user.discussions.push({ user: userId, messages: [] });
+            await user.save();
+
+            res.status(201).json({ message: "Discussion créée avec succès" });
         } catch (error) {
             res.status(500).json({ error: error.message });
-        }        
+        }
     }
 
     static async getDiscussions(req, res) {
         try {
 
-        const user = await UserModel.findById(req.user.userID);
-        if (!user) {
-            return res.status(400).json({ message: "Utilisateur non trouvé" });
-        }
+            const user = await UserModel.findById(req.user.userID);
+            if (!user) {
+                return res.status(400).json({ message: "Utilisateur non trouvé" });
+            }
 
-        const discussions = user.discussions;
-        res.json(discussions);
+            const discussions = user.discussions;
+            res.json(discussions);
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
     }
 
-    static async getDiscussionsByUser(req,res){
+    static async getDiscussionsByUser(req, res) {
         try {
-        const userId = req.params.userId;
+            const userId = req.params.userId;
 
-        const user = await UserModel.findById(req.user.userID);
-        if (!user) {
-            return res.status(400).json({ message: "Utilisateur non trouvé" });
-        }
+            const user = await UserModel.findById(req.user.userID);
+            if (!user) {
+                return res.status(400).json({ message: "Utilisateur non trouvé" });
+            }
 
-        const discussions = user.discussions.filter(discussion => discussion.user.toString() === userId);
-        res.json(discussions);
+            const discussions = user.discussions.filter(discussion => discussion.user.toString() === userId);
+            res.json(discussions);
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
@@ -481,171 +448,138 @@ export default class UserController {
 
     static async sendMessageToDiscussion(req, res) {
         try {
-        const discussionUser = req.params.discussionUser;
+            const discussionUser = req.params.discussionUser;
 
-        const user = await UserModel.findById(req.user.userID);
-        if (!user) {
-            return res.status(400).json({ message: "Utilisateur non trouvé" });
-        }
+            const user = await UserModel.findById(req.user.userID);
+            if (!user) {
+                return res.status(400).json({ message: "Utilisateur non trouvé" });
+            }
 
-        const discussion = user.discussions.find(discussion => discussion.user.toString() === discussionUser);
-        if (!discussion) {
-            return res.status(400).json({ message: "Discussion non trouvée" });
-        }
+            const discussion = user.discussions.find(discussion => discussion.user.toString() === discussionUser);
+            if (!discussion) {
+                return res.status(400).json({ message: "Discussion non trouvée" });
+            }
 
-        user.discussions.find(discussionId => discussionId.user.toString() === discussionUser).messages.push({content: req.body.message});
-        await user.save();
+            user.discussions.find(discussionId => discussionId.user.toString() === discussionUser).messages.push({ content: req.body.message });
+            await user.save();
 
-        res.status(201).json({ message: "Message envoyé avec succès" });
+            res.status(201).json({ message: "Message envoyé avec succès" });
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
     }
 
-  static async profile(req, res) {
-    const user = await UserModel.findOne({ _id: req.user.userID });
-    res.json(user);
-  }
+    // static async profile(req, res) {
+    //     const user = await UserModel.findOne({ _id: req.user.userID });
+    //     res.json(user);
+    // }
 
-  static async getTailleurRanking(req, res) {
-    try {
-         const ranking = await UserModel.aggregate([
-            { $unwind: "$notes" },
-            { $group: {
-                _id: "$_id",
-                nom: { $first: "$nom" },
-                prenom: { $first: "$prenom" },
-                email: { $first: "$email" },
-                photoProfile: { $first: "$photoProfile" },
-                role: { $first: "$role" },
-                note: { $avg: "$notes.rate" }
-            }},
-            { $sort: { note: -1 } }
-        ]);
+    static async getTailleurRanking(req, res) {
+        try {
+            const ranking = await UserModel.aggregate([
+                { $unwind: "$notes" },
+                {
+                    $group: {
+                        _id: "$_id",
+                        nom: { $first: "$nom" },
+                        prenom: { $first: "$prenom" },
+                        email: { $first: "$email" },
+                        photoProfile: { $first: "$photoProfile" },
+                        role: { $first: "$role" },
+                        note: { $avg: "$notes.rate" }
+                    }
+                },
+                { $sort: { note: -1 } }
+            ]);
 
-         let currentRank = 1;
-        let previousNote = null;
-        ranking.forEach((item, index) => {
-            if (previousNote === null || item.note < previousNote) {
-                 item.rang = currentRank;
-            } else {
-                 item.rang = currentRank - 1;
-            }
-            previousNote = item.note;
-            currentRank++;
-        });
+            let currentRank = 1;
+            let previousNote = null;
+            ranking.forEach((item, index) => {
+                if (previousNote === null || item.note < previousNote) {
+                    item.rang = currentRank;
+                } else {
+                    item.rang = currentRank - 1;
+                }
+                previousNote = item.note;
+                currentRank++;
+            });
 
-         res.status(200).json(ranking);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-    
-  static async myFollowers(req, res) {
-    const connectedUser = await UserModel.findById(req.user.userID);
-    if (!connectedUser || connectedUser.role != "tailleur") {
-      res
-        .status(400)
-        .json({ message: "Vous n'êtes pas connecté en tant que tailleur" });
-    } else {
-      const followers = await UserModel.find({
-        _id: { $in: connectedUser.followers },
-      });
-      const followersNames = followers.map(
-        (follower) => `${follower.prenom} ${follower.nom}`
-      );
-      res.status(200).json({ followersNames });
-    }
-  }
-
-  // static async myPosition(req, res) {
-  //   const connectedUser = await UserModel.findById(req.user.userID);
-  //   if (!connectedUser || connectedUser.role != "tailleur") {
-  //     res
-  //       .status(400)
-  //       .json({ message: "Vous n'êtes pas connecté en tant que tailleur" });
-  //   } else {
-  //     try {
-  //       const allUsers = await UserModel.aggregate([
-  //         { $unwind: "$notes" },
-  //         {
-  //           $group: {
-  //             _id: "$_id",
-  //             nom: { $first: "$nom" },
-  //             prenom: { $first: "$prenom" },
-  //             email: { $first: "$email" },
-  //             photoProfile: { $first: "$photoProfile" },
-  //             role: { $first: "$role" },
-  //             averageRate: { $avg: "$notes.rate" },
-  //           },
-  //         },
-  //         { $sort: { averageRate: -1 } },
-  //       ]);
-
-  //       const connectedUserRank =
-  //         allUsers.findIndex(
-  //           (user) => user._id.toString() === connectedUser.id.toString()
-  //         ) + 1;
-  //       const result = ("Votre classement est " + connectedUserRank );
-  //       // res.status(200).json({ result });
-  //       res.status(200).send(result);
-  //     } catch (err) {
-  //       res.status(500).json({ message: "Erreur " + err });
-  //     }
-  //   }
-  // }
-  static async myPosition(req, res) {
-    const connectedUser = await UserModel.findById(req.user.userID);
-    if (!connectedUser || connectedUser.role !== "tailleur") {
-      res.status(400).json({ message: "Vous n'êtes pas connecté en tant que tailleur" });
-    } else {
-      try {
-        const allUsers = await UserModel.aggregate([
-          { $unwind: "$notes" },
-          {
-            $group: {
-              _id: "$_id",
-              nom: { $first: "$nom" },
-              prenom: { $first: "$prenom" },
-              email: { $first: "$email" },
-              photoProfile: { $first: "$photoProfile" },
-              role: { $first: "$role" },
-              averageRate: { $avg: "$notes.rate" },
-            },
-          },
-          { $sort: { averageRate: -1 } },
-        ]);
-  
-        let rank = 1;
-        let previousRate = null;
-        let tiedUsersCount = 0;
-  
-        for (let i = 0; i < allUsers.length; i++) {
-          if (previousRate === allUsers[i].averageRate) {
-            tiedUsersCount++;
-          } else {
-            rank += tiedUsersCount;
-            tiedUsersCount = 1;
-          }
-  
-          allUsers[i].rank = rank;
-          previousRate = allUsers[i].averageRate;
-  
-          if (allUsers[i]._id.toString() === connectedUser.id.toString()) {
-            const result = "Votre classement est " + allUsers[i].rank;
-            res.status(200).send(result);
-            return;
-          }
+            res.status(200).json(ranking);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
         }
-  
-        res.status(404).json({ message: "Utilisateur non trouvé dans le classement" });
-      } catch (err) {
-        res.status(500).json({ message: "Erreur " + err });
-      }
     }
-  }
-  
-}
+    static async myFollowers(req, res) {
+        const connectedUser = await UserModel.findById(req.user.userID);
+        if (!connectedUser || connectedUser.role != "tailleur") {
+            res
+                .status(400)
+                .json({ message: "Vous n'êtes pas connecté en tant que tailleur" });
+        } else {
+            const followers = await UserModel.find({
+                _id: { $in: connectedUser.followers },
+            });
+            const followersNames = followers.map(
+                (follower) => `${follower.prenom} ${follower.nom}`
+            );
+            res.status(200).json({ followersNames });
+        }
+    }
+
+    static async myPosition(req, res) {
+        const connectedUser = await UserModel.findById(req.user.userID);
+        if (!connectedUser || connectedUser.role !== "tailleur") {
+            res.status(400).json({ message: "Vous n'êtes pas connecté en tant que tailleur" });
+        } else {
+            try {
+                const allUsers = await UserModel.aggregate([
+                    { $unwind: "$notes" },
+                    {
+                        $group: {
+                            _id: "$_id",
+                            nom: { $first: "$nom" },
+                            prenom: { $first: "$prenom" },
+                            email: { $first: "$email" },
+                            photoProfile: { $first: "$photoProfile" },
+                            role: { $first: "$role" },
+                            averageRate: { $avg: "$notes.rate" },
+                        },
+                    },
+                    { $sort: { averageRate: -1 } },
+                ]);
+
+                let rank = 1;
+                let previousRate = null;
+                let tiedUsersCount = 0;
+
+                for (let i = 0; i < allUsers.length; i++) {
+                    if (previousRate === allUsers[i].averageRate) {
+                        tiedUsersCount++;
+                    } else {
+                        rank += tiedUsersCount;
+                        tiedUsersCount = 1;
+                    }
+
+                    allUsers[i].rank = rank;
+                    previousRate = allUsers[i].averageRate;
+
+                    if (allUsers[i]._id.toString() === connectedUser.id.toString()) {
+                        const result = "Votre classement est " + allUsers[i].rank;
+                        res.status(200).send(result);
+                        return;
+                    }
+                }
+
+                res.status(404).json({ message: "Utilisateur non trouvé dans le classement" });
+            } catch (err) {
+                res.status(500).json({ message: "Erreur " + err });
+            }
+        }
+    }
 
 }
+
+
+module.exports = UserController;
 
 
