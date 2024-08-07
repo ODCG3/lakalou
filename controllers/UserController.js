@@ -305,6 +305,39 @@ export default class UserController {
     res.json(user);
   }
 
+  static async getTailleurRanking(req, res) {
+    try {
+         const ranking = await UserModel.aggregate([
+            { $unwind: "$notes" },
+            { $group: {
+                _id: "$_id",
+                nom: { $first: "$nom" },
+                prenom: { $first: "$prenom" },
+                email: { $first: "$email" },
+                photoProfile: { $first: "$photoProfile" },
+                role: { $first: "$role" },
+                note: { $avg: "$notes.rate" }
+            }},
+            { $sort: { note: -1 } }
+        ]);
+
+         let currentRank = 1;
+        let previousNote = null;
+        ranking.forEach((item, index) => {
+            if (previousNote === null || item.note < previousNote) {
+                 item.rang = currentRank;
+            } else {
+                 item.rang = currentRank - 1;
+            }
+            previousNote = item.note;
+            currentRank++;
+        });
+
+         res.status(200).json(ranking);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+    
   static async myFollowers(req, res) {
     const connectedUser = await UserModel.findById(req.user.userID);
     if (!connectedUser || connectedUser.role != "tailleur") {
@@ -312,9 +345,107 @@ export default class UserController {
         .status(400)
         .json({ message: "Vous n'êtes pas connecté en tant que tailleur" });
     } else {
-      const followers = await UserModel.find({_id: {$in: connectedUser.followers}}); 
-      const followersNames = followers.map(follower => `${follower.prenom} ${follower.nom}`)
-      res.status(200).json({followersNames});
+      const followers = await UserModel.find({
+        _id: { $in: connectedUser.followers },
+      });
+      const followersNames = followers.map(
+        (follower) => `${follower.prenom} ${follower.nom}`
+      );
+      res.status(200).json({ followersNames });
     }
   }
+
+  // static async myPosition(req, res) {
+  //   const connectedUser = await UserModel.findById(req.user.userID);
+  //   if (!connectedUser || connectedUser.role != "tailleur") {
+  //     res
+  //       .status(400)
+  //       .json({ message: "Vous n'êtes pas connecté en tant que tailleur" });
+  //   } else {
+  //     try {
+  //       const allUsers = await UserModel.aggregate([
+  //         { $unwind: "$notes" },
+  //         {
+  //           $group: {
+  //             _id: "$_id",
+  //             nom: { $first: "$nom" },
+  //             prenom: { $first: "$prenom" },
+  //             email: { $first: "$email" },
+  //             photoProfile: { $first: "$photoProfile" },
+  //             role: { $first: "$role" },
+  //             averageRate: { $avg: "$notes.rate" },
+  //           },
+  //         },
+  //         { $sort: { averageRate: -1 } },
+  //       ]);
+
+  //       const connectedUserRank =
+  //         allUsers.findIndex(
+  //           (user) => user._id.toString() === connectedUser.id.toString()
+  //         ) + 1;
+  //       const result = ("Votre classement est " + connectedUserRank );
+  //       // res.status(200).json({ result });
+  //       res.status(200).send(result);
+  //     } catch (err) {
+  //       res.status(500).json({ message: "Erreur " + err });
+  //     }
+  //   }
+  // }
+  static async myPosition(req, res) {
+    const connectedUser = await UserModel.findById(req.user.userID);
+    if (!connectedUser || connectedUser.role !== "tailleur") {
+      res.status(400).json({ message: "Vous n'êtes pas connecté en tant que tailleur" });
+    } else {
+      try {
+        const allUsers = await UserModel.aggregate([
+          { $unwind: "$notes" },
+          {
+            $group: {
+              _id: "$_id",
+              nom: { $first: "$nom" },
+              prenom: { $first: "$prenom" },
+              email: { $first: "$email" },
+              photoProfile: { $first: "$photoProfile" },
+              role: { $first: "$role" },
+              averageRate: { $avg: "$notes.rate" },
+            },
+          },
+          { $sort: { averageRate: -1 } },
+        ]);
+  
+        let rank = 1;
+        let previousRate = null;
+        let tiedUsersCount = 0;
+  
+        for (let i = 0; i < allUsers.length; i++) {
+          if (previousRate === allUsers[i].averageRate) {
+            tiedUsersCount++;
+          } else {
+            rank += tiedUsersCount;
+            tiedUsersCount = 1;
+          }
+  
+          allUsers[i].rank = rank;
+          previousRate = allUsers[i].averageRate;
+  
+          if (allUsers[i]._id.toString() === connectedUser.id.toString()) {
+            const result = "Votre classement est " + allUsers[i].rank;
+            res.status(200).send(result);
+            return;
+          }
+        }
+  
+        res.status(404).json({ message: "Utilisateur non trouvé dans le classement" });
+      } catch (err) {
+        res.status(500).json({ message: "Erreur " + err });
+      }
+    }
+  }
+  
 }
+
+
+
+}
+
+
