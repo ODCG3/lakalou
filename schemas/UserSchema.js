@@ -7,19 +7,33 @@ const UserSchema = new Schema({
     password: { type: String, required: true },
     photoProfile: { type: String, required: true },
     role: { type: String, required: true },
-    notes: [{ 
+    notes: [{
         rate: { type: Number, min: 1, max: 5 },
         idUser: { type: Schema.Types.ObjectId, ref: 'User' }
     }],
-    signals: [{ 
+    signals: [{
         reason: { type: String, required: true },
         idReporter: { type: Schema.Types.ObjectId, ref: 'User' }
     }],
-  followers: {
-    type: [String],
-  },
-  followings: {
-    type: [String],
-  },
+    mesures: {
+        cou: Number,
+        longueurPantallon: Number,
+        epaule: Number,
+        longueurManche: Number,
+        hanche: Number,
+        poitrine: Number,
+        cuisse: Number,
+        longueur: Number,
+        tourBras: Number,
+        tourPoignet: Number,
+        ceinture: Number
+    },
+    credits: Number,
+    followers: {
+        type: [String],
+    },
+    followings: {
+        type: [String],
+    },
 });
 export default UserSchema;

@@ -100,5 +100,6 @@ router.get('/post/:postId/Dislike', auth, getPostDislike);
 router.post('/post/:postId/comment', auth, addComment);
 router.delete('/comment/:commentId', auth, deleteComment);
 router.get('/post/:postId/comments', auth, getPostComments);
+router.post('/user/changeRole',auth, UserController.changeRole);
 
 export default router;
