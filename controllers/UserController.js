@@ -5,7 +5,6 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import user from "../models/UserModel.js";
-import { use } from "bcrypt/promises.js";
 const ObjectId = mongoose.Types.ObjectId;
 
 export default class UserController {
@@ -129,10 +128,6 @@ export default class UserController {
     const { id } = req.params;
     const { rate } = req.body;
 
-    static async addNote(req, res) {
-        const { id } = req.params;
-        const { rate } = req.body;
-
     if (typeof rate !== "number" || rate < 1 || rate > 5) {
       return res
         .status(400)
@@ -141,35 +136,6 @@ export default class UserController {
 
     const userToRate = await UserModel.findById(id);
 
-
-        const userToRate = await UserModel.findById(id);
-
-        if (userToRate.role != "tailleur") {
-            return res.status(403).json({ error: 'Vous ne pouvez pas noter un visiteur' });
-        }
-
-        if (!userToRate) {
-            return res.status(404).json({ error: 'Utilisateur non trouvé' });
-        }
-
-        try {
-
-            const raterId = req.user.userID;
-
-            if (userToRate._id.toString() === raterId) {
-                return res.status(400).json({ error: 'Vous ne pouvez pas vous noter vous-même' });
-            }
-
-            const existingNote = userToRate.notes.find(note => note.idTailleur.toString() === raterId.toString());
-            if (existingNote) {
-                return res.status(400).json({ error: 'Vous avez déjà noté cet utilisateur' });
-            }
-
-            const note = {
-                rate,
-                idTailleur: raterId
-            };
-          
     if (userToRate.role != "tailleur") {
       return res
         .status(403)
@@ -212,10 +178,9 @@ export default class UserController {
     }
   }
 
-    static async reportUser(req, res) {
-        const { id } = req.params;
-        const { reason } = req.body;
-
+  static async reportUser(req, res) {
+    const { id } = req.params;
+    const { reason } = req.body;
 
     if (!reason || typeof reason !== "string") {
       return res
@@ -269,238 +234,71 @@ export default class UserController {
     res.json(data);
   }
 
-
-    //-------------------- MÉTHODE D'AJOUT FOLLOWING DE L'UTILISATEUR CONNECTÉ:
-    static async followUser(req, res) {
-        if (!ObjectId.isValid(req.params.id)) {
-            return res.status(400).json({ message: "Id Non trouvé" });
-        }
-
-        try {
-            const userId = req.user.userID;
-            if (!userId) {
-                return res.status(401).json({ message: "Aucun Token en cours" });
-            }
-            const userToFollow = await UserModel.findById(req.params.id);
-            if (userToFollow.role != "tailleur") {
-                res
-                    .status(402)
-                    .json({ message: "Vous ne pouvez pas suivre un visiteur" });
-            } else {
-                await UserModel.findByIdAndUpdate(
-                    req.params.id,
-                    { $addToSet: { followers: userId } },
-                    { new: true, upsert: true }
-                );
-
-                await UserModel.findByIdAndUpdate(
-                    req.body.follower,
-                    { $addToSet: { followings: req.params.id } },
-                    { new: true, upsert: true }
-                );
-                res.status(201).json({ message: "Follower ajouté avec succès !" });
-            }
-        } catch (err) {
-            res.status(400).json({ message: "Erreur ajout follower: " + err });
-        }
+  //-------------------- MÉTHODE D'AJOUT FOLLOWING DE L'UTILISATEUR CONNECTÉ:
+  static async followUser(req, res) {
+    if (!ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "Id Non trouvé" });
     }
 
-    //--------------------MÉTHODE UNFOLLOWING DE L'UTILISATEUR CONNECTÉ:
-    static async unfollowUser(req, res) {
-        if (!ObjectId.isValid(req.params.id)) {
-            return res.status(400).json({ message: "Id Non trouvé" });
-        }
+    try {
+      const userId = req.user.userID;
+      if (!userId) {
+        return res.status(401).json({ message: "Aucun Token en cours" });
+      }
+      const userToFollow = await UserModel.findById(req.params.id);
+      if (userToFollow.role != "tailleur") {
+        res
+          .status(402)
+          .json({ message: "Vous ne pouvez pas suivre un visiteur" });
+      } else {
+        await UserModel.findByIdAndUpdate(
+          req.params.id,
+          { $addToSet: { followers: userId } },
+          { new: true, upsert: true }
+        );
 
-        try {
-            const userId = req.user.userID;
+        await UserModel.findByIdAndUpdate(
+          req.body.follower,
+          { $addToSet: { followings: req.params.id } },
+          { new: true, upsert: true }
+        );
+        res.status(201).json({ message: "Follower ajouté avec succès !" });
+      }
+    } catch (err) {
+      res.status(400).json({ message: "Erreur ajout follower: " + err });
+    }
+  }
 
-            if (!userId) {
-                return res.status(401).json({
-                    message: "Vous devez vous connecter pour suivre un Vendeur",
-                });
-            }
-            await UserModel.findByIdAndUpdate(
-                req.params.id,
-                { $pull: { followers: userId } },
-                { new: true, upsert: true }
-            );
-
-            await UserModel.findByIdAndUpdate(
-                req.body.follower,
-                { $pull: { followings: req.params.id } },
-                { new: true, upsert: true }
-            );
-            res.status(201).json({ message: "Unfollowing ajouté avec succès !" });
-        } catch (err) {
-            res.status(400).json({ message: "Erreur Unfollowing " + err });
-        }
-
+  //--------------------MÉTHODE UNFOLLOWING DE L'UTILISATEUR CONNECTÉ:
+  static async unfollowUser(req, res) {
+    if (!ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "Id Non trouvé" });
     }
 
-    static async profile(req, res) {
-        const user = await UserModel.findOne({ _id: req.user.userID });
-        res.json(user)
+    try {
+      const userId = req.user.userID;
+
+      if (!userId) {
+        return res.status(401).json({
+          message: "Vous devez vous connecter pour suivre un Vendeur",
+        });
+      }
+      await UserModel.findByIdAndUpdate(
+        req.params.id,
+        { $pull: { followers: userId } },
+        { new: true, upsert: true }
+      );
+
+      await UserModel.findByIdAndUpdate(
+        req.body.follower,
+        { $pull: { followings: req.params.id } },
+        { new: true, upsert: true }
+      );
+      res.status(201).json({ message: "Unfollowing ajouté avec succès !" });
+    } catch (err) {
+      res.status(400).json({ message: "Erreur Unfollowing " + err });
     }
-
-
-    static async changeRole(req, res) {
-        try {
-            const user = await UserModel.findOne({ _id: req.user.userID });
-
-            const role = user.role == "visiteur" ? "tailleur" : "visiteur";
-
-            await UserModel.findByIdAndUpdate(req.user.userID, { role: role }, { new: true });
-            res.json({ response: "role updated successfully" });
-        } catch (error) {
-            res.status(500).json({ error: error.message });
-        }
-    }
-
-    static async bloquerUsers(req, res) {
-        try {
-            
-            const userToBlock = await UserModel.findById(req.params.userID);
-            if (!userToBlock) {
-                return res.status(404).json({ error: "Utilisateur non trouvé" });
-            }
-
-            console.log(userToBlock._id.toString(),req.user.userID.toString());
-            
-            
-            if (userToBlock._id.toString() === req.user.userID.toString()) {
-                return res.status(400).json({ error: "Vous ne pouvez pas vous bloquer vous-même" });
-            }
-
-            const alreadyBlocked = userToBlock.utilisateurBloque.some(blockedUser => blockedUser.toString() === req.user.userID.toString());
-            
-            if (alreadyBlocked) {
-                return res.status(400).json({ error: "Vous avez déjà bloqué cet utilisateur" });
-            }
-
-            const currentUser = await UserModel.findById(req.user.userID);
-            currentUser.utilisateurBloque.push(userToBlock._id);
-            await currentUser.save();
-            res.status(200).json({ message: "Utilisateur bloqué avec succès" });
-        } catch (error) {
-            res.status(500).json({ error: error.message });
-        }
-    }
-
-    static async debloquerUsers(req, res) {
-        try {
-            const userToUnblock = await UserModel.findById(req.params.userID);
-            if (!userToUnblock) {
-                return res.status(404).json({ error: "Utilisateur non trouvé" });
-            }
-
-            const currentUser = await UserModel.findById(req.user.userID);
-            if (!currentUser.utilisateurBloque.includes(userToUnblock._id)) {
-                return res.status(400).json({ error: "cet utilisateur n'a pas ete bloquer" });
-            }
-
-
-            currentUser.utilisateurBloque = currentUser.utilisateurBloque.filter(blockedUser => blockedUser.toString()!== userToUnblock._id.toString());
-            await currentUser.save();
-            res.status(200).json({ message: "Utilisateur débloqué avec succès" });
-        } catch (error) {
-            res.status(500).json({ error: error.message });
-        }
-    }
-
-    static async getUserBloquer(req, res) {
-        try {
-            const user = await UserModel.findById(req.user.userID);
-            if (!user) {
-                return res.status(404).json({ error: "Utilisateur non trouvé" });
-            }
-
-            res.json(user.utilisateurBloque);
-        } catch (error) {
-            res.status(500).json({ error: error.message });
-        }
-    }
-
-    static async createDiscussion(req, res) {
-        try {
-        const userId = req.params.userId;
-
-        const user = await UserModel.findById(req.user.userID);
-        if (!user) {
-            return res.status(400).json({ message: "Utilisateur non trouvé" });
-        }
-        
-        if(userId.toString() === req.user.userID.toString()) {
-            return res.status(400).json({ message: "Vous ne pouvez pas vous créer une discussion avec vous-même" });
-        }
-
-        // check if a discussion with the given user already exists
-        const discussionExists = user.discussions.some(discussion => discussion.user.toString() === userId.toString());
-        if(discussionExists) {
-            return res.status(400).json({ message: "Une discussion avec cet utilisateur existe déjà" });
-        }
-        
-        user.discussions.push({user: userId,messages: []});
-        await user.save();
-
-        res.status(201).json({ message: "Discussion créée avec succès" });
-        } catch (error) {
-            res.status(500).json({ error: error.message });
-        }        
-    }
-
-    static async getDiscussions(req, res) {
-        try {
-
-        const user = await UserModel.findById(req.user.userID);
-        if (!user) {
-            return res.status(400).json({ message: "Utilisateur non trouvé" });
-        }
-
-        const discussions = user.discussions;
-        res.json(discussions);
-        } catch (error) {
-            res.status(500).json({ error: error.message });
-        }
-    }
-
-    static async getDiscussionsByUser(req,res){
-        try {
-        const userId = req.params.userId;
-
-        const user = await UserModel.findById(req.user.userID);
-        if (!user) {
-            return res.status(400).json({ message: "Utilisateur non trouvé" });
-        }
-
-        const discussions = user.discussions.filter(discussion => discussion.user.toString() === userId);
-        res.json(discussions);
-        } catch (error) {
-            res.status(500).json({ error: error.message });
-        }
-    }
-
-    static async sendMessageToDiscussion(req, res) {
-        try {
-        const discussionUser = req.params.discussionUser;
-
-        const user = await UserModel.findById(req.user.userID);
-        if (!user) {
-            return res.status(400).json({ message: "Utilisateur non trouvé" });
-        }
-
-        const discussion = user.discussions.find(discussion => discussion.user.toString() === discussionUser);
-        if (!discussion) {
-            return res.status(400).json({ message: "Discussion non trouvée" });
-        }
-
-        user.discussions.find(discussionId => discussionId.user.toString() === discussionUser).messages.push({content: req.body.message});
-        await user.save();
-
-        res.status(201).json({ message: "Message envoyé avec succès" });
-        } catch (error) {
-            res.status(500).json({ error: error.message });
-        }
-    }
+  }
 
   static async profile(req, res) {
     const user = await UserModel.findOne({ _id: req.user.userID });
@@ -645,6 +443,8 @@ export default class UserController {
   }
   
 }
+
+
 
 }
 
