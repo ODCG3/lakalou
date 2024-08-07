@@ -28,6 +28,12 @@ const UserSchema = new Schema({
         tourPoignet: Number,
         ceinture: Number
     },
+    utilisateurBloque: [
+        {
+            type: Schema.Types.ObjectId,
+            ref: 'User',
+        }
+    ],
     credits: Number,
     followers: {
         type: [String],

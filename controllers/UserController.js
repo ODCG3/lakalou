@@ -5,6 +5,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import user from "../models/UserModel.js";
+import { use } from "bcrypt/promises.js";
 const ObjectId = mongoose.Types.ObjectId;
 
 export default class UserController {
@@ -299,7 +300,71 @@ export default class UserController {
             const role = user.role == "visiteur" ? "tailleur" : "visiteur";
 
             await UserModel.findByIdAndUpdate(req.user.userID, { role: role }, { new: true });
-            res.json({response:"role updated successfully"});
+            res.json({ response: "role updated successfully" });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    static async bloquerUsers(req, res) {
+        try {
+            
+            const userToBlock = await UserModel.findById(req.params.userID);
+            if (!userToBlock) {
+                return res.status(404).json({ error: "Utilisateur non trouvé" });
+            }
+
+            console.log(userToBlock._id.toString(),req.user.userID.toString());
+            
+            
+            if (userToBlock._id.toString() === req.user.userID.toString()) {
+                return res.status(400).json({ error: "Vous ne pouvez pas vous bloquer vous-même" });
+            }
+
+            const alreadyBlocked = userToBlock.utilisateurBloque.some(blockedUser => blockedUser.toString() === req.user.userID.toString());
+            
+            if (alreadyBlocked) {
+                return res.status(400).json({ error: "Vous avez déjà bloqué cet utilisateur" });
+            }
+
+            const currentUser = await UserModel.findById(req.user.userID);
+            currentUser.utilisateurBloque.push(userToBlock._id);
+            await currentUser.save();
+            res.status(200).json({ message: "Utilisateur bloqué avec succès" });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    static async debloquerUsers(req, res) {
+        try {
+            const userToUnblock = await UserModel.findById(req.params.userID);
+            if (!userToUnblock) {
+                return res.status(404).json({ error: "Utilisateur non trouvé" });
+            }
+
+            const currentUser = await UserModel.findById(req.user.userID);
+            if (!currentUser.utilisateurBloque.includes(userToUnblock._id)) {
+                return res.status(400).json({ error: "cet utilisateur n'a pas ete bloquer" });
+            }
+
+
+            currentUser.utilisateurBloque = currentUser.utilisateurBloque.filter(blockedUser => blockedUser.toString()!== userToUnblock._id.toString());
+            await currentUser.save();
+            res.status(200).json({ message: "Utilisateur débloqué avec succès" });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    static async getUserBloquer(req, res) {
+        try {
+            const user = await UserModel.findById(req.user.userID);
+            if (!user) {
+                return res.status(404).json({ error: "Utilisateur non trouvé" });
+            }
+
+            res.json(user.utilisateurBloque);
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
