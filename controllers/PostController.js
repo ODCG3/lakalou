@@ -1,25 +1,27 @@
 import model from "../models/ModelModel.js";
 import post from "../models/PostModel.js";
 import favori from "../models/FavoriModel.js";
+import partage from "../models/PartageModel.js";
+import user from "../models/UserModel.js";
 
 export default class PostController {
 
     static async create(req, res) {
-        
+
         const connectedUser = user.findById(req.user.userID);
-        if(connectedUser.role != "tailleur" ) {
+        if (connectedUser.role != "tailleur") {
             return res.status(403).json({ error: 'Vous n\'êtes pas un tailleur' });
         }
-        
-        const { contenues,model,description,titre } = req.body;
+
+        const { contenues, model, description, titre } = req.body;
 
         const utilisateur = req.user.userID;
-        
+
 
         try {
 
             const createdPost = post.create({
-                contenues,model,utilisateur,commentaires: [],partages: [],dislikes: [],likes: [],description,titre,vues: []
+                contenues, model, utilisateur, commentaires: [], partages: [], dislikes: [], likes: [], description, titre, vues: []
             });
             res.status(201).json(createdPost);
         } catch (error) {
@@ -40,7 +42,7 @@ export default class PostController {
 
         try {
             const postData = await post.findById(req.params.id);
-            
+
             if (!postData) {
                 return res.status(404).json({ error: 'Post not found' });
             }
@@ -51,10 +53,16 @@ export default class PostController {
     }
 
     static async deletePost(req, res) {
-        const { id } = req.params.id;
+        const id = req.params.id;
+
+        const testpost = await post.findById(id);
+        console.log(testpost);
+
 
         try {
-            const deletedPost = await post.findByIdAndDelete(id);
+            const deletedPost = await post.findOneAndDelete({ _id: id, utilisateur: req.user.userID });
+            console.log(deletedPost);
+
             if (!deletedPost) {
                 return res.status(404).json({ error: 'Post not found' });
             }
@@ -67,7 +75,7 @@ export default class PostController {
     static async getModel(req, res) {
         const postId = req.params.id;
 
-        try{
+        try {
             const postData = await post.findById(postId);
             const modelData = await model.findById(postData.model);
 
@@ -83,7 +91,7 @@ export default class PostController {
     static async addFavorite(req, res) {
         const { id } = req.params;
         const utilisateurId = req.user.userID;
-        
+
         try {
             // Vérifier si le post appartient à l'utilisateur connecté
             const Post = await post.findById(id);
@@ -113,14 +121,14 @@ export default class PostController {
     static async removeFavorite(req, res) {
         const { id } = req.params; // id du favori à supprimer
         const utilisateurId = req.user.userID;
-    
+
         try {
             // Vérifier si le favori existe
             const favoriToRemove = await favori.findOne({ utilisateur: utilisateurId, post: id });
             if (!favoriToRemove) {
                 return res.status(404).json({ error: "Favorite not found" });
             }
-    
+
             // Supprimer le favori
             await favoriToRemove.deleteOne();
             res.status(200).json({ message: "Favorite removed successfully" });
@@ -128,9 +136,6 @@ export default class PostController {
             res.status(500).json({ error: error.message });
         }
     }
-
-
-
 
     static async getAllFavorites(req, res) {
         const utilisateurId = req.user.userID;
@@ -156,5 +161,41 @@ export default class PostController {
     
     
 
+    static async partagerPost(req, res) {
+        const { postId } = req.params;
+        const utilisateurId = req.user.userID;
+        const { utilisateurCible } = req.body;
+
+        try {
+            // Vérifier si le post appartient à l'utilisateur connecté
+            const postData = await post.findById(postId);
+            if (!postData) {
+                return res.status(404).json({ error: "Post not found" });
+            }
+
+            // Vérifier si l'utilisateur cible existe
+            const utilisateurCibleData = await user.findById(utilisateurCible);
+            if (!utilisateurCibleData) {
+                return res.status(404).json({ error: "User not found" });
+            }
+
+            const donneePartage =  partage.create({sender: utilisateurCible,post: postId,receiver: utilisateurCible});
+            if (!donneePartage) {
+                return res.status(500).json({ error: "Failed to share post" });
+            }
+
+            // Ajouter le post à la liste des partages de l'utilisateur cible
+            postData.partages.push(utilisateurId);
+            await postData.save();
+
+            res.status(200).json({
+                message: "Post shared successfully",
+                post: postData
+            });
+        }
+        catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
 
 }
