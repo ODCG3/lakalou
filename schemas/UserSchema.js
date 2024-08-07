@@ -27,7 +27,13 @@ const UserSchema = new Schema({
         tourBras: Number,
         tourPoignet: Number,
         ceinture: Number
-    },
+    }, discussions: [{
+        user: { type: Schema.Types.ObjectId, ref: 'User' },
+        messages: [{
+            content: String,
+            createdAt: { type: Date, default: Date.now },
+        }]
+    }],
     utilisateurBloque: [
         {
             type: Schema.Types.ObjectId,

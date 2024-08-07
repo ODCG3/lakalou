@@ -369,4 +369,86 @@ export default class UserController {
             res.status(500).json({ error: error.message });
         }
     }
+
+    static async createDiscussion(req, res) {
+        try {
+        const userId = req.params.userId;
+
+        const user = await UserModel.findById(req.user.userID);
+        if (!user) {
+            return res.status(400).json({ message: "Utilisateur non trouvé" });
+        }
+        
+        if(userId.toString() === req.user.userID.toString()) {
+            return res.status(400).json({ message: "Vous ne pouvez pas vous créer une discussion avec vous-même" });
+        }
+
+        // check if a discussion with the given user already exists
+        const discussionExists = user.discussions.some(discussion => discussion.user.toString() === userId.toString());
+        if(discussionExists) {
+            return res.status(400).json({ message: "Une discussion avec cet utilisateur existe déjà" });
+        }
+        
+        user.discussions.push({user: userId,messages: []});
+        await user.save();
+
+        res.status(201).json({ message: "Discussion créée avec succès" });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }        
+    }
+
+    static async getDiscussions(req, res) {
+        try {
+
+        const user = await UserModel.findById(req.user.userID);
+        if (!user) {
+            return res.status(400).json({ message: "Utilisateur non trouvé" });
+        }
+
+        const discussions = user.discussions;
+        res.json(discussions);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    static async getDiscussionsByUser(req,res){
+        try {
+        const userId = req.params.userId;
+
+        const user = await UserModel.findById(req.user.userID);
+        if (!user) {
+            return res.status(400).json({ message: "Utilisateur non trouvé" });
+        }
+
+        const discussions = user.discussions.filter(discussion => discussion.user.toString() === userId);
+        res.json(discussions);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    static async sendMessageToDiscussion(req, res) {
+        try {
+        const discussionUser = req.params.discussionUser;
+
+        const user = await UserModel.findById(req.user.userID);
+        if (!user) {
+            return res.status(400).json({ message: "Utilisateur non trouvé" });
+        }
+
+        const discussion = user.discussions.find(discussion => discussion.user.toString() === discussionUser);
+        if (!discussion) {
+            return res.status(400).json({ message: "Discussion non trouvée" });
+        }
+
+        user.discussions.find(discussionId => discussionId.user.toString() === discussionUser).messages.push({content: req.body.message});
+        await user.save();
+
+        res.status(201).json({ message: "Message envoyé avec succès" });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
 }

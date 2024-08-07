@@ -106,6 +106,9 @@ router.post('/user/:userID/debloquer',auth, UserController.debloquerUsers);
 router.get('/user/bloquer',auth, UserController.getUserBloquer);
 router.post('/post/:postId',auth, PostController.marquerVue);
 router.get('/post/:postId/vues',auth, PostController.getVues);
+router.post('/user/discussion/:userId/create',auth, UserController.createDiscussion);
+router.post('/user/discussion/:discussionUser/createMessage',auth, UserController.sendMessageToDiscussion);
+router.get('/user/discussions',auth, UserController.getDiscussions);
 
 
 export default router;
