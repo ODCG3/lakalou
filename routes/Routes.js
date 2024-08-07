@@ -8,60 +8,45 @@ import StoryController from '../controllers/StoryController.js';
 import { likePost, unlikePost, getPostLikes } from '../controllers/LikeController.js';
 import { dislikePost, getPostDislike, undislikePost } from "../controllers/DislikeController.js";
 
-
+import { getPostComments, addComment, deleteComment } from '../controllers/CommentController.js';
 
 const router = express.Router();
 
+// Routes de l'utilisateur
 router.route("/register").post((req, res) => UserController.create(req, res));
-
 router.route("/login").post((req, res) => UserController.login(req, res));
-
 router.route("/logout").post((req, res) => UserController.logout(req, res));
-
 router.route("/test").get(auth, (req, res) => UserController.test(req, res));
 
+// Routes pour suivre/désuivre des utilisateurs
+router.route("/follow/:id").post((req, res) => UserController.followUser(req, res));
+router.route("/unfollow/:id").post((req, res) => UserController.unfollowUser(req, res));
+router.route('/add-note/:id').post(auth, (req, res) => UserController.addNote(req, res));
+router.route('/signal/:id').post(auth, (req, res) => UserController.reportUser(req, res));
 
-// FOLLOW USER
+// Routes pour les modèles
+router.route('/model/create').post(auth, (req, res) => ModelController.create(req, res));
 
-router
-    .route("/follow/:id")
-    .post((req, res) => UserController.followUser(req, res));
+// Routes pour les posts
+router.route('/post/create').post(auth, (req, res) => PostController.create(req, res));
+router.route('/post').get(auth, (req, res) => PostController.getAllPosts(req, res));
+router.route('/post/:id').get(auth, (req, res) => PostController.getPostById(req, res));
+router.route('/post/:id/model').get(auth, (req, res) => PostController.getModel(req, res));
+router.route('/post/favorite/create/:id').post(auth, (req, res) => PostController.addFavorite(req, res));
 
-// UNFOLLOW USER:
-router
-    .route("/unfollow/:id")
-    .post((req, res) => UserController.unfollowUser(req, res));
-
-router.route('/add-note/:id')
-    .post(auth, (req, res) => UserController.addNote(req, res));
-
-router.route('/signal/:id')
-    .post(auth, (req, res) => UserController.reportUser(req, res));
-
-// Model routes
-router.route('/model/create')
-    .post(auth, (req, res) => ModelController.create(req, res));
-
-// Post routes
-router.route('/post/create')
-    .post(auth, (req, res) => PostController.create(req, res));
-
-router.route('/post')
-    .get(auth, (req, res) => PostController.getAllPosts(req, res));
-
-router.route('/post/:id')
-    .get(auth, (req, res) => PostController.getPostById(req, res));
-
-router.route('/post/:id/model')
-    .get(auth, (req, res) => PostController.getModel(req, res));
-
-// Story routes
-router.route('/story/create')
-    .post(auth, StoryController.createStory);
+// Routes pour les histoires
+router.route('/story/create').post(auth, StoryController.createStory);
 
 
-router.route('/profile')
-    .get(auth, (req, res) => UserController.profile(req, res));
+// Routes pour les likes
+router.post('/post/:postId/like', auth, likePost);
+router.post('/post/:postId/like/:likeID/unlike',auth, unlikePost);
+router.get('/post/:postId/likes',auth, getPostLikes);
+
+// Routes pour les dislikes
+router.post('/post/:postId/Dislike',auth, dislikePost);
+router.post('/post/:postId/dislike/:dislikeID/undislike',auth, undislikePost);
+router.get('/post/:postId/Dislike',auth, getPostDislike);
 
 
 router.route('/post/favorite/create/:id')
@@ -109,5 +94,9 @@ router.post('/post/:postId/dislike/:dislikeID/undislike', auth, undislikePost);
 router.get('/post/:postId/Dislike', auth, getPostDislike);
 
 
+// Routes pour les commentaires
+router.post('/post/:postId/comment', auth, addComment);
+router.delete('/comment/:commentId', auth, deleteComment);
+router.get('/post/:postId/comments', auth, getPostComments);
 
-export default router; 
+export default router;
