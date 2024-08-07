@@ -47,8 +47,12 @@ const PostSchema = new Schema({
     titre: {type: String,required: true},
     vues: [
         {
-            type: Number,
-            default: 0
+            type: Schema.Types.ObjectId,
+            ref: 'User'
+        },
+        {
+            type: Date,
+            default: Date.now
         }
     ]
 });
