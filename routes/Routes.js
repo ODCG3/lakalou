@@ -84,6 +84,8 @@ router.route('/post/:id/model')
 router.route('/post/:id')
     .delete(auth, (req, res) => PostController.deletePost(req, res));
 
+router.route('/post/:postId/share')
+    .post(auth, (req, res) => PostController.partagerPost(req, res));
 
 
 router.route('/test')
