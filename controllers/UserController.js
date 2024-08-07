@@ -312,9 +312,50 @@ export default class UserController {
         .status(400)
         .json({ message: "Vous n'êtes pas connecté en tant que tailleur" });
     } else {
-      const followers = await UserModel.find({_id: {$in: connectedUser.followers}}); 
-      const followersNames = followers.map(follower => `${follower.prenom} ${follower.nom}`)
-      res.status(200).json({followersNames});
+      const followers = await UserModel.find({
+        _id: { $in: connectedUser.followers },
+      });
+      const followersNames = followers.map(
+        (follower) => `${follower.prenom} ${follower.nom}`
+      );
+      res.status(200).json({ followersNames });
+    }
+  }
+
+  static async myPosition(req, res) {
+    const connectedUser = await UserModel.findById(req.user.userID);
+    if (!connectedUser || connectedUser.role != "tailleur") {
+      res
+        .status(400)
+        .json({ message: "Vous n'êtes pas connecté en tant que tailleur" });
+    } else {
+      try {
+        const allUsers = await UserModel.aggregate([
+          { $unwind: "$notes" },
+          {
+            $group: {
+              _id: "$_id",
+              nom: { $first: "$nom" },
+              prenom: { $first: "$prenom" },
+              email: { $first: "$email" },
+              photoProfile: { $first: "$photoProfile" },
+              role: { $first: "$role" },
+              averageRate: { $avg: "$notes.rate" },
+            },
+          },
+          { $sort: { averageRate: -1 } },
+        ]);
+
+        const connectedUserRank =
+          allUsers.findIndex(
+            (user) => user._id.toString() === connectedUser.id.toString()
+          ) + 1;
+        const result = ("Votre classement est " + connectedUserRank );
+        // res.status(200).json({ result });
+        res.status(200).send(result);
+      } catch (err) {
+        res.status(500).json({ message: "Erreur " + err });
+      }
     }
   }
 }

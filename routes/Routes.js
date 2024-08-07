@@ -102,4 +102,17 @@ router
   .route("/post/myFollowers")
   .post(auth, (req, res) => UserController.myFollowers(req, res));
 
+// ROUTE POUR VOIR LE CLASSEMENT DU TAILLEUR:
+router
+  .route("/post/myPosition")
+  .post(auth, (req, res) => UserController.myPosition(req, res));
+
 export default router;
+
+/*
+Moustaph:2 postion:4
+Fat: 2 position:4
+khadia: 4 position: 2
+Bamba: 4 position: 1
+Faly: 0: position: 0
+*/
