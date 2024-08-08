@@ -7,6 +7,10 @@ const UserSchema = new Schema({
     password: { type: String, required: true },
     photoProfile: { type: String, required: true },
     role: { type: String, required: true },
+    MesCommand: {
+        type: [Schema.Types.ObjectId],
+        ref: 'Commande',
+    },
     notes: [{
         rate: { type: Number, min: 1, max: 5 },
         idUser: { type: Schema.Types.ObjectId, ref: 'User' }
