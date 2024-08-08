@@ -73,7 +73,16 @@ const UserSchema = new Schema({
             type: Schema.Types.ObjectId,
             ref: 'Commande',
         }
-    ]
+    ],
+    status:{
+        type: String,
+        enum: ['Premium', 'normal'],
+        default: 'normal'
+    },
+    certificat:{
+        type: Boolean,
+        default: false
+    }
 
 });
 export default UserSchema;
