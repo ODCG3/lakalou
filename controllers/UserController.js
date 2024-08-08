@@ -640,8 +640,33 @@ export default class UserController {
       const messageId = req.params.messageId;
       const newContent = req.body.newContent;
 
+      // Find the user by ID
+      const user = await UserModel.findById(userId);
+      if (!user) {
+        return res.status(400).json({ message: "Utilisateur non trouvé" });
+      }
 
-static async updateMeasurements(req, res) {
+      // Find the discussion by ID and update the message using $set
+      const updatedUser = await UserModel.findOneAndUpdate(
+        { _id: userId, 'discussions._id': discussionId },
+        { $set: { 'discussions.$.messages.$[msg].content': newContent } },
+        { arrayFilters: [{ 'msg._id': messageId }] },
+        { new: true }
+      );
+
+      if (!updatedUser) {
+        return res.status(404).json({ message: "echec de modification" });
+      }
+
+      res.status(200).json({ message: "Message modifié avec succès" });
+    }
+    catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+
+  static async updateMeasurements(req, res) {
     try {
         const { id } = req.params;
         const measurements = req.body;
@@ -685,33 +710,6 @@ static async updateMeasurements(req, res) {
         return res.status(500).json({ error: "Erreur interne du serveur." });
     }
 }
-
-
-
-      // Find the user by ID
-      const user = await UserModel.findById(userId);
-      if (!user) {
-        return res.status(400).json({ message: "Utilisateur non trouvé" });
-      }
-
-      // Find the discussion by ID and update the message using $set
-      const updatedUser = await UserModel.findOneAndUpdate(
-        { _id: userId, 'discussions._id': discussionId },
-        { $set: { 'discussions.$.messages.$[msg].content': newContent } },
-        { arrayFilters: [{ 'msg._id': messageId }] },
-        { new: true }
-      );
-
-      if (!updatedUser) {
-        return res.status(404).json({ message: "echec de modification" });
-      }
-
-      res.status(200).json({ message: "Message modifié avec succès" });
-    }
-    catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  }
 
   static async chargeCredit(req, res) {
     const connectedUser = await UserModel.findById(req.user.userID);
