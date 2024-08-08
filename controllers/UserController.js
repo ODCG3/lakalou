@@ -37,11 +37,11 @@ export default class UserController {
 
     if (password.length < 8) {
       return res
-       .status(400)
-       .json({ error: "Le mot de passe doit contenir au moins 8 caractères" });
+        .status(400)
+        .json({ error: "Le mot de passe doit contenir au moins 8 caractères" });
     }
 
-    if(role != "tailleur" && role != "visiteur"){
+    if (role != "tailleur" && role != "visiteur") {
       return res.status(400).json({ error: "Le rôle doit être 'tailleur' ou 'visiteur'" });
     }
 
@@ -152,7 +152,7 @@ export default class UserController {
         .status(403)
         .json({ error: "Vous ne pouvez pas noter un visiteur" });
     }
-    
+
     if (!userToRate) {
       return res.status(404).json({ error: "Utilisateur non trouvé" });
     }
@@ -264,8 +264,8 @@ export default class UserController {
 
       const connectedUser = await UserModel.findById(userId);
 
-      if((connectedUser.credits < 1 && connectedUser.followings.length > 10) || (connectedUser.credits == 0 && connectedUser.followings.length > 10) ){
-        return res.status(401).json({message: "Pour follow un autre utilisateur veuillez recharger vos credits"})
+      if ((connectedUser.credits < 1 && connectedUser.followings.length > 10) || (connectedUser.credits == 0 && connectedUser.followings.length > 10)) {
+        return res.status(401).json({ message: "Pour follow un autre utilisateur veuillez recharger vos credits" })
       }
 
       const userToFollow = await UserModel.findById(req.params.id);
@@ -287,7 +287,7 @@ export default class UserController {
           { new: true, upsert: true }
         );
 
-        if(connectedUser.followings.length > 10) {
+        if (connectedUser.followings.length > 10) {
           connectedUser.credits -= 1;
           await connectedUser.save();
         }
@@ -341,7 +341,7 @@ export default class UserController {
 
       const role = user.role == "visiteur" ? "tailleur" : "visiteur";
 
-      if (user.credits < 1 ) {
+      if (user.credits < 1) {
         return res.status(401).json({ message: "Vous n'avez pas assez de crédits pour changer de role" });
       }
 
@@ -700,48 +700,48 @@ export default class UserController {
 
   static async updateMeasurements(req, res) {
     try {
-        const { id } = req.params;
-        const measurements = req.body;
+      const { id } = req.params;
+      const measurements = req.body;
 
-        // Liste des champs à vérifier
-        const fields = [
-            'cou', 'longueurPantallon', 'epaule', 'longueurManche',
-            'hanche', 'poitrine', 'cuisse', 'longueur', 'tourBras',
-            'tourPoignet', 'ceinture'
-        ];
+      // Liste des champs à vérifier
+      const fields = [
+        'cou', 'longueurPantallon', 'epaule', 'longueurManche',
+        'hanche', 'poitrine', 'cuisse', 'longueur', 'tourBras',
+        'tourPoignet', 'ceinture'
+      ];
 
-        // Vérification des champs
-        for (const field of fields) {
-            const value = measurements[field];
+      // Vérification des champs
+      for (const field of fields) {
+        const value = measurements[field];
 
-            // Si le champ est vide, on continue sans vérifier
-            if (value === undefined || value === null || value === '') {
-                continue;
-            }
-
-            // Vérifier si la valeur est un nombre
-            if (!validator.isFloat(value.toString())) {
-                return res.status(400).json({ error: `La valeur pour ${field} doit être un nombre.` });
-            }
+        // Si le champ est vide, on continue sans vérifier
+        if (value === undefined || value === null || value === '') {
+          continue;
         }
 
-        // Mettre à jour les mesures de l'utilisateur
-        const user = await UserModel.findByIdAndUpdate(
-            id,
-            { mesures: measurements },
-            { new: true, runValidators: true }
-        );
-
-        if (!user) {
-            return res.status(404).json({ error: "Utilisateur non trouvé." });
+        // Vérifier si la valeur est un nombre
+        if (!validator.isFloat(value.toString())) {
+          return res.status(400).json({ error: `La valeur pour ${field} doit être un nombre.` });
         }
+      }
 
-        return res.status(200).json({ message: "Mesures mises à jour avec succès." });
+      // Mettre à jour les mesures de l'utilisateur
+      const user = await UserModel.findByIdAndUpdate(
+        id,
+        { mesures: measurements },
+        { new: true, runValidators: true }
+      );
+
+      if (!user) {
+        return res.status(404).json({ error: "Utilisateur non trouvé." });
+      }
+
+      return res.status(200).json({ message: "Mesures mises à jour avec succès." });
     } catch (error) {
-        console.error(error);
-        return res.status(500).json({ error: "Erreur interne du serveur." });
+      console.error(error);
+      return res.status(500).json({ error: "Erreur interne du serveur." });
     }
-}
+  }
 
   static async chargeCredit(req, res) {
     const connectedUser = await UserModel.findById(req.user.userID);
@@ -780,7 +780,7 @@ export default class UserController {
     }
     await UserModel.findByIdAndUpdate(
       connectedUser.id,
-      {$inc: {credits: credit}},
+      { $inc: { credits: credit } },
       { new: true }
     );
     res.status(200).json({
@@ -788,6 +788,86 @@ export default class UserController {
     });
   }
 
+  static async getTailleurs(req, res) {
+    const tailleurs = await UserModel.find({ role: 'tailleur' });
+    res.status(200).json(tailleurs);
+  }
+
+  static async filterTailleurById(req, res) {
+    const { tailleurId } = req.params;
+    const tailleur = await UserModel.findById(tailleurId);
+    if (!tailleur) {
+      return res.status(404).json({ message: "Tailleur non trouvé" });
+    }
+    res.status(200).json(tailleur);
+  }
+
+  static async filterByName(req, res) {
+    const { name } = req.params;
+    const tailleurs = await UserModel.find({ role: 'tailleur', nom: new RegExp(name, 'i') });
+    res.status(200).json(tailleurs);
+  }
+
+  static async filterByNotes(req, res) {
+    const connectedUser = await UserModel.findById(req.user.userID);
+
+    if (connectedUser.status.toLocaleLowerCase() != 'premium') {
+      return res.status(401).json({ message: "Vous devez être premium pour effectuer cette action" });
+    }
+
+    const tailleurs = await UserModel.aggregate([
+      {
+        $match: { role: 'tailleur' }
+      },
+      {
+        $unwind: {
+          path: '$notes',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $group: {
+          _id: '$_id',
+          nom: { $first: '$nom' },
+          prenom: { $first: '$prenom' },
+          email: { $first: '$email' },
+          photoProfile: { $first: '$photoProfile' },
+          moyenneNote: { $avg: '$notes.rate' },
+          nombreDeNote: {$sum: 1}
+        }
+      },
+      {
+        $sort: { averageRate: -1 }
+      }
+    ]);
+
+    res.status(200).json(tailleurs);
+  }
+
+  static async filterTailleurByCertificat(req, res) {
+    const connectedUser = await UserModel.findById(req.user.userID);
+
+    if (connectedUser.status.toLocaleLowerCase() != "premium") {
+      return res.status(401).json({ message: "Vous devez être premium pour effectuer cette action" });
+    }
+
+    const tailleurs = await UserModel.aggregate([
+      {
+        $match: { role: 'tailleur', certificat: true } // Filter to get only tailors with certificat
+      },
+      {
+        $group: {
+          _id: '$_id',
+          nom: { $first: '$nom' },
+          prenom: { $first: '$prenom' },
+          email: { $first: '$email' },
+          photoProfile: { $first: '$photoProfile' }
+        }
+      }
+    ]);
+
+    return res.status(201).json({ message: tailleurs });
+  }
 }
 
 

@@ -160,5 +160,11 @@ router.get('/notifications', auth, PostController.getNotifications);
 
 router.delete('/notifications/:notificationId', auth, PostController.deleteNotification);
 
+router.get('/tailleurs', auth, UserController.getTailleurs);
+router.get('/tailleurs/:tailleurId', auth, UserController.filterTailleurById);
+router.get('/tailleurs/name/:name', auth, UserController.filterByName);
+router.get('/tailleurs/note/filter', auth, UserController.filterByNotes);
+router.get('/tailleurs/certificat/filter', auth, UserController.filterTailleurByCertificat);
+
 
 export default router;

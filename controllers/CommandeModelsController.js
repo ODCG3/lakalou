@@ -1,6 +1,7 @@
 import CommandeModels from '../models/CommandeModelsModel.js';
 import Post from '../models/PostModel.js';
 import User from '../models/UserModel.js';
+import Model from '../models/ModelModel.js';
 
 // Effectuer une commande d'un modèle dans un post
 export async function createCommande(req, res) {
@@ -22,26 +23,35 @@ export async function createCommande(req, res) {
         }
         // un user ne doit pas pouvoire commander sur un post qu'il à fait
         
-        // Créer la commande
-        const commande = CommandeModels.create({
-            user_id: userId,
-            post_id: postId,
-            model_libelle: model_libelle,
-            adresseLivraison
-        });
+        const modelCommander = Model.findById(model);
+        if(modelCommander.quantite > 0){
 
-        // Associer la commande à l'utilisateur
-        const user = await User.findById(userId);
-        user.MesCommand.push((await commande).id);
-        await user.save();
-
-        const tailleur = await User.findById(post.utilisateur);
-        tailleur.CommandesUtilisateur.push((await commande).id);
-        await tailleur.save();
-
-        // Sauvegarder la commande
-
-        res.status(201).json(commande);
+            // Créer la commande
+            const commande = CommandeModels.create({
+                user_id: userId,
+                post_id: postId,
+                model_libelle: model_libelle,
+                adresseLivraison
+            });
+            
+            modelCommander.quantite -= 1;
+            await modelCommander.save();
+            
+            // Associer la commande à l'utilisateur
+            const user = await User.findById(userId);
+            user.MesCommand.push((await commande).id);
+            await user.save();
+            
+            const tailleur = await User.findById(post.utilisateur);
+            tailleur.CommandesUtilisateur.push((await commande).id);
+            await tailleur.save();
+            
+            // Sauvegarder la commande
+            
+            res.status(201).json(commande);
+        }else{
+            res.status(400).json({ message: 'Le modèle n\'est plus disponible' });
+        }
 
         // Réduire le stock du modèle
         // const modelToUpdate = await Model.findById(model._id);
