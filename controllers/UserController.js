@@ -1,6 +1,7 @@
 import UserModel from "../models/UserModel.js";
 import isEmail from "validator/lib/isEmail.js";
 import validateName, { validateImageExtension } from "../utils/Validator.js";
+import validator from "validator";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
@@ -602,6 +603,53 @@ export default class UserController {
         res.status(500).json({ error: error.message });
     }
 }
+
+
+static async updateMeasurements(req, res) {
+    try {
+        const { id } = req.params;
+        const measurements = req.body;
+
+        // Liste des champs à vérifier
+        const fields = [
+            'cou', 'longueurPantallon', 'epaule', 'longueurManche',
+            'hanche', 'poitrine', 'cuisse', 'longueur', 'tourBras',
+            'tourPoignet', 'ceinture'
+        ];
+
+        // Vérification des champs
+        for (const field of fields) {
+            const value = measurements[field];
+
+            // Si le champ est vide, on continue sans vérifier
+            if (value === undefined || value === null || value === '') {
+                continue;
+            }
+
+            // Vérifier si la valeur est un nombre
+            if (!validator.isFloat(value.toString())) {
+                return res.status(400).json({ error: `La valeur pour ${field} doit être un nombre.` });
+            }
+        }
+
+        // Mettre à jour les mesures de l'utilisateur
+        const user = await UserModel.findByIdAndUpdate(
+            id,
+            { mesures: measurements },
+            { new: true, runValidators: true }
+        );
+
+        if (!user) {
+            return res.status(404).json({ error: "Utilisateur non trouvé." });
+        }
+
+        return res.status(200).json({ message: "Mesures mises à jour avec succès." });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Erreur interne du serveur." });
+    }
+}
+
 
 
 

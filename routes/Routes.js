@@ -17,6 +17,7 @@ router.route("/register").post((req, res) => UserController.create(req, res));
 router.route("/login").post((req, res) => UserController.login(req, res));
 router.route("/logout").post((req, res) => UserController.logout(req, res));
 router.route("/test").get(auth, (req, res) => UserController.test(req, res));
+router.route("/user/:id/updateMeasurements").put((req, res) => UserController.updateMeasurements(req, res));
 
 // Routes pour suivre/désuivre des utilisateurs
 router.route("/follow/:id").post((req, res) => UserController.followUser(req, res));
