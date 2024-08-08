@@ -35,6 +35,16 @@ export default class UserController {
         .json({ error: "Tous les champs sont obligatoires" });
     }
 
+    if (password.length < 8) {
+      return res
+       .status(400)
+       .json({ error: "Le mot de passe doit contenir au moins 8 caractères" });
+    }
+
+    if(role != "tailleur" && role != "visiteur"){
+      return res.status(400).json({ error: "Le rôle doit être 'tailleur' ou 'visiteur'" });
+    }
+
     if (password !== confirmationPassword) {
       return res
         .status(400)
