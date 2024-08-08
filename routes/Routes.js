@@ -3,24 +3,16 @@ import UserController from "../controllers/UserController.js";
 import auth from "../middlewares/auth.js";
 import ModelController from "../controllers/ModelController.js";
 import PostController from "../controllers/PostController.js";
-import StoryController from "../controllers/StoryController.js";
 
-import {
-  likePost,
-  unlikePost,
-  getPostLikes,
-} from "../controllers/LikeController.js";
-import {
-  dislikePost,
-  getPostDislike,
-  undislikePost,
-} from "../controllers/DislikeController.js";
+import StoryController from '../controllers/StoryController.js';
 
-import {
-  getPostComments,
-  addComment,
-  deleteComment,
-} from "../controllers/CommentController.js";
+
+import { likePost, unlikePost, getPostLikes } from '../controllers/LikeController.js';
+import { dislikePost, getPostDislike, undislikePost } from "../controllers/DislikeController.js";
+
+import { getPostComments, addComment, deleteComment } from '../controllers/CommentController.js';
+import { createCommande, getCommandesByPostId, getCommandeById } from '../controllers/CommandeModelsController.js';
+
 
 const router = express.Router();
 
@@ -67,7 +59,9 @@ router
   .post(auth, (req, res) => PostController.addFavorite(req, res));
 
 // Routes pour les histoires
-router.route("/story/create").post(auth, StoryController.createStory);
+
+router.route('/story/create').post(auth, StoryController.createStory);
+router.route('/stories/:userId').get(auth, (req, res) => StoryController.getStories(req, res));
 
 // Routes pour les likes
 router.post("/post/:postId/like", auth, likePost);
@@ -129,19 +123,32 @@ router.post("/post/:postId/dislike/:dislikeID/undislike", auth, undislikePost);
 router.get("/post/:postId/Dislike", auth, getPostDislike);
 
 // Routes pour les commentaires
-router.post("/post/:postId/comment", auth, addComment);
-router.delete("/comment/:commentId", auth, deleteComment);
-router.get("/post/:postId/comments", auth, getPostComments);
-router.post("/user/changeRole", auth, UserController.changeRole);
-router.post("/user/:userID/bloquer", auth, UserController.bloquerUsers);
-router.post("/user/:userID/debloquer", auth, UserController.debloquerUsers);
-router.get("/user/bloquer", auth, UserController.getUserBloquer);
-router.post("/post/:postId", auth, PostController.marquerVue);
-router.get("/post/:postId/vues", auth, PostController.getVues);
+
+router.post('/post/:postId/comment', auth, addComment);
+router.delete('/comment/:commentId', auth, deleteComment);
+router.get('/post/:postId/comments', auth, getPostComments);
+
+// Routes pour les roles de utilisateurs
+router.post('/user/changeRole',auth, UserController.changeRole);
+// Routes pour bloquer un user
+router.post('/user/:userID/bloquer',auth, UserController.bloquerUsers);
+router.post('/user/:userID/debloquer',auth, UserController.debloquerUsers);
+router.get('/user/bloquer',auth, UserController.getUserBloquer);
+router.post('/post/:postId',auth, PostController.marquerVue);
+router.get('/post/:postId/vues',auth, PostController.getVues);
+router.delete('/user/discussion/:discussionId/messages/:messageId',auth, UserController.deleteMessage);
+router.put('/user/discussion/:discussionId/messages/:messageId',auth, UserController.modifierMessages);
+
+// Routes pour les commades
+router.post('/post/:postId/commande', auth,createCommande);
+router.get('/post/:postId/commandes', auth,getCommandesByPostId);
+router.get('/commande/:commandeId', auth, getCommandeById);
+
 
 // ROUTE POUR RECHARGER CRÉDIT TAILLEUR:
 router
   .route("/chargeCredit")
   .post(auth, (req, res) => UserController.chargeCredit(req, res));
+
 
 export default router;

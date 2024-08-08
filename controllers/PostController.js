@@ -8,7 +8,8 @@ export default class PostController {
 
     static async create(req, res) {
 
-        const connectedUser = user.findById(req.user.userID);
+        const connectedUser = await user.findById(req.user.userID);
+        console.log(connectedUser);
         if (connectedUser.role != "tailleur") {
             return res.status(403).json({ error: 'Vous n\'êtes pas un tailleur' });
         }
@@ -20,7 +21,7 @@ export default class PostController {
 
         try {
 
-            const createdPost = post.create({
+            const createdPost = await post.create({
                 contenues, model, utilisateur, commentaires: [], partages: [], dislikes: [], likes: [], description, titre, vues: []
             });
             res.status(201).json(createdPost);

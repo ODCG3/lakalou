@@ -603,6 +603,67 @@ export default class UserController {
     }
   }
 
+  static async deleteMessage(req, res) {
+    try {
+      const userId = req.user.userID;
+      const discussionId = req.params.discussionId;
+      const messageId = req.params.messageId;
+
+      // Find the user by ID
+      const user = await UserModel.findById(userId);
+      if (!user) {
+        return res.status(400).json({ message: "Utilisateur non trouvé" });
+      }
+
+      // Find the discussion by ID and remove the message using $pull
+      const updatedUser = await UserModel.findOneAndUpdate(
+        { _id: userId, 'discussions._id': discussionId },
+        { $pull: { 'discussions.$.messages': { _id: messageId } } },
+        { new: true }
+      );
+
+      if (!updatedUser) {
+        return res.status(404).json({ message: "Message ou discussion non trouvée" });
+      }
+
+      res.status(200).json({ message: "Message supprimé avec succès" });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  static async modifierMessages(req, res) {
+    try {
+      const userId = req.user.userID;
+      const discussionId = req.params.discussionId;
+      const messageId = req.params.messageId;
+      const newContent = req.body.newContent;
+
+      // Find the user by ID
+      const user = await UserModel.findById(userId);
+      if (!user) {
+        return res.status(400).json({ message: "Utilisateur non trouvé" });
+      }
+
+      // Find the discussion by ID and update the message using $set
+      const updatedUser = await UserModel.findOneAndUpdate(
+        { _id: userId, 'discussions._id': discussionId },
+        { $set: { 'discussions.$.messages.$[msg].content': newContent } },
+        { arrayFilters: [{ 'msg._id': messageId }] },
+        { new: true }
+      );
+
+      if (!updatedUser) {
+        return res.status(404).json({ message: "echec de modification" });
+      }
+
+      res.status(200).json({ message: "Message modifié avec succès" });
+    }
+    catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+
   static async chargeCredit(req, res) {
     const connectedUser = await UserModel.findById(req.user.userID);
     if (!connectedUser || connectedUser.role !== "tailleur") {
@@ -648,24 +709,5 @@ export default class UserController {
     });
   }
 
-  // static async updateNote(req, res){
-    
-  //   const connectedUser = await UserModel.findById(req.user.userID);
-  //   if (!connectedUser || connectedUser.role !== "tailleur") {
-  //     res
-  //       .status(400)
-  //       .json({ message: "Vous n'êtes pas connecté en tant que tailleur" });
-  //   }
-  //   const {newNote} = req.body;
-  //   try{
-  //     const notedUser = await UserModel.findByIdAndUpdate()
-  //   }
-  //   catch(err) {
-  //     res.status(404).json({message: "erreur modification note: " + note})
-  //   }
-
-  // }
-
-  
-
 }
+
