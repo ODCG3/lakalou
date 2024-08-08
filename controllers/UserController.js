@@ -135,16 +135,21 @@ export default class UserController {
     }
 
     const userToRate = await UserModel.findById(id);
+    // const raterId = req.user.userID;
 
     if (userToRate.role != "tailleur") {
       return res
         .status(403)
         .json({ error: "Vous ne pouvez pas noter un visiteur" });
     }
-
+    
     if (!userToRate) {
       return res.status(404).json({ error: "Utilisateur non trouvé" });
     }
+
+    // if(!raterId){
+    //   return res.status(403).json({message: "Connectez-vous d'abord pour noter"})
+    // }
 
     try {
       const raterId = req.user.userID;
@@ -166,7 +171,7 @@ export default class UserController {
 
       const note = {
         rate,
-        idTailleur: raterId,
+        raterId: raterId,
       };
 
       userToRate.notes.push(note);
@@ -302,9 +307,8 @@ export default class UserController {
 
   static async profile(req, res) {
     const user = await UserModel.findOne({ _id: req.user.userID });
-    res.json(user)
+    res.json(user);
   }
-
 
   static async changeRole(req, res) {
     try {
@@ -312,7 +316,11 @@ export default class UserController {
 
       const role = user.role == "visiteur" ? "tailleur" : "visiteur";
 
-      await UserModel.findByIdAndUpdate(req.user.userID, { role: role }, { new: true });
+      await UserModel.findByIdAndUpdate(
+        req.user.userID,
+        { role: role },
+        { new: true }
+      );
       res.json({ response: "role updated successfully" });
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -321,7 +329,6 @@ export default class UserController {
 
   static async bloquerUsers(req, res) {
     try {
-
       const userToBlock = await UserModel.findById(req.params.userID);
       if (!userToBlock) {
         return res.status(404).json({ error: "Utilisateur non trouvé" });
@@ -329,15 +336,20 @@ export default class UserController {
 
       console.log(userToBlock._id.toString(), req.user.userID.toString());
 
-
       if (userToBlock._id.toString() === req.user.userID.toString()) {
-        return res.status(400).json({ error: "Vous ne pouvez pas vous bloquer vous-même" });
+        return res
+          .status(400)
+          .json({ error: "Vous ne pouvez pas vous bloquer vous-même" });
       }
 
-      const alreadyBlocked = userToBlock.utilisateurBloque.some(blockedUser => blockedUser.toString() === req.user.userID.toString());
+      const alreadyBlocked = userToBlock.utilisateurBloque.some(
+        (blockedUser) => blockedUser.toString() === req.user.userID.toString()
+      );
 
       if (alreadyBlocked) {
-        return res.status(400).json({ error: "Vous avez déjà bloqué cet utilisateur" });
+        return res
+          .status(400)
+          .json({ error: "Vous avez déjà bloqué cet utilisateur" });
       }
 
       const currentUser = await UserModel.findById(req.user.userID);
@@ -358,11 +370,14 @@ export default class UserController {
 
       const currentUser = await UserModel.findById(req.user.userID);
       if (!currentUser.utilisateurBloque.includes(userToUnblock._id)) {
-        return res.status(400).json({ error: "cet utilisateur n'a pas ete bloquer" });
+        return res
+          .status(400)
+          .json({ error: "cet utilisateur n'a pas ete bloquer" });
       }
 
-
-      currentUser.utilisateurBloque = currentUser.utilisateurBloque.filter(blockedUser => blockedUser.toString() !== userToUnblock._id.toString());
+      currentUser.utilisateurBloque = currentUser.utilisateurBloque.filter(
+        (blockedUser) => blockedUser.toString() !== userToUnblock._id.toString()
+      );
       await currentUser.save();
       res.status(200).json({ message: "Utilisateur débloqué avec succès" });
     } catch (error) {
@@ -393,13 +408,20 @@ export default class UserController {
       }
 
       if (userId.toString() === req.user.userID.toString()) {
-        return res.status(400).json({ message: "Vous ne pouvez pas vous créer une discussion avec vous-même" });
+        return res.status(400).json({
+          message:
+            "Vous ne pouvez pas vous créer une discussion avec vous-même",
+        });
       }
 
       // check if a discussion with the given user already exists
-      const discussionExists = user.discussions.some(discussion => discussion.user.toString() === userId.toString());
+      const discussionExists = user.discussions.some(
+        (discussion) => discussion.user.toString() === userId.toString()
+      );
       if (discussionExists) {
-        return res.status(400).json({ message: "Une discussion avec cet utilisateur existe déjà" });
+        return res
+          .status(400)
+          .json({ message: "Une discussion avec cet utilisateur existe déjà" });
       }
 
       user.discussions.push({ user: userId, messages: [] });
@@ -413,7 +435,6 @@ export default class UserController {
 
   static async getDiscussions(req, res) {
     try {
-
       const user = await UserModel.findById(req.user.userID);
       if (!user) {
         return res.status(400).json({ message: "Utilisateur non trouvé" });
@@ -424,7 +445,6 @@ export default class UserController {
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
-
   }
 
   static async getDiscussionsByUser(req, res) {
@@ -436,7 +456,9 @@ export default class UserController {
         return res.status(400).json({ message: "Utilisateur non trouvé" });
       }
 
-      const discussions = user.discussions.filter(discussion => discussion.user.toString() === userId);
+      const discussions = user.discussions.filter(
+        (discussion) => discussion.user.toString() === userId
+      );
       res.json(discussions);
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -452,12 +474,16 @@ export default class UserController {
         return res.status(400).json({ message: "Utilisateur non trouvé" });
       }
 
-      const discussion = user.discussions.find(discussion => discussion.user.toString() === discussionUser);
+      const discussion = user.discussions.find(
+        (discussion) => discussion.user.toString() === discussionUser
+      );
       if (!discussion) {
         return res.status(400).json({ message: "Discussion non trouvée" });
       }
 
-      user.discussions.find(discussionId => discussionId.user.toString() === discussionUser).messages.push({ content: req.body.message });
+      user.discussions
+        .find((discussionId) => discussionId.user.toString() === discussionUser)
+        .messages.push({ content: req.body.message });
       await user.save();
 
       res.status(201).json({ message: "Message envoyé avec succès" });
@@ -465,7 +491,6 @@ export default class UserController {
       res.status(500).json({ error: error.message });
     }
   }
-
 
   // static async profile(req, res) {
   //     const user = await UserModel.findOne({ _id: req.user.userID });
@@ -484,10 +509,10 @@ export default class UserController {
             email: { $first: "$email" },
             photoProfile: { $first: "$photoProfile" },
             role: { $first: "$role" },
-            note: { $avg: "$notes.rate" }
-          }
+            note: { $avg: "$notes.rate" },
+          },
         },
-        { $sort: { note: -1 } }
+        { $sort: { note: -1 } },
       ]);
 
       let currentRank = 1;
@@ -527,7 +552,9 @@ export default class UserController {
   static async myPosition(req, res) {
     const connectedUser = await UserModel.findById(req.user.userID);
     if (!connectedUser || connectedUser.role !== "tailleur") {
-      res.status(400).json({ message: "Vous n'êtes pas connecté en tant que tailleur" });
+      res
+        .status(400)
+        .json({ message: "Vous n'êtes pas connecté en tant que tailleur" });
     } else {
       try {
         const allUsers = await UserModel.aggregate([
@@ -568,7 +595,9 @@ export default class UserController {
           }
         }
 
-        res.status(404).json({ message: "Utilisateur non trouvé dans le classement" });
+        res
+          .status(404)
+          .json({ message: "Utilisateur non trouvé dans le classement" });
       } catch (err) {
         res.status(500).json({ message: "Erreur " + err });
       }
@@ -577,32 +606,39 @@ export default class UserController {
 
   static async deleteMessage(req, res) {
     try {
-        const userId = req.user.userID;
-        const discussionId = req.params.discussionId;
-        const messageId = req.params.messageId;
+      const userId = req.user.userID;
+      const discussionId = req.params.discussionId;
+      const messageId = req.params.messageId;
 
-        // Find the user by ID
-        const user = await UserModel.findById(userId);
-        if (!user) {
-            return res.status(400).json({ message: "Utilisateur non trouvé" });
-        }
+      // Find the user by ID
+      const user = await UserModel.findById(userId);
+      if (!user) {
+        return res.status(400).json({ message: "Utilisateur non trouvé" });
+      }
 
-        // Find the discussion by ID and remove the message using $pull
-        const updatedUser = await UserModel.findOneAndUpdate(
-            { _id: userId, 'discussions._id': discussionId },
-            { $pull: { 'discussions.$.messages': { _id: messageId } } },
-            { new: true }
-        );
+      // Find the discussion by ID and remove the message using $pull
+      const updatedUser = await UserModel.findOneAndUpdate(
+        { _id: userId, 'discussions._id': discussionId },
+        { $pull: { 'discussions.$.messages': { _id: messageId } } },
+        { new: true }
+      );
 
-        if (!updatedUser) {
-            return res.status(404).json({ message: "Message ou discussion non trouvée" });
-        }
+      if (!updatedUser) {
+        return res.status(404).json({ message: "Message ou discussion non trouvée" });
+      }
 
-        res.status(200).json({ message: "Message supprimé avec succès" });
+      res.status(200).json({ message: "Message supprimé avec succès" });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+      res.status(500).json({ error: error.message });
     }
-}
+  }
+
+  static async modifierMessages(req, res) {
+    try {
+      const userId = req.user.userID;
+      const discussionId = req.params.discussionId;
+      const messageId = req.params.messageId;
+      const newContent = req.body.newContent;
 
 
 static async updateMeasurements(req, res) {
@@ -652,5 +688,76 @@ static async updateMeasurements(req, res) {
 
 
 
+      // Find the user by ID
+      const user = await UserModel.findById(userId);
+      if (!user) {
+        return res.status(400).json({ message: "Utilisateur non trouvé" });
+      }
+
+      // Find the discussion by ID and update the message using $set
+      const updatedUser = await UserModel.findOneAndUpdate(
+        { _id: userId, 'discussions._id': discussionId },
+        { $set: { 'discussions.$.messages.$[msg].content': newContent } },
+        { arrayFilters: [{ 'msg._id': messageId }] },
+        { new: true }
+      );
+
+      if (!updatedUser) {
+        return res.status(404).json({ message: "echec de modification" });
+      }
+
+      res.status(200).json({ message: "Message modifié avec succès" });
+    }
+    catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  static async chargeCredit(req, res) {
+    const connectedUser = await UserModel.findById(req.user.userID);
+    if (!connectedUser || connectedUser.role !== "tailleur") {
+      res
+        .status(400)
+        .json({ message: "Vous n'êtes pas connecté en tant que tailleur" });
+    }
+    const { credits } = req.body;
+    const comparedAmount = parseInt(credits);
+    if (!comparedAmount) {
+      res.status(400).send("Vous devez saisir un montant valide");
+    } else if (
+      comparedAmount !== 1000 &&
+      comparedAmount !== 2000 &&
+      comparedAmount !== 3000
+    ) {
+      res.status(400).send("Vous devez saisir 1000, 2000 ou 3000");
+    }
+
+    let credit = 0;
+
+    switch (comparedAmount) {
+      case 1000:
+        credit = 10;
+        break;
+      case 2000:
+        credit = 20;
+        break;
+      case 3000:
+        credit = 30;
+        break;
+
+      default:
+        null;
+    }
+    await UserModel.findByIdAndUpdate(
+      connectedUser.id,
+      {$inc: {credits: credit}},
+      { new: true }
+    );
+    res.status(200).json({
+      message: `Rechargement ${comparedAmount} Fr réussi.`,
+    });
+  }
 
 }
+
+

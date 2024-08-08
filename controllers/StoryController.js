@@ -24,7 +24,17 @@ const createStory = (req, res) => {
       });
     });
 };
+const getStories = (req, res) => {
+  Story.find({ userId: req.params.userId, expiresAt: { $gt: new Date() } })
+    .then(stories => {
+      res.status(200).json(stories);
+    })
+    .catch(error => {
+      res.status(400).json({ error: error.message });
+    });
+};
 
 export default {
-  createStory
+  createStory,
+  getStories
 };
