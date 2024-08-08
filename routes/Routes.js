@@ -26,10 +26,10 @@ router.route("/user/:id/updateMeasurements").put((req, res) => UserController.up
 // Routes pour suivre/désuivre des utilisateurs
 router
   .route("/follow/:id")
-  .post((req, res) => UserController.followUser(req, res));
+  .post(auth,(req, res) => UserController.followUser(req, res));
 router
   .route("/unfollow/:id")
-  .post((req, res) => UserController.unfollowUser(req, res));
+  .post(auth,(req, res) => UserController.unfollowUser(req, res));
 router
   .route("/add-note/:id")
   .post(auth, (req, res) => UserController.addNote(req, res));
