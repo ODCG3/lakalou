@@ -9,18 +9,26 @@ export default class PostController {
     static async create(req, res) {
         const connectedUser = await user.findById(req.user.userID);
         if (connectedUser.role != "tailleur") {
-            return res.status(403).json({ error: 'Vous n\'êtes pas un tailleur' });
+            return res.status(403).json({ error: 'Vous n\'êtes pas un tailleur , seul les tailleur peuvent cree des postes' });
         }
 
         const { contenues, model, description, titre } = req.body;
         const utilisateur = req.user.userID;
 
         try {
-            const createdPost = await post.create({
-                contenues, model, utilisateur, commentaires: [], partages: [], dislikes: [], likes: [], description, titre, vues: []
-            });
-            await PostController.notifyFollowers(utilisateur, createdPost._id); // Notifier les abonnés
+            if(connectedUser.credits > 0){
+                const createdPost = await post.create({
+                    contenues, model, utilisateur, commentaires: [], partages: [], dislikes: [], likes: [], description, titre, vues: []
+                });
+
+                connectedUser.credits -= 1;
+                await connectedUser.save();
+                await PostController.notifyFollowers(utilisateur, createdPost._id); // Notifier les abonnés
             res.status(201).json(createdPost);
+                res.status(201).json(createdPost);
+            }else{
+                res.status(400).json({ error: 'Vous n\'avez pas assez de crédits pour poster veuillez recharger votre compte' });
+            }
         } catch (error) {
             res.status(500).json({ error: error.message });
         }

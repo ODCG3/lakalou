@@ -10,6 +10,7 @@ const storySchema = new mongoose.Schema({
   mediaUrl: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
   expiresAt: { type: Date, required: true },
+  views: { type: Number, default: 0 }
 }, { timestamps: true });
 
 // Définir un index TTL pour faire expirer automatiquement les documents après 24h
