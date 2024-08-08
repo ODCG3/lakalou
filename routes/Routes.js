@@ -65,6 +65,9 @@ router.route('/story/create').post(auth, StoryController.createStory);
 router.route('/stories/:userId').get(auth, (req, res) => StoryController.getStories(req, res));
 // Route pour supprimer une story
 router.route('/story/:id/delete').delete(auth, (req, res) => StoryController.deleteStory(req, res));
+router.route('/story/:id/view').post(auth, (req, res) => StoryController.viewStory(req, res)); // Incrémenter les vues
+router.route('/story/:id/views').get(auth, (req, res) => StoryController.getStoryViews(req, res)); // Obtenir le nombre de vues
+
 
 // Routes pour les likes
 router.post("/post/:postId/like", auth, likePost);

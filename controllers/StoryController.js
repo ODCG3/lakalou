@@ -49,9 +49,44 @@ const deleteStory = (req, res) => {
       res.status(500).json({ error: error.message });
     });
 };
+const viewStory = (req, res) => {
+  const storyId = req.params.id;
+
+  Story.findByIdAndUpdate(storyId, { $inc: { views: 1 } }, { new: true })
+    .then(story => {
+      if (story) {
+        res.status(200).json({ views: story.views });
+      } else {
+        res.status(404).json({ message: 'Story non trouvée' });
+      }
+    })
+    .catch(error => {
+      res.status(500).json({ error: error.message });
+    });
+};
+
+const getStoryViews = (req, res) => {
+  const storyId = req.params.id;
+
+  Story.findById(storyId)
+    .then(story => {
+      if (story) {
+        res.status(200).json({ views: story.views });
+      } else {
+        res.status(404).json({ message: 'Story non trouvée' });
+      }
+    })
+    .catch(error => {
+      res.status(500).json({ error: error.message });
+    });
+
+  }
+
 
 export default {
   createStory,
   getStories,
-  deleteStory
+  deleteStory,
+  viewStory,
+  getStoryViews,
 };
