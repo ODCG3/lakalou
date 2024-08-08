@@ -107,5 +107,6 @@ router.get('/user/bloquer',auth, UserController.getUserBloquer);
 router.post('/post/:postId',auth, PostController.marquerVue);
 router.get('/post/:postId/vues',auth, PostController.getVues);
 
+router.get('/notifications', auth, PostController.getNotifications);
 
 export default router;

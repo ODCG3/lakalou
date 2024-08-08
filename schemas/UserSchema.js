@@ -1,5 +1,6 @@
 import { Schema } from "mongoose";
 
+
 const UserSchema = new Schema({
     nom: { type: String, required: true },
     prenom: { type: String, required: true },
@@ -41,5 +42,15 @@ const UserSchema = new Schema({
     followings: {
         type: [String],
     },
+
+    notifications: [{
+        type: {
+            type: String, // Type de la notification (ex: 'post', 'commentaire', etc.)
+            required: true
+        },
+        message: { type: String, required: true },
+        postId: { type: Schema.Types.ObjectId, ref: 'Post' },
+        createdAt: { type: Date, default: Date.now }
+    }]
 });
 export default UserSchema;
