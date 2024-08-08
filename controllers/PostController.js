@@ -58,6 +58,31 @@ export default class PostController {
         }
     }
 
+    static async deleteNotification(req, res) {
+        const userId = req.user.userID;
+        const { notificationId } = req.params;
+    
+        try {
+             const userData = await user.findById(userId);
+            if (!userData) {
+                return res.status(404).json({ error: 'User not found' });
+            }
+    
+             const updatedNotifications = userData.notifications.filter(notification => notification._id.toString() !== notificationId);
+    
+             userData.notifications = updatedNotifications;
+            await userData.save();
+    
+            res.status(200).json({ message: 'Notification removed successfully' });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+
+
+
+
 
    
     

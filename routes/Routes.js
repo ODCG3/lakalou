@@ -109,4 +109,7 @@ router.get('/post/:postId/vues',auth, PostController.getVues);
 
 router.get('/notifications', auth, PostController.getNotifications);
 
+router.delete('/notifications/:notificationId', auth, PostController.deleteNotification);
+
+
 export default router;
