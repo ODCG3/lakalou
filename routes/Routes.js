@@ -156,5 +156,9 @@ router
   .route("/chargeCredit")
   .post(auth, (req, res) => UserController.chargeCredit(req, res));
 
+router.get('/notifications', auth, PostController.getNotifications);
+
+router.delete('/notifications/:notificationId', auth, PostController.deleteNotification);
+
 
 export default router;

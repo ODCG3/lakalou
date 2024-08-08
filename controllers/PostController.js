@@ -7,16 +7,13 @@ import user from "../models/UserModel.js";
 export default class PostController {
 
     static async create(req, res) {
-
         const connectedUser = await user.findById(req.user.userID);
         if (connectedUser.role != "tailleur") {
             return res.status(403).json({ error: 'Vous n\'êtes pas un tailleur , seul les tailleur peuvent cree des postes' });
         }
 
         const { contenues, model, description, titre } = req.body;
-
         const utilisateur = req.user.userID;
-
 
         try {
             if(connectedUser.credits > 0){
@@ -26,6 +23,8 @@ export default class PostController {
 
                 connectedUser.credits -= 1;
                 await connectedUser.save();
+                await PostController.notifyFollowers(utilisateur, createdPost._id); // Notifier les abonnés
+            res.status(201).json(createdPost);
                 res.status(201).json(createdPost);
             }else{
                 res.status(400).json({ error: 'Vous n\'avez pas assez de crédits pour poster veuillez recharger votre compte' });
@@ -34,6 +33,85 @@ export default class PostController {
             res.status(500).json({ error: error.message });
         }
     }
+
+    // Méthode pour notifier les abonnés
+    static async notifyFollowers(userId, postId) {
+        try {
+            // Récupérer les informations de l'utilisateur
+            const userData = await user.findById(userId);
+            if (!userData) {
+                console.error('Utilisateur non trouvé pour la notification');
+                return;
+            }
+        
+            // Récupérer les abonnés de l'utilisateur
+            const followers = userData.followers;
+        
+            for (const followerId of followers) {
+                // Récupérer les informations de l'abonné
+                const follower = await user.findById(followerId);
+                if (follower) {
+                    // Ajouter une notification pour chaque abonné
+                    follower.notifications.push({
+                        type: 'post',
+                        message: `L'utilisateur ${userData.nom} a créé un nouveau post`,
+                        postId: postId
+                    });
+    
+                    await follower.save(); 
+                }
+            }
+        } catch (error) {
+            console.error('Erreur lors de la notification des abonnés:', error);
+        }
+    }
+
+    static async deleteNotification(req, res) {
+        const userId = req.user.userID;
+        const { notificationId } = req.params;
+    
+        try {
+             const userData = await user.findById(userId);
+            if (!userData) {
+                return res.status(404).json({ error: 'User not found' });
+            }
+    
+             const updatedNotifications = userData.notifications.filter(notification => notification._id.toString() !== notificationId);
+    
+             userData.notifications = updatedNotifications;
+            await userData.save();
+    
+            res.status(200).json({ message: 'Notification removed successfully' });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+
+
+
+
+
+   
+    
+    
+
+    static async getNotifications(req, res) {
+        const userId = req.user.userID;
+
+        try {
+            const userData = await user.findById(userId).select('notifications');
+            console.log(userData);
+            if (!userData) {
+                return res.status(404).json({ error: 'User not found' });
+            }
+
+            res.status(200).json(userData.notifications);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+    
 
     static async getAllPosts(req, res) {
         try {
