@@ -36,6 +36,7 @@ router.route('/post/favorite/create/:id').post(auth, (req, res) => PostControlle
 
 // Routes pour les histoires
 router.route('/story/create').post(auth, StoryController.createStory);
+router.route('/stories/:userId').get(auth, (req, res) => StoryController.getStories(req, res));
 
 
 // Routes pour les likes
