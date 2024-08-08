@@ -1,4 +1,5 @@
-import { Schema } from "mongoose";
+import { now, Schema } from "mongoose";
+
 
 const UserSchema = new Schema({
     nom: { type: String, required: true },
@@ -7,8 +8,12 @@ const UserSchema = new Schema({
     password: { type: String, required: true },
     photoProfile: { type: String, required: true },
     role: { type: String, required: true },
-    notes: [
-        {
+
+    MesCommand: {
+        type: [Schema.Types.ObjectId],
+        ref: 'Commande',
+    },
+    notes: [{
         rate: { type: Number, min: 1, max: 5 },
         raterId: { type: Schema.Types.ObjectId, ref: 'User' }
     }
@@ -43,5 +48,26 @@ const UserSchema = new Schema({
     followings: {
         type: [String],
     },
+
+    notifications: [{
+        type: {
+            type: String, // Type de la notification (ex: 'post', 'commentaire', etc.)
+            required: true
+        },
+        message: { type: String, required: true },
+        postId: { type: Schema.Types.ObjectId, ref: 'Post' },
+        createdAt: { type: Date, default: Date.now }
+    }]
+    discussions: [
+        {
+            user: {type: Schema.Types.ObjectId, ref: 'User'},
+            messages: [{
+                content: String,
+                createdAt: {type: Date,default: now()}
+            }
+            ]
+        }
+    ]
+
 });
 export default UserSchema;
