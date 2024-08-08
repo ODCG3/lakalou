@@ -247,10 +247,19 @@ export default class UserController {
 
     try {
       const userId = req.user.userID;
+
       if (!userId) {
         return res.status(401).json({ message: "Aucun Token en cours" });
       }
+
+      const connectedUser = await UserModel.findById(userId);
+
+      if((connectedUser.credits < 1 && connectedUser.followings.length > 10) || (connectedUser.credits == 0 && connectedUser.followings.length > 10) ){
+        return res.status(401).json({message: "Pour follow un autre utilisateur veuillez recharger vos credits"})
+      }
+
       const userToFollow = await UserModel.findById(req.params.id);
+
       if (userToFollow.role != "tailleur") {
         res
           .status(402)
@@ -263,10 +272,16 @@ export default class UserController {
         );
 
         await UserModel.findByIdAndUpdate(
-          req.body.follower,
+          userId,
           { $addToSet: { followings: req.params.id } },
           { new: true, upsert: true }
         );
+
+        if(connectedUser.followings.length > 10) {
+          connectedUser.credits -= 1;
+          await connectedUser.save();
+        }
+
         res.status(201).json({ message: "Follower ajouté avec succès !" });
       }
     } catch (err) {
@@ -316,11 +331,18 @@ export default class UserController {
 
       const role = user.role == "visiteur" ? "tailleur" : "visiteur";
 
+      if (user.credits < 1 ) {
+        return res.status(401).json({ message: "Vous n'avez pas assez de crédits pour changer de role" });
+      }
+
       await UserModel.findByIdAndUpdate(
         req.user.userID,
         { role: role },
         { new: true }
       );
+
+      user.credits -= 1;
+      user.save();
       res.json({ response: "role updated successfully" });
     } catch (error) {
       res.status(500).json({ error: error.message });
