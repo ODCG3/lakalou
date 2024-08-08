@@ -107,6 +107,7 @@ router.get('/user/bloquer',auth, UserController.getUserBloquer);
 router.post('/post/:postId',auth, PostController.marquerVue);
 router.get('/post/:postId/vues',auth, PostController.getVues);
 router.delete('/user/discussion/:discussionId/messages/:messageId',auth, UserController.deleteMessage);
+router.put('/user/discussion/:discussionId/messages/:messageId',auth, UserController.modifierMessages);
 
 
 export default router;
