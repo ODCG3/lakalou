@@ -573,6 +573,36 @@ export default class UserController {
       }
     }
   }
+
+  static async deleteMessage(req, res) {
+    try {
+        const userId = req.user.userID;
+        const discussionId = req.params.discussionId;
+        const messageId = req.params.messageId;
+
+        // Find the user by ID
+        const user = await UserModel.findById(userId);
+        if (!user) {
+            return res.status(400).json({ message: "Utilisateur non trouvé" });
+        }
+
+        // Find the discussion by ID and remove the message using $pull
+        const updatedUser = await UserModel.findOneAndUpdate(
+            { _id: userId, 'discussions._id': discussionId },
+            { $pull: { 'discussions.$.messages': { _id: messageId } } },
+            { new: true }
+        );
+
+        if (!updatedUser) {
+            return res.status(404).json({ message: "Message ou discussion non trouvée" });
+        }
+
+        res.status(200).json({ message: "Message supprimé avec succès" });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 }
 
 
+
+}

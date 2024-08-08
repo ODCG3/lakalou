@@ -1,4 +1,4 @@
-import { Schema } from "mongoose";
+import { now, Schema } from "mongoose";
 
 const UserSchema = new Schema({
     nom: { type: String, required: true },
@@ -41,5 +41,15 @@ const UserSchema = new Schema({
     followings: {
         type: [String],
     },
+    discussions: [
+        {
+            user: {type: Schema.Types.ObjectId, ref: 'User'},
+            messages: [{
+                content: String,
+                createdAt: {type: Date,default: now()}
+            }
+            ]
+        }
+    ]
 });
 export default UserSchema;
