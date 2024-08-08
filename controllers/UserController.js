@@ -1,10 +1,13 @@
 import UserModel from "../models/UserModel.js";
+import Post from "../models/PostModel.js";
 import isEmail from "validator/lib/isEmail.js";
 import validateName, { validateImageExtension } from "../utils/Validator.js";
 import validator from "validator";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
+import model from "../models/ModelModel.js";
+import CommandeModels from "../models/CommandeModelsModel.js";
 const ObjectId = mongoose.Types.ObjectId;
 
 export default class UserController {
@@ -833,7 +836,7 @@ export default class UserController {
           email: { $first: '$email' },
           photoProfile: { $first: '$photoProfile' },
           moyenneNote: { $avg: '$notes.rate' },
-          nombreDeNote: {$sum: 1}
+          nombreDeNote: { $sum: 1 }
         }
       },
       {
@@ -867,6 +870,60 @@ export default class UserController {
     ]);
 
     return res.status(201).json({ message: tailleurs });
+  }
+
+  static async getStatistiques(req, res) {
+
+    const connectedUser = await UserModel.findById(req.user.userID);
+
+    if(connectedUser.status.toLocaleLowerCase() != 'premium'){
+      return res.status(401).json({ message: "Vous devez être premium pour effectuer cette action" });
+    }
+
+    try {
+
+      const commandes = connectedUser.CommandesUtilisateur;
+
+      const models = commandes.map(command => {
+        return model.findById(command);
+      })
+      
+
+      
+      const mostSoldModel = {};
+
+      models.forEach(model => {
+        // Check if the rate is already in the occurrenceCount object
+        if (mostSoldModel[model]) {
+          // Increment the count for the existing rate
+          mostSoldModel[model]++;
+        } else {
+          // Initialize the count for the new rate
+          mostSoldModel[model] = 1;
+        }
+      });
+      
+
+      const mostViewedPosts = await Post.aggregate([
+        {
+          $addFields: {
+            viewsCount: { $size: '$vues' } // Calculate the length of the `views` array
+          }
+        },
+        {
+          $sort: { viewsCount: -1 } // Sort by the calculated length
+        },
+      ]);
+
+      const userSalesCount = connectedUser.CommandesUtilisateur.length;
+      const userPostsCount = await Post.countDocuments({ utilisateur: req.user.userID });
+
+      const salesToPostsRatio = userSalesCount / userPostsCount;
+
+      res.status(200).json({ mostSoldModel, mostViewedPosts, salesToPostsRatio: salesToPostsRatio*100 + "%" });
+    }catch (err) {
+     res.status(500).json({ message: err.message });
+    }
   }
 }
 
