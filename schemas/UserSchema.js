@@ -67,6 +67,12 @@ const UserSchema = new Schema({
             }
             ]
         }
+    ],
+    CommandesUtilisateur: [
+        {
+            type: Schema.Types.ObjectId,
+            ref: 'Commande',
+        }
     ]
 
 });

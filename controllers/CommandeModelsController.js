@@ -23,36 +23,39 @@ export async function createCommande(req, res) {
         // un user ne doit pas pouvoire commander sur un post qu'il à fait
         
         // Créer la commande
-        const commande = new CommandeModels({
+        const commande = CommandeModels.create({
             user_id: userId,
             post_id: postId,
-            model_libelle: model,
+            model_libelle: model_libelle,
             adresseLivraison
         });
 
         // Associer la commande à l'utilisateur
         const user = await User.findById(userId);
-        user.MesCommand.push(commande);
+        user.MesCommand.push((await commande).id);
         await user.save();
 
+        const tailleur = await User.findById(post.utilisateur);
+        tailleur.CommandesUtilisateur.push((await commande).id);
+        await tailleur.save();
+
         // Sauvegarder la commande
-        await commande.save();
 
         res.status(201).json(commande);
 
         // Réduire le stock du modèle
-        const modelToUpdate = await Model.findById(model._id);
-        modelToUpdate.stock -= 1;
-        await modelToUpdate.save();
+        // const modelToUpdate = await Model.findById(model._id);
+        // modelToUpdate.stock -= 1;
+        // await modelToUpdate.save();
 
 
 
-        await commande.save();
+        // await commande.save();
 
-        res.status(201).json(commande);
+        // res.status(201).json(commande);
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: 'Server error '+error });
     }
 }
 
