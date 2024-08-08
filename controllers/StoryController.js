@@ -65,20 +65,32 @@ const viewStory = (req, res) => {
     });
 };
 
-const getStoryViews = (req, res) => {
+const getStoryViews = async (req, res) => {
   const storyId = req.params.id;
 
-  Story.findById(storyId)
-    .then(story => {
-      if (story) {
-        res.status(200).json({ views: story.views });
-      } else {
-        res.status(404).json({ message: 'Story non trouvée' });
-      }
-    })
-    .catch(error => {
-      res.status(500).json({ error: error.message });
-    });
+  try{
+    const story = await Story.findById(storyId);
+
+    if(!story) {
+      res.status(404).json({ message: "story not found"});
+    }
+
+    res.status(200).json({ views: story.views });
+  }
+  catch(error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+    // .then(story => {
+    //   if (story) {
+    //     res.status(200).json({ views: story.views });
+    //   } else {
+    //     res.status(404).json({ message: 'Story non trouvée' });
+    //   }
+    // })
+    // .catch(error => {
+    //   res.status(500).json({ error: error.message });
+    // });
 
   }
 
