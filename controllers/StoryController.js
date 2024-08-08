@@ -33,8 +33,25 @@ const getStories = (req, res) => {
       res.status(400).json({ error: error.message });
     });
 };
+const deleteStory = (req, res) => {
+  const storyId = req.params.id;
+  const userID = req.user.userID;
+
+  Story.deleteOne({ _id: storyId, userId: userID })
+    .then(result => {
+      if (result.deletedCount > 0) {
+        res.status(200).json({ message: 'Story supprimée avec succès' });
+      } else {
+        res.status(404).json({ message: 'Story non trouvée ou vous n\'êtes pas autorisé à la supprimer' });
+      }
+    })
+    .catch(error => {
+      res.status(500).json({ error: error.message });
+    });
+};
 
 export default {
   createStory,
-  getStories
+  getStories,
+  deleteStory
 };
