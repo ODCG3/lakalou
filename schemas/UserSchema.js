@@ -57,7 +57,7 @@ const UserSchema = new Schema({
         message: { type: String, required: true },
         postId: { type: Schema.Types.ObjectId, ref: 'Post' },
         createdAt: { type: Date, default: Date.now }
-    }]
+    }],
     discussions: [
         {
             user: {type: Schema.Types.ObjectId, ref: 'User'},
