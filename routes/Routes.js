@@ -5,10 +5,12 @@ import ModelController from "../controllers/ModelController.js";
 import PostController from "../controllers/PostController.js";
 import StoryController from '../controllers/StoryController.js';
 
+
 import { likePost, unlikePost, getPostLikes } from '../controllers/LikeController.js';
 import { dislikePost, getPostDislike, undislikePost } from "../controllers/DislikeController.js";
 
 import { getPostComments, addComment, deleteComment } from '../controllers/CommentController.js';
+import { createCommande, getCommandesByPostId, getCommandeById } from '../controllers/CommandeModelsController.js';
 
 const router = express.Router();
 
@@ -100,12 +102,19 @@ router.get('/post/:postId/Dislike', auth, getPostDislike);
 router.post('/post/:postId/comment', auth, addComment);
 router.delete('/comment/:commentId', auth, deleteComment);
 router.get('/post/:postId/comments', auth, getPostComments);
+
+// Routes pour les roles de utilisateurs
 router.post('/user/changeRole',auth, UserController.changeRole);
+// Routes pour bloquer un user
 router.post('/user/:userID/bloquer',auth, UserController.bloquerUsers);
 router.post('/user/:userID/debloquer',auth, UserController.debloquerUsers);
 router.get('/user/bloquer',auth, UserController.getUserBloquer);
 router.post('/post/:postId',auth, PostController.marquerVue);
 router.get('/post/:postId/vues',auth, PostController.getVues);
 
+// Routes pour les commades
+router.post('/post/:postId/commande', auth,createCommande);
+router.get('/post/:postId/commandes', auth,getCommandesByPostId);
+router.get('/commande/:commandeId', auth, getCommandeById);
 
 export default router;
