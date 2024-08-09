@@ -34,20 +34,24 @@ const UserSchema = new Schema({
         tourBras: Number,
         tourPoignet: Number,
         ceinture: Number
+
+  },
+  utilisateurBloque: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "User",
     },
-    utilisateurBloque: [
-        {
-            type: Schema.Types.ObjectId,
-            ref: 'User',
-        }
-    ],
-    credits: Number,
-    followers: {
-        type: [String],
-    },
-    followings: {
-        type: [String],
-    },
+  ],
+  credits: Number,
+  followers: {
+    type: [String],
+  },
+  followings: {
+    type: [String],
+  },
+  listeSouhaits: {
+    type: [String],
+  },
 
     notifications: [{
         type: {
