@@ -3,18 +3,18 @@ import model from "../models/ModelModel.js";
 export default class ModelController {
 
     static async create(req, res) {
-        const { libelle, prix } = req.body;
+        const { libelle, prix,quantite } = req.body;
 
         const existingModel = await model.findOne({ libelle });
 
         if (existingModel) {
-            return res.status(400).json({ error: 'Cet email est déjà utilisé' });
+            return res.status(400).json({ error: 'Cet model est déjà utilisé' });
         }
 
         try {
 
             const createdModel = model.create({
-                libelle, prix
+                libelle, prix , quantite
             });
             res.status(201).json(createdModel);
         } catch (error) {

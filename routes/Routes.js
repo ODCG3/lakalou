@@ -3,24 +3,16 @@ import UserController from "../controllers/UserController.js";
 import auth from "../middlewares/auth.js";
 import ModelController from "../controllers/ModelController.js";
 import PostController from "../controllers/PostController.js";
-import StoryController from "../controllers/StoryController.js";
 
-import {
-  likePost,
-  unlikePost,
-  getPostLikes,
-} from "../controllers/LikeController.js";
-import {
-  dislikePost,
-  getPostDislike,
-  undislikePost,
-} from "../controllers/DislikeController.js";
+import StoryController from '../controllers/StoryController.js';
 
-import {
-  getPostComments,
-  addComment,
-  deleteComment,
-} from "../controllers/CommentController.js";
+
+import { likePost, unlikePost, getPostLikes } from '../controllers/LikeController.js';
+import { dislikePost, getPostDislike, undislikePost } from "../controllers/DislikeController.js";
+
+import { getPostComments, addComment, deleteComment } from '../controllers/CommentController.js';
+import { createCommande, getCommandesByPostId, getCommandeById } from '../controllers/CommandeModelsController.js';
+
 
 const router = express.Router();
 
@@ -29,14 +21,15 @@ router.route("/register").post((req, res) => UserController.create(req, res));
 router.route("/login").post((req, res) => UserController.login(req, res));
 router.route("/logout").post((req, res) => UserController.logout(req, res));
 router.route("/test").get(auth, (req, res) => UserController.test(req, res));
+router.route("/user/:id/updateMeasurements").put((req, res) => UserController.updateMeasurements(req, res));
 
 // Routes pour suivre/désuivre des utilisateurs
 router
   .route("/follow/:id")
-  .post((req, res) => UserController.followUser(req, res));
+  .post(auth,(req, res) => UserController.followUser(req, res));
 router
   .route("/unfollow/:id")
-  .post((req, res) => UserController.unfollowUser(req, res));
+  .post(auth,(req, res) => UserController.unfollowUser(req, res));
 router
   .route("/add-note/:id")
   .post(auth, (req, res) => UserController.addNote(req, res));
@@ -67,7 +60,14 @@ router
   .post(auth, (req, res) => PostController.addFavorite(req, res));
 
 // Routes pour les histoires
-router.route("/story/create").post(auth, StoryController.createStory);
+
+router.route('/story/create').post(auth, StoryController.createStory);
+router.route('/stories/:userId').get(auth, (req, res) => StoryController.getStories(req, res));
+// Route pour supprimer une story
+router.route('/story/:id/delete').delete(auth, (req, res) => StoryController.deleteStory(req, res));
+router.route('/story/:id/view').post(auth, (req, res) => StoryController.viewStory(req, res)); // Incrémenter les vues
+router.route('/story/:id/views').get(auth, (req, res) => StoryController.getStoryViews(req, res)); // Obtenir le nombre de vues
+
 
 // Routes pour les likes
 router.post("/post/:postId/like", auth, likePost);
@@ -129,20 +129,33 @@ router.post("/post/:postId/dislike/:dislikeID/undislike", auth, undislikePost);
 router.get("/post/:postId/Dislike", auth, getPostDislike);
 
 // Routes pour les commentaires
-router.post("/post/:postId/comment", auth, addComment);
-router.delete("/comment/:commentId", auth, deleteComment);
-router.get("/post/:postId/comments", auth, getPostComments);
-router.post("/user/changeRole", auth, UserController.changeRole);
-router.post("/user/:userID/bloquer", auth, UserController.bloquerUsers);
-router.post("/user/:userID/debloquer", auth, UserController.debloquerUsers);
-router.get("/user/bloquer", auth, UserController.getUserBloquer);
-router.post("/post/:postId", auth, PostController.marquerVue);
-router.get("/post/:postId/vues", auth, PostController.getVues);
+
+router.post('/post/:postId/comment', auth, addComment);
+router.delete('/comment/:commentId', auth, deleteComment);
+router.get('/post/:postId/comments', auth, getPostComments);
+
+// Routes pour les roles de utilisateurs
+router.post('/user/changeRole',auth, UserController.changeRole);
+// Routes pour bloquer un user
+router.post('/user/:userID/bloquer',auth, UserController.bloquerUsers);
+router.post('/user/:userID/debloquer',auth, UserController.debloquerUsers);
+router.get('/user/bloquer',auth, UserController.getUserBloquer);
+router.post('/post/:postId',auth, PostController.marquerVue);
+router.get('/post/:postId/vues',auth, PostController.getVues);
+router.delete('/user/discussion/:discussionId/messages/:messageId',auth, UserController.deleteMessage);
+router.put('/user/discussion/:discussionId/messages/:messageId',auth, UserController.modifierMessages);
+
+// Routes pour les commades
+router.post('/post/:postId/commande', auth,createCommande);
+router.get('/post/:postId/commandes', auth,getCommandesByPostId);
+router.get('/commande/:commandeId', auth, getCommandeById);
+
 
 // ROUTE POUR RECHARGER CRÉDIT TAILLEUR:
 router
   .route("/chargeCredit")
   .post(auth, (req, res) => UserController.chargeCredit(req, res));
+
 
 router
   .route("/updateNote/:id")
@@ -151,6 +164,18 @@ router
 router
   .route("/wishList/:id")
   .post(auth, (req, res) => UserController.listeSouhaits(req, res));
+
+router.get('/notifications', auth, PostController.getNotifications);
+
+router.delete('/notifications/:notificationId', auth, PostController.deleteNotification);
+
+router.get('/tailleurs', auth, UserController.getTailleurs);
+router.get('/tailleurs/filter/:tailleurId', auth, UserController.filterTailleurById);
+router.get('/tailleurs/name/:name', auth, UserController.filterByName);
+router.get('/tailleurs/filterNote', auth, UserController.filterByNotes);
+router.get('/tailleurs/filterCertificat', auth, UserController.filterTailleurByCertificat);
+router.get('/tailleurs/statistique', auth, UserController.getStatistiques);
+
 
 
 export default router;
