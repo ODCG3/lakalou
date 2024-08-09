@@ -85,7 +85,7 @@ const UserSchema = new Schema({
             },
             acquiredAt: { type: Date, default: Date.now } // Date d'acquisition du badge
         }
-    ]
+    ],
     status:{
         type: String,
         enum: ['Premium', 'normal'],

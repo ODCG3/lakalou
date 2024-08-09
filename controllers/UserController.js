@@ -922,7 +922,9 @@ export default class UserController {
       res
         .status(500)
         .json({ message: "Erreur récupération model du post: " + err });
-
+    }
+  }
+  
   static async getTailleurs(req, res) {
     const tailleurs = await UserModel.find({ role: 'tailleur' });
     res.status(200).json(tailleurs);
