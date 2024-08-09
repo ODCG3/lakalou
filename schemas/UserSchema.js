@@ -78,6 +78,14 @@ const UserSchema = new Schema({
             ref: 'Commande',
         }
     ],
+    badges: [
+        {
+            achat:{
+                type:Boolean
+            },
+            acquiredAt: { type: Date, default: Date.now } // Date d'acquisition du badge
+        }
+    ]
     status:{
         type: String,
         enum: ['Premium', 'normal'],

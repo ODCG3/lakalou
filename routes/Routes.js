@@ -170,13 +170,15 @@ router.get('/notifications', auth, PostController.getNotifications);
 
 router.delete('/notifications/:notificationId', auth, PostController.deleteNotification);
 
+router.post('/acheter-badge', auth, UserController.acheterBadge);
+
+
 router.get('/tailleurs', auth, UserController.getTailleurs);
 router.get('/tailleurs/filter/:tailleurId', auth, UserController.filterTailleurById);
 router.get('/tailleurs/name/:name', auth, UserController.filterByName);
 router.get('/tailleurs/filterNote', auth, UserController.filterByNotes);
 router.get('/tailleurs/filterCertificat', auth, UserController.filterTailleurByCertificat);
 router.get('/tailleurs/statistique', auth, UserController.getStatistiques);
-
 
 
 export default router;
