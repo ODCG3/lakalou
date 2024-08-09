@@ -1,39 +1,58 @@
 import Story from '../models/StoryModel.js';
 import user from "../models/UserModel.js";
+import model from "../models/ModelModel.js";
 
-const createStory = (req, res) => {
-  const currentTime = new Date();
-  const expirationTime = new Date(currentTime.getTime() + 24 * 60 * 60 * 1000); // 24 heures plus tard
-  const userID = req.user.userID;
+const createStory = async (req, res) => {
+  try {
+    const currentTime = new Date();
+    const expirationTime = new Date(currentTime.getTime() + 24 * 60 * 60 * 1000); // 24 heures plus tard
+    const userID = req.user.userID;
 
-  const connectedUser = user.findById(userID);
+    // Rechercher l'utilisateur connecté
+    const connectedUser = await user.findById(userID);
 
-  if(connectedUser.role != "tailleur"){
-    return res.status(403).json({ error: 'Vous n\'êtes pas un tailleur, seul les tailleurs peuvent poster des statuts' });
-  }
+    // Vérifiez si l'utilisateur a le rôle "tailleur"
+    if (connectedUser.role !== 'tailleur') {
+      return res.status(403).json({ error: 'Vous n\'êtes pas un tailleur, seul les tailleurs peuvent poster des statuts' });
+    }
 
-  if(connectedUser.credits > 0){
-    const story = new Story({
-      userId: userID,
-      content: req.body.content,
-      mediaUrl: req.body.mediaUrl,
-      expiresAt: expirationTime
-    });
-    story.save()
-    connectedUser.credits -= 1;
-    connectedUser.save()
-    
-    .then(() => {
+    // Vérifiez si l'utilisateur a suffisamment de crédits
+    if (connectedUser.credits > 0) {
+      // Recherchez le modèle que vous souhaitez associer à la story (par exemple, basé sur l'ID dans req.body)
+      const modelID = req.body.model; // Assurez-vous que l'ID du modèle est fourni dans la requête
+      const Model = await model.findById(modelID);
+
+      if (!Model) {
+        return res.status(404).json({ error: 'Modèle non trouvé' });
+      }
+
+      // Créez la nouvelle story
+      const story = new Story({
+        userId: userID,
+        model: Model._id, // Ajoutez le modèle à la story
+        description: req.body.description,
+        contenu: req.body.contenu,
+        expiresAt: expirationTime
+      });
+
+      // Sauvegardez la story
+      await story.save();
+
+      // Réduire le crédit de l'utilisateur et sauvegardez
+      connectedUser.credits -= 1;
+      await connectedUser.save();
+
+      // Réponse de succès
       res.status(201).json({
         message: 'Story créée avec succès!'
       });
-    })
-    .catch((error) => {
-      res.status(400).json({
-        error: error.message
-      });
+    } else {
+      res.status(400).json({ error: 'Vous n\'avez pas assez de crédits pour poster un statut' });
+    }
+  } catch (error) {
+    res.status(500).json({
+      error: error.message
     });
-    
   }
 };
 

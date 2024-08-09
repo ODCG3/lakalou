@@ -149,6 +149,7 @@ router.put('/user/discussion/:discussionId/messages/:messageId',auth, UserContro
 router.post('/post/:postId/commande', auth,createCommande);
 router.get('/post/:postId/commandes', auth,getCommandesByPostId);
 router.get('/commande/:commandeId', auth, getCommandeById);
+router.post('/story/:storyId/commande', auth,createCommande);
 
 
 // ROUTE POUR RECHARGER CRÉDIT TAILLEUR:
