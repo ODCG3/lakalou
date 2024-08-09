@@ -12,14 +12,16 @@ export default class PostController {
             return res.status(403).json({ error: 'Vous n\'êtes pas un tailleur , seul les tailleur peuvent cree des postes' });
         }
 
-        const { contenues, model, description, titre } = req.body;
+        const { model, description, titre } = req.body;
         const utilisateur = req.user.userID;
 
         try {
             if(connectedUser.credits > 0){
                 const createdPost = await post.create({
-                    contenues, model, utilisateur, commentaires: [], partages: [], dislikes: [], likes: [], description, titre, vues: []
+                    model, utilisateur, commentaires: [], partages: [], dislikes: [], likes: [], description, titre, vues: []
                 });
+
+                connectedUser.posts.push(createdPost._id);
 
                 connectedUser.credits -= 1;
                 await connectedUser.save();
@@ -191,6 +193,11 @@ export default class PostController {
 
             // Ajouter le post aux favoris de l'utilisateur
             const newFavori = await favori.create({ utilisateur: utilisateurId, post: id });
+            
+            const connectedUser = await user.findById(req.user.userID);
+            connectedUser.favories.push(newFavori.utilisateur);
+            await connectedUser.save();
+
             if (!newFavori) {
                 return res.status(500).json({ error: "Failed to add post to favorites" });
             }

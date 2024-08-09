@@ -17,7 +17,7 @@ const UserSchema = new Schema({
         rate: { type: Number, min: 1, max: 5 },
         raterId: { type: Schema.Types.ObjectId, ref: 'User' }
     }
-],
+    ],
     signals: [{
         reason: { type: String, required: true },
         idReporter: { type: Schema.Types.ObjectId, ref: 'User' }
@@ -35,23 +35,24 @@ const UserSchema = new Schema({
         tourPoignet: Number,
         ceinture: Number
 
-  },
-  utilisateurBloque: [
-    {
-      type: Schema.Types.ObjectId,
-      ref: "User",
     },
-  ],
-  credits: Number,
-  followers: {
-    type: [String],
-  },
-  followings: {
-    type: [String],
-  },
-  listeSouhaits: {
-    type: [String],
-  },
+    utilisateurBloque: [
+        {
+            type: Schema.Types.ObjectId,
+            ref: "User",
+        },
+    ],
+    credits: Number,
+    followers: {
+        type: [String],
+    },
+    followings: {
+        type: [String],
+    },
+    listeSouhaits: [{
+        type: Schema.Types.ObjectId,
+        ref: "Post",
+    }],
 
     notifications: [{
         type: {
@@ -64,37 +65,70 @@ const UserSchema = new Schema({
     }],
     discussions: [
         {
-            user: {type: Schema.Types.ObjectId, ref: 'User'},
+            user: { type: Schema.Types.ObjectId, ref: 'User' },
             messages: [{
                 content: String,
-                createdAt: {type: Date,default: now()}
+                createdAt: { type: Date, default: now() }
             }
             ]
         }
     ],
-    CommandesUtilisateur: [
-        {
+    CommandesUtilisateur: [{
+
+        commandeId: {
             type: Schema.Types.ObjectId,
             ref: 'Commande',
-        }
+        },
+        userId: { type: Schema.Types.ObjectId, ref: 'User' }
+    }
     ],
     badges: [
         {
-            achat:{
-                type:Boolean
-            },
+            type: Boolean,
             acquiredAt: { type: Date, default: Date.now } // Date d'acquisition du badge
         }
     ],
-    status:{
+    status: {
         type: String,
         enum: ['Premium', 'normal'],
         default: 'normal'
     },
-    certificat:{
+    certificat: {
         type: Boolean,
         default: false
-    }
+    },
+    posts:[
+        {
+            type: Schema.Types.ObjectId,
+            ref: 'Post'
+        }
+    ],
+    mesModels:[
+        {
+            idModel: {
+                type: Schema.Types.ObjectId,
+                ref: 'Model'
+            },
+            libelle: String,
+            nombreDeCommande: {
+                type: Number,
+                default: 0
+            },
+            note: [Number]
+        }
+    ],
+    favories:[
+        {
+            type: Schema.Types.ObjectId,
+            ref: 'Post'
+        }
+    ],
+    stories: [
+        {
+            type: Schema.Types.ObjectId,
+            ref: 'Story'
+        }
+    ]
 
 });
 export default UserSchema;

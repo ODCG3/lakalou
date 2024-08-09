@@ -7,17 +7,18 @@ import Model from '../models/ModelModel.js';
 // Effectuer une commande d'un modèle dans un post
 export async function createCommande(req, res) {
     try {
-        const { model_libelle, adresseLivraison } = req.body;
+        const { adresseLivraison } = req.body;
         const userId = req.user.userID;
         const { postId, storyId } = req.params;
 
         let model = null;
         let ownerId = null;
+        let post = null;
 
         // Vérifier si c'est un post ou une story
         if (postId && !storyId) {
             // Gérer la commande à partir d'un post
-            const post = await Post.findById(postId);
+            post = await Post.findById(postId);
             if (!post) {
                 return res.status(404).json({ message: 'Post non trouvé' });
             }
@@ -59,60 +60,57 @@ export async function createCommande(req, res) {
             return res.status(400).json({ message: 'Veuillez spécifier soit un postId, soit un storyId, mais pas les deux ou aucun.' });
         }
 
-
-        // Créer la commande
-        const commande = new CommandeModels({
-            user_id: userId,
-            post_id: postId || null,
-            story_id: storyId || null,
-            model_libelle: model_libelle,
-            adresseLivraison
-        });
-
-        // Sauvegarder la commande
-        await commande.save();
-
-        // Associer la commande à l'utilisateur
-        const user = await User.findById(userId);
-        user.MesCommand.push(commande.id);
-        await user.save();
-
-        // Associer la commande au tailleur (propriétaire du post ou de la story)
-        const tailleur = await User.findById(ownerId);
-        tailleur.CommandesUtilisateur.push(commande.id);
-        await tailleur.save();
-
-        res.status(201).json(commande);
-
         // un user ne doit pas pouvoire commander sur un post qu'il à fait
-        
-        const modelCommander = Model.findById(model);
-        if(modelCommander.quantite > 0){
+
+
+        const modelCommander = await Model.findById(model);
+        if (modelCommander.quantite > 0) {
 
             // Créer la commande
-            const commande = CommandeModels.create({
+            const commande = await CommandeModels.create({
                 user_id: userId,
-                post_id: postId,
-                model_libelle: model_libelle,
+                post_id: postId || null,
+                story_id: storyId || null,
+                model_libelle: model,
                 adresseLivraison
             });
-            
+
             modelCommander.quantite -= 1;
             await modelCommander.save();
-            
+
             // Associer la commande à l'utilisateur
-            const user = await User.findById(userId);
+            const user = await User.findById(ownerId);
             user.MesCommand.push((await commande).id);
+
+            let found = false;
+            let index = null;
+            user.mesModels.map(model => {
+                if (model.idModel == modelCommander._id) {
+                    index = user.mesModels.indexOf(model);
+                    found = true;
+                }
+            })
+            if (!found) {
+                user.mesModels.push({
+                    idModel: modelCommander._id,
+                    libelle: modelCommander.libelle,
+                    nombreDeCommande: 1,
+                    note: []
+                });
+            } else {
+                user.mesModels[index].nombreDeCommande += 1;
+            }
+
             await user.save();
-            
+
             const tailleur = await User.findById(post.utilisateur);
             tailleur.CommandesUtilisateur.push((await commande).id);
             await tailleur.save();
-            
+
             // Sauvegarder la commande
-            
+
             res.status(201).json(commande);
-        }else{
+        } else {
             res.status(400).json({ message: 'Le modèle n\'est plus disponible' });
         }
 

@@ -5,7 +5,7 @@ import User from '../models/UserModel.js';
 export default class ModelController {
 
     static async create(req, res) {
-        const { libelle, prix,quantite } = req.body;
+        const { libelle, prix,quantite,contenu } = req.body;
 
         const existingModel = await model.findOne({ libelle });
 
@@ -16,8 +16,13 @@ export default class ModelController {
         try {
 
             const createdModel = model.create({
-                libelle, prix , quantite
+                libelle, prix , quantite,contenu
             });
+
+            const connectedUser = await User.findById(req.user.userID);
+            connectedUser.mesModels.push({idModel: createdModel._id,libelle: (await createdModel).libelle,nombreDeCommande:0,note:[]});
+            await connectedUser.save();
+
             res.status(201).json(createdModel);
         } catch (error) {
             res.status(500).json({ error: error.message });
@@ -66,7 +71,7 @@ export default class ModelController {
     // updateModel permet de mettre à jour les informations d'un modèle
     static async updateModel(req, res) {
         const { modelId } = req.params; // Get the modelId from the request parameters
-        const { libelle, prix } = req.body; // Get the fields to update from the request body
+        const { libelle, prix , contenu } = req.body; // Get the fields to update from the request body
 
         try {
             const updatedModel = await model.findByIdAndUpdate(

@@ -815,7 +815,7 @@ export default class UserController {
         }
 
         // Vérifier si le badge est déjà acquis
-        const badgeAcquis = userData.badges.some(badge => badge.achat === true);
+        const badgeAcquis = userData.badges.some(badge => badge === true);
 
         if (badgeAcquis) {
             return res.status(400).json({ message: 'Badge déjà acquis' });
@@ -829,7 +829,7 @@ export default class UserController {
         // Mettre à jour le crédit et ajouter le badge
         await UserModel.findByIdAndUpdate(userId, {
             $inc: { credits: -5 }, // Décrémenter les crédits
-            $push: { badges: { achat: true } } // Ajouter le badge
+            $push: { badges: true } // Ajouter le badge
         }, {
             new: true
         });
@@ -924,7 +924,7 @@ export default class UserController {
         .json({ message: "Erreur récupération model du post: " + err });
     }
   }
-  
+
   static async getTailleurs(req, res) {
     const tailleurs = await UserModel.find({ role: 'tailleur' });
     res.status(200).json(tailleurs);
@@ -990,7 +990,7 @@ export default class UserController {
 
     const tailleurs = await UserModel.aggregate([
       {
-        $match: { role: 'tailleur', certificat: true } // Filter to get only tailors with certificat
+        $match: { role: 'tailleur', badges: true } // Filter to get only tailors with certificat
       },
       {
         $group: {
@@ -1016,26 +1016,13 @@ export default class UserController {
 
     try {
 
-      const commandes = connectedUser.CommandesUtilisateur;
-
-      const models = commandes.map(command => {
-        return model.findById(command);
-      })
+    
       
 
       
-      const mostSoldModel = {};
+      const mostSoldModel = connectedUser.mesModels.sort((a, b) => a.nombreDeCommande - b.nombreDeCommande);
 
-      models.forEach(model => {
-        // Check if the rate is already in the occurrenceCount object
-        if (mostSoldModel[model]) {
-          // Increment the count for the existing rate
-          mostSoldModel[model]++;
-        } else {
-          // Initialize the count for the new rate
-          mostSoldModel[model] = 1;
-        }
-      });
+      // mostSoldModel = connectedUser.mesModels.sort((a, b) => a.nombreDeCommande - b.nombreDeCommande);
       
 
       const mostViewedPosts = await Post.aggregate([

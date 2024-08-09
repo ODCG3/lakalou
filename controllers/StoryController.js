@@ -27,7 +27,6 @@ const createStory = async (req, res) => {
       
       const story = new Story({
         userId: userID,
-        contenu: req.body.contenu,
         model: Model._id,
         description: req.body.description,
         expiresAt: expirationTime,
@@ -36,6 +35,7 @@ const createStory = async (req, res) => {
 
       await story.save();
       connectedUser.credits -= 1;
+      connectedUser.stories.push(story._id);
       await connectedUser.save();
       res.status(201).json({
         message: 'Story créée avec succès!'

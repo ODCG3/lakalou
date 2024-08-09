@@ -1,12 +1,6 @@
 import { Schema } from 'mongoose';
 
 const PostSchema = new Schema({
-    contenues: [
-        {
-            type: String,
-            required: true
-        }
-    ],
     model: {
         type: Schema.Types.ObjectId,
         ref: 'Model',
