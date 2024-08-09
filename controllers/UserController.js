@@ -1,4 +1,6 @@
 import UserModel from "../models/UserModel.js";
+import PostModel from "../models/PostModel.js";
+import Model from "../models/ModelModel.js";
 import isEmail from "validator/lib/isEmail.js";
 import validateName, { validateImageExtension } from "../utils/Validator.js";
 import bcrypt from "bcrypt";
@@ -141,7 +143,7 @@ export default class UserController {
         .status(403)
         .json({ error: "Vous ne pouvez pas noter un visiteur" });
     }
-    
+
     if (!userToRate) {
       return res.status(404).json({ error: "Utilisateur non trouvé" });
     }
@@ -640,7 +642,7 @@ export default class UserController {
     }
     await UserModel.findByIdAndUpdate(
       connectedUser.id,
-      {$inc: {credits: credit}},
+      { $inc: { credits: credit } },
       { new: true }
     );
     res.status(200).json({
@@ -648,24 +650,84 @@ export default class UserController {
     });
   }
 
-  // static async updateNote(req, res){
-    
-  //   const connectedUser = await UserModel.findById(req.user.userID);
-  //   if (!connectedUser || connectedUser.role !== "tailleur") {
-  //     res
-  //       .status(400)
-  //       .json({ message: "Vous n'êtes pas connecté en tant que tailleur" });
-  //   }
-  //   const {newNote} = req.body;
-  //   try{
-  //     const notedUser = await UserModel.findByIdAndUpdate()
-  //   }
-  //   catch(err) {
-  //     res.status(404).json({message: "erreur modification note: " + note})
-  //   }
+  static async updateNote(req, res) {
+    const connectedUser = await UserModel.findById(req.user.userID);
+    if (!connectedUser || connectedUser.role !== "tailleur") {
+      res
+        .status(400)
+        .json({ message: "Vous n'êtes pas connecté en tant que tailleur" });
+    }
 
-  // }
+    const notedUser = await UserModel.findById(req.params.id);
+    if (!notedUser) {
+      return res.status(402).json({ message: "ID tailleur non trouvé" });
+    }
 
-  
+    const { newRate } = req.body;
 
+    if (typeof newRate !== "number" || newRate < 1 || newRate > 5) {
+      return res
+        .status(400)
+        .json({ error: "La note doit être un nombre entre 1 et 5" });
+    }
+
+    const noteIndex = notedUser.notes.findIndex(
+      (note) => note.raterId.toString() === connectedUser.id.toString()
+    );
+
+    if (noteIndex === -1) {
+      return res
+        .status(400)
+        .json({ message: "Vous n'avez pas encore noté pour ce tailleur" });
+    } else {
+      notedUser.notes[noteIndex].rate = newRate;
+
+      await notedUser.save();
+
+      return res.status(200).json({
+        message: "Note mise à jour avec succès",
+        rate: notedUser.notes[noteIndex].rate,
+      });
+    }
+  }
+
+  static async listeSouhaits(req, res) {
+    const connectedUser = await UserModel.findById(req.user.userID);
+    if (!connectedUser || connectedUser.role !== "visiteur") {
+      res
+        .status(400)
+        .json({ message: "Vous n'êtes pas connecté en tant que visiteur" });
+    }
+
+    const post = await PostModel.findById(req.params.id);
+    if (!post) {
+      res.status(400).json({ message: "Ce Post n'est pas accessible !" });
+    }
+
+    try {
+      const wishedModel = await Model.findById(post.model);
+      const user = await UserModel.findById(connectedUser.id);
+
+      const foundedModel = user.listeSouhaits.includes(wishedModel._id);
+      if (foundedModel) {
+        return res
+          .status(400)
+          .json({
+            message: "Ce modèle est dèjas dans votre liste des souhaits",
+          });
+      } else {
+        user.listeSouhaits.push(wishedModel._id);
+        await user.save();
+        res
+          .status(201)
+          .json({
+            message: `modèle ajouté à la liste des souhait avec succès`,
+          });
+      }
+    } catch (err) {
+      res
+        .status(500)
+        .json({ message: "Erreur récupération model du post: " + err });
+    }
+  }
 }

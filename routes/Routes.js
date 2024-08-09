@@ -144,4 +144,14 @@ router
   .route("/chargeCredit")
   .post(auth, (req, res) => UserController.chargeCredit(req, res));
 
+router
+  .route("/updateNote/:id")
+  .post(auth, (req, res) => UserController.updateNote(req, res));
+
+router
+  .route("/wishList/:id")
+  .post(auth, (req, res) => UserController.listeSouhaits(req, res));
+
+
 export default router;
+ 
