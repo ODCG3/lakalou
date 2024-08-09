@@ -84,11 +84,6 @@ export async function createCommande(req, res) {
 
         res.status(201).json(commande);
 
-        // Vérifier si le modèle existe dans le post
-        const model = post.model;
-        if (!model) {
-            return res.status(404).json({ message: 'Model not found in the post' });
-        }
         // un user ne doit pas pouvoire commander sur un post qu'il à fait
         
         const modelCommander = Model.findById(model);
