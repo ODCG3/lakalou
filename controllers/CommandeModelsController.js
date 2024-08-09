@@ -2,6 +2,7 @@ import CommandeModels from '../models/CommandeModelsModel.js';
 import Post from '../models/PostModel.js';
 import User from '../models/UserModel.js';
 import Story from '../models/StoryModel.js';
+import Model from '../models/ModelModel.js';
 
 // Effectuer une commande d'un modèle dans un post
 export async function createCommande(req, res) {
@@ -58,6 +59,7 @@ export async function createCommande(req, res) {
             return res.status(400).json({ message: 'Veuillez spécifier soit un postId, soit un storyId, mais pas les deux ou aucun.' });
         }
 
+
         // Créer la commande
         const commande = new CommandeModels({
             user_id: userId,
@@ -81,6 +83,43 @@ export async function createCommande(req, res) {
         await tailleur.save();
 
         res.status(201).json(commande);
+
+        // Vérifier si le modèle existe dans le post
+        const model = post.model;
+        if (!model) {
+            return res.status(404).json({ message: 'Model not found in the post' });
+        }
+        // un user ne doit pas pouvoire commander sur un post qu'il à fait
+        
+        const modelCommander = Model.findById(model);
+        if(modelCommander.quantite > 0){
+
+            // Créer la commande
+            const commande = CommandeModels.create({
+                user_id: userId,
+                post_id: postId,
+                model_libelle: model_libelle,
+                adresseLivraison
+            });
+            
+            modelCommander.quantite -= 1;
+            await modelCommander.save();
+            
+            // Associer la commande à l'utilisateur
+            const user = await User.findById(userId);
+            user.MesCommand.push((await commande).id);
+            await user.save();
+            
+            const tailleur = await User.findById(post.utilisateur);
+            tailleur.CommandesUtilisateur.push((await commande).id);
+            await tailleur.save();
+            
+            // Sauvegarder la commande
+            
+            res.status(201).json(commande);
+        }else{
+            res.status(400).json({ message: 'Le modèle n\'est plus disponible' });
+        }
 
     } catch (error) {
         console.error(error);

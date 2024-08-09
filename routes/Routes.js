@@ -157,9 +157,27 @@ router
   .route("/chargeCredit")
   .post(auth, (req, res) => UserController.chargeCredit(req, res));
 
+
+router
+  .route("/updateNote/:id")
+  .post(auth, (req, res) => UserController.updateNote(req, res));
+
+router
+  .route("/wishList/:id")
+  .post(auth, (req, res) => UserController.listeSouhaits(req, res));
+
 router.get('/notifications', auth, PostController.getNotifications);
 
 router.delete('/notifications/:notificationId', auth, PostController.deleteNotification);
 
+router.get('/tailleurs', auth, UserController.getTailleurs);
+router.get('/tailleurs/filter/:tailleurId', auth, UserController.filterTailleurById);
+router.get('/tailleurs/name/:name', auth, UserController.filterByName);
+router.get('/tailleurs/filterNote', auth, UserController.filterByNotes);
+router.get('/tailleurs/filterCertificat', auth, UserController.filterTailleurByCertificat);
+router.get('/tailleurs/statistique', auth, UserController.getStatistiques);
+
+
 
 export default router;
+ 
