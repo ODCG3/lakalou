@@ -37,10 +37,27 @@ router
   .route("/signal/:id")
   .post(auth, (req, res) => UserController.reportUser(req, res));
 
+
+
 // Routes pour les modèles
 router
   .route("/model/create")
   .post(auth, (req, res) => ModelController.create(req, res));
+  // Routes pour afficher les modèles d'un utilisateur
+router
+  .route("/model/:userId/getModels")
+  .get(auth, (req, res) => ModelController.getModelsByUserId(req, res));
+router
+  .route("/model/:modelId/update")
+  .put(auth, (req, res) => ModelController.updateModel(req, res));
+router
+  .route("/model/:modelId/delete")
+  .delete(auth, (req, res) => ModelController.deleteModel(req, res));
+  router
+  .route("/model/:modelId")
+  .get(auth, (req, res) => ModelController.getModelById(req, res));
+
+
 
 // Routes pour les posts
 router
@@ -149,6 +166,7 @@ router.put('/user/discussion/:discussionId/messages/:messageId',auth, UserContro
 router.post('/post/:postId/commande', auth,createCommande);
 router.get('/post/:postId/commandes', auth,getCommandesByPostId);
 router.get('/commande/:commandeId', auth, getCommandeById);
+router.post('/story/:storyId/commande', auth,createCommande);
 
 
 // ROUTE POUR RECHARGER CRÉDIT TAILLEUR:
@@ -156,9 +174,29 @@ router
   .route("/chargeCredit")
   .post(auth, (req, res) => UserController.chargeCredit(req, res));
 
+
+router
+  .route("/updateNote/:id")
+  .post(auth, (req, res) => UserController.updateNote(req, res));
+
+router
+  .route("/wishList/:id")
+  .post(auth, (req, res) => UserController.listeSouhaits(req, res));
+
 router.get('/notifications', auth, PostController.getNotifications);
 
 router.delete('/notifications/:notificationId', auth, PostController.deleteNotification);
 
+router.post('/acheter-badge', auth, UserController.acheterBadge);
+
+
+router.get('/tailleurs', auth, UserController.getTailleurs);
+router.get('/tailleurs/filter/:tailleurId', auth, UserController.filterTailleurById);
+router.get('/tailleurs/name/:name', auth, UserController.filterByName);
+router.get('/tailleurs/filterNote', auth, UserController.filterByNotes);
+router.get('/tailleurs/filterCertificat', auth, UserController.filterTailleurByCertificat);
+router.get('/tailleurs/statistique', auth, UserController.getStatistiques);
+
 
 export default router;
+ 

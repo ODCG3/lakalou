@@ -34,20 +34,24 @@ const UserSchema = new Schema({
         tourBras: Number,
         tourPoignet: Number,
         ceinture: Number
+
+  },
+  utilisateurBloque: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "User",
     },
-    utilisateurBloque: [
-        {
-            type: Schema.Types.ObjectId,
-            ref: 'User',
-        }
-    ],
-    credits: Number,
-    followers: {
-        type: [String],
-    },
-    followings: {
-        type: [String],
-    },
+  ],
+  credits: Number,
+  followers: {
+    type: [String],
+  },
+  followings: {
+    type: [String],
+  },
+  listeSouhaits: {
+    type: [String],
+  },
 
     notifications: [{
         type: {
@@ -73,7 +77,24 @@ const UserSchema = new Schema({
             type: Schema.Types.ObjectId,
             ref: 'Commande',
         }
-    ]
+    ],
+    badges: [
+        {
+            achat:{
+                type:Boolean
+            },
+            acquiredAt: { type: Date, default: Date.now } // Date d'acquisition du badge
+        }
+    ],
+    status:{
+        type: String,
+        enum: ['Premium', 'normal'],
+        default: 'normal'
+    },
+    certificat:{
+        type: Boolean,
+        default: false
+    }
 
 });
 export default UserSchema;

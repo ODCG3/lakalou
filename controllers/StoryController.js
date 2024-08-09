@@ -1,5 +1,6 @@
 import Story from '../models/StoryModel.js';
 import user from "../models/UserModel.js";
+import model from "../models/ModelModel.js";
 
 const createStory = async (req, res) => {
   const currentTime = new Date();
@@ -12,12 +13,23 @@ const createStory = async (req, res) => {
     if (connectedUser.role !== "tailleur") {
       return res.status(403).json({ error: 'Vous n\'êtes pas un tailleur, seul les tailleurs peuvent poster des statuts' });
     }
+    
+    // Recherchez le modèle que vous souhaitez associer à la story (par exemple, basé sur l'ID dans req.body)
+      const modelID = req.body.model; // Assurez-vous que l'ID du modèle est fourni dans la requête
+      const Model = await model.findById(modelID);
+    
+    if (!Model) {
+        return res.status(404).json({ error: 'Modèle non trouvé' });
+      }
 
     if (connectedUser.credits > 0) {
+      
+      
       const story = new Story({
         userId: userID,
-        content: req.body.content,
-        mediaUrl: req.body.mediaUrl,
+        contenu: req.body.contenu,
+        model: Model._id,
+        description: req.body.description,
         expiresAt: expirationTime,
         blockedUsers: req.body.blockedUsers || []  // Récupérer la liste des utilisateurs bloqués depuis la requête
       });
@@ -25,11 +37,11 @@ const createStory = async (req, res) => {
       await story.save();
       connectedUser.credits -= 1;
       await connectedUser.save();
-
       res.status(201).json({
         message: 'Story créée avec succès!'
       });
     } else {
+
       res.status(400).json({ error: 'Crédits insuffisants pour créer une story' });
     }
   } catch (error) {
