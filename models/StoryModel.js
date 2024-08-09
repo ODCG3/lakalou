@@ -1,5 +1,10 @@
 import mongoose from 'mongoose';
 
+const { Schema } = mongoose;
+
+import user from '../models/UserModel.js';
+
+
 const storySchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -15,7 +20,9 @@ const storySchema = new mongoose.Schema({
   contenu: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
   expiresAt: { type: Date, required: true },
-  views: { type: Number, default: 0 }
+  views: { type: Number, default: 0 },
+  //j'ai ajouter blockerdUsers pour recuperes les utilisateurs bloques
+  blockedUsers: [{ type: Schema.Types.ObjectId, ref: 'User' }]
 }, { timestamps: true });
 
 // Définir un index TTL pour faire expirer automatiquement les documents après 24h
