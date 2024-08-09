@@ -5,6 +5,7 @@ import validator from "validator";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
+import user from "../models/UserModel.js";
 const ObjectId = mongoose.Types.ObjectId;
 
 export default class UserController {
@@ -787,6 +788,57 @@ export default class UserController {
       message: `Rechargement ${comparedAmount} Fr réussi.`,
     });
   }
+
+  
+  static async acheterBadge(req, res) {
+    const userId = req.user.userID;
+    console.log(userId);
+
+    try {
+        // Vérifier si l'utilisateur existe
+        const userData = await UserModel.findById(userId).select('credits badges followers');
+        
+        if (!userData) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const credits = userData.credits;
+        const followersCount = userData.followers.length; // Compter le nombre de followers
+        console.log(`Credits: ${credits}, Followers: ${followersCount}`);
+
+        // Vérifier si l'utilisateur a au moins 1 follower
+        if (followersCount < 100) {
+            return res.status(400).json({ message: 'Vous devez avoir au moins 1 follower pour acheter un badge' });
+        }
+
+        // Vérifier si le badge est déjà acquis
+        const badgeAcquis = userData.badges.some(badge => badge.achat === true);
+
+        if (badgeAcquis) {
+            return res.status(400).json({ message: 'Badge déjà acquis' });
+        }
+
+        // Vérifier si l'utilisateur a suffisamment de crédits
+        if (credits < 5) {
+            return res.status(400).json({ message: 'Crédit insuffisant' });
+        }
+
+        // Mettre à jour le crédit et ajouter le badge
+        await UserModel.findByIdAndUpdate(userId, {
+            $inc: { credits: -5 }, // Décrémenter les crédits
+            $push: { badges: { achat: true } } // Ajouter le badge
+        }, {
+            new: true
+        });
+
+        res.status(200).json({ message: 'Badge acquis avec succès' });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Une erreur est survenue' });
+    }
+}
+
 
 }
 

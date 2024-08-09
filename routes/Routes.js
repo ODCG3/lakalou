@@ -159,6 +159,6 @@ router
 router.get('/notifications', auth, PostController.getNotifications);
 
 router.delete('/notifications/:notificationId', auth, PostController.deleteNotification);
-
+router.post('/acheter-badge', auth, UserController.acheterBadge);
 
 export default router;

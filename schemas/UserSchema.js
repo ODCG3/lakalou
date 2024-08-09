@@ -73,6 +73,14 @@ const UserSchema = new Schema({
             type: Schema.Types.ObjectId,
             ref: 'Commande',
         }
+    ],
+    badges: [
+        {
+            achat:{
+                type:Boolean
+            },
+            acquiredAt: { type: Date, default: Date.now } // Date d'acquisition du badge
+        }
     ]
 
 });
