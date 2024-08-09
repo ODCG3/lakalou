@@ -1,51 +1,62 @@
 import Story from '../models/StoryModel.js';
 import user from "../models/UserModel.js";
 
-const createStory = (req, res) => {
+const createStory = async (req, res) => {
   const currentTime = new Date();
   const expirationTime = new Date(currentTime.getTime() + 24 * 60 * 60 * 1000); // 24 heures plus tard
   const userID = req.user.userID;
 
-  const connectedUser = user.findById(userID);
+  try {
+    const connectedUser = await user.findById(userID);
 
-  if(connectedUser.role != "tailleur"){
-    return res.status(403).json({ error: 'Vous n\'êtes pas un tailleur, seul les tailleurs peuvent poster des statuts' });
-  }
+    if (connectedUser.role !== "tailleur") {
+      return res.status(403).json({ error: 'Vous n\'êtes pas un tailleur, seul les tailleurs peuvent poster des statuts' });
+    }
 
-  if(connectedUser.credits > 0){
-    const story = new Story({
-      userId: userID,
-      content: req.body.content,
-      mediaUrl: req.body.mediaUrl,
-      expiresAt: expirationTime
-    });
-    story.save()
-    connectedUser.credits -= 1;
-    connectedUser.save()
-    
-    .then(() => {
+    if (connectedUser.credits > 0) {
+      const story = new Story({
+        userId: userID,
+        content: req.body.content,
+        mediaUrl: req.body.mediaUrl,
+        expiresAt: expirationTime,
+        blockedUsers: req.body.blockedUsers || []  // Récupérer la liste des utilisateurs bloqués depuis la requête
+      });
+
+      await story.save();
+      connectedUser.credits -= 1;
+      await connectedUser.save();
+
       res.status(201).json({
         message: 'Story créée avec succès!'
       });
-    })
-    .catch((error) => {
-      res.status(400).json({
-        error: error.message
-      });
+    } else {
+      res.status(400).json({ error: 'Crédits insuffisants pour créer une story' });
+    }
+  } catch (error) {
+    res.status(400).json({
+      error: error.message
     });
-    
   }
 };
 
-const getStories = (req, res) => {
-  Story.find({ userId: req.params.userId, expiresAt: { $gt: new Date() } })
-    .then(stories => {
-      res.status(200).json(stories);
-    })
-    .catch(error => {
-      res.status(400).json({ error: error.message });
+const getStories = async (req, res) => {
+  const viewerId = req.user.userID; // L'utilisateur qui fait la demande de voir les stories
+  const ownerId = req.params.userId; // L'utilisateur propriétaire des stories
+
+  try {
+    // Récupérer les stories de l'utilisateur tout en excluant celles où l'utilisateur qui fait la requête est bloqué
+    const stories = await Story.find({
+      userId: ownerId,
+      expiresAt: { $gt: new Date() },
+      blockedUsers: { $ne: viewerId }  // Exclure les stories où le viewerId est dans la liste des utilisateurs bloqués
     });
+
+    res.status(200).json(stories);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 };
+
 const deleteStory = (req, res) => {
   const storyId = req.params.id;
   const userID = req.user.userID;
@@ -62,6 +73,7 @@ const deleteStory = (req, res) => {
       res.status(500).json({ error: error.message });
     });
 };
+
 const viewStory = (req, res) => {
   const storyId = req.params.id;
 
@@ -81,32 +93,19 @@ const viewStory = (req, res) => {
 const getStoryViews = async (req, res) => {
   const storyId = req.params.id;
 
-  try{
+  try {
     const story = await Story.findById(storyId);
 
-    if(!story) {
-      res.status(404).json({ message: "story not found"});
+    if (!story) {
+      res.status(404).json({ message: "Story non trouvée" });
     }
 
     res.status(200).json({ views: story.views });
-  }
-  catch(error) {
+  } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal server error' });
   }
-    // .then(story => {
-    //   if (story) {
-    //     res.status(200).json({ views: story.views });
-    //   } else {
-    //     res.status(404).json({ message: 'Story non trouvée' });
-    //   }
-    // })
-    // .catch(error => {
-    //   res.status(500).json({ error: error.message });
-    // });
-
-  }
-
+};
 
 export default {
   createStory,
