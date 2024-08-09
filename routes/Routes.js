@@ -37,10 +37,27 @@ router
   .route("/signal/:id")
   .post(auth, (req, res) => UserController.reportUser(req, res));
 
+
+
 // Routes pour les modèles
 router
   .route("/model/create")
   .post(auth, (req, res) => ModelController.create(req, res));
+  // Routes pour afficher les modèles d'un utilisateur
+router
+  .route("/model/:userId/getModels")
+  .get(auth, (req, res) => ModelController.getModelsByUserId(req, res));
+router
+  .route("/model/:modelId/update")
+  .put(auth, (req, res) => ModelController.updateModel(req, res));
+router
+  .route("/model/:modelId/delete")
+  .delete(auth, (req, res) => ModelController.deleteModel(req, res));
+  router
+  .route("/model/:modelId")
+  .get(auth, (req, res) => ModelController.getModelById(req, res));
+
+
 
 // Routes pour les posts
 router
