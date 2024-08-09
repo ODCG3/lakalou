@@ -6,8 +6,13 @@ const storySchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  content: { type: String, required: true },
-  mediaUrl: { type: String, required: true },
+  model: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Model',
+    required: true
+  },
+  description: { type: String, required: true },
+  contenu: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
   expiresAt: { type: Date, required: true },
   views: { type: Number, default: 0 }
