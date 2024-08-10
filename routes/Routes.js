@@ -56,8 +56,20 @@ router
   router
   .route("/model/:modelId")
   .get(auth, (req, res) => ModelController.getModelById(req, res));
+//routes pour noteModel
+router
+  .route("/model/:modelId/note")
+  .post(auth, (req, res) => ModelController.noteModel(req, res));
 
 
+
+router
+  .route("/model/:modelId/unlike")
+  .post(auth, (req, res) => ModelController.unlikeModel(req, res));
+
+
+  
+  
 
 // Routes pour les posts
 router
