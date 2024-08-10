@@ -100,7 +100,44 @@ export default class ModelController {
         }
     }
 
-
+    /* En tant qu'utilisateur je peux noter des models */
+    static async noteModel(req, res) {
+        const userId = req.user.userID;
+        const { modelId } = req.params;
+        const note = req.body.note;
+    
+        try {
+            const user = await User.findById(userId);
+            if (!user) {
+                return res.status(404).json({ error: 'User not found' });
+            }
+    
+            const foundModel = await model.findById(modelId);
+            if (!foundModel) {
+                return res.status(404).json({ error: 'Model not found' });
+            }
+    
+            const existingNote = user.mesModels.find(element => element.idModel.toString() === modelId.toString());
+    
+            if (existingNote) {
+                // Remplacez la dernière note par la nouvelle
+                existingNote.note[existingNote.note.length - 1] = note;
+            } else {
+                // Si aucune note n'existe, ajoutez une nouvelle entrée
+                user.mesModels.push({ idModel: modelId, libelle: foundModel.libelle, nombreDeCommande: 1, note: [note] });
+            }
+            console.log(existingNote);
+    
+            await user.save();
+    
+            res.json({ message: 'Model noted successfully' });
+    
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+    
+    
 
 }
 
