@@ -271,7 +271,7 @@ export default class PostController {
         try {
             const postData = await post.findById(postId);
             if (!postData) {
-                return res.status(404).json({ error: "Post not found" });
+                return res.status(400).json({ error: "Post not found" });
             }
 
             // Ajouter le post à la liste des vues de l'utilisateur

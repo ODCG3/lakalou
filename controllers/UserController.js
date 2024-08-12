@@ -347,7 +347,7 @@ export default class UserController {
       const role = user.role == "visiteur" ? "tailleur" : "visiteur";
 
       if (user.credits < 1) {
-        return res.status(401).json({ message: "Vous n'avez pas assez de crédits pour changer de role" });
+        return res.status(402).json({ message: "Vous n'avez pas assez de crédits pour changer de role" });
       }
 
       await UserModel.findByIdAndUpdate(
@@ -358,7 +358,7 @@ export default class UserController {
 
       user.credits -= 1;
       user.save();
-      res.json({ response: "role updated successfully" });
+      res.status(200).json({ response: "role updated successfully" });
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
@@ -368,14 +368,14 @@ export default class UserController {
     try {
       const userToBlock = await UserModel.findById(req.params.userID);
       if (!userToBlock) {
-        return res.status(404).json({ error: "Utilisateur non trouvé" });
+        return res.status(400).json({ error: "Utilisateur non trouvé" });
       }
 
       console.log(userToBlock._id.toString(), req.user.userID.toString());
 
       if (userToBlock._id.toString() === req.user.userID.toString()) {
         return res
-          .status(400)
+          .status(403)
           .json({ error: "Vous ne pouvez pas vous bloquer vous-même" });
       }
 
@@ -385,7 +385,7 @@ export default class UserController {
 
       if (alreadyBlocked) {
         return res
-          .status(400)
+          .status(402)
           .json({ error: "Vous avez déjà bloqué cet utilisateur" });
       }
 
@@ -402,13 +402,13 @@ export default class UserController {
     try {
       const userToUnblock = await UserModel.findById(req.params.userID);
       if (!userToUnblock) {
-        return res.status(404).json({ error: "Utilisateur non trouvé" });
+        return res.status(400).json({ error: "Utilisateur non trouvé" });
       }
 
       const currentUser = await UserModel.findById(req.user.userID);
       if (!currentUser.utilisateurBloque.includes(userToUnblock._id)) {
         return res
-          .status(400)
+          .status(402)
           .json({ error: "cet utilisateur n'a pas ete bloquer" });
       }
 
@@ -758,13 +758,13 @@ export default class UserController {
     const { credits } = req.body;
     const comparedAmount = parseInt(credits);
     if (!comparedAmount) {
-      res.status(400).send("Vous devez saisir un montant valide");
+      res.status(402).send("Vous devez saisir un montant valide");
     } else if (
       comparedAmount !== 1000 &&
       comparedAmount !== 2000 &&
       comparedAmount !== 3000
     ) {
-      res.status(400).send("Vous devez saisir 1000, 2000 ou 3000");
+      res.status(402).send("Vous devez saisir 1000, 2000 ou 3000");
     }
 
     let credit = 0;
@@ -802,7 +802,7 @@ export default class UserController {
         const userData = await UserModel.findById(userId).select('credits badges followers');
         
         if (!userData) {
-            return res.status(404).json({ error: 'User not found' });
+            return res.status(400).json({ error: 'User not found' });
         }
 
         const credits = userData.credits;
@@ -811,19 +811,19 @@ export default class UserController {
 
         // Vérifier si l'utilisateur a au moins 1 follower
         if (followersCount < 100) {
-            return res.status(400).json({ message: 'Vous devez avoir au moins 1 follower pour acheter un badge' });
+            return res.status(403).json({ message: 'Vous devez avoir au moins 100 follower pour acheter un badge' });
         }
 
         // Vérifier si le badge est déjà acquis
         const badgeAcquis = userData.badges.some(badge => badge === true);
 
         if (badgeAcquis) {
-            return res.status(400).json({ message: 'Badge déjà acquis' });
+            return res.status(405).json({ message: 'Badge déjà acquis' });
         }
 
         // Vérifier si l'utilisateur a suffisamment de crédits
         if (credits < 5) {
-            return res.status(400).json({ message: 'Crédit insuffisant' });
+            return res.status(406).json({ message: 'Crédit insuffisant' });
         }
 
         // Mettre à jour le crédit et ajouter le badge

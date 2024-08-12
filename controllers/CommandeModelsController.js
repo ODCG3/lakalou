@@ -20,13 +20,13 @@ export async function createCommande(req, res) {
             // Gérer la commande à partir d'un post
             post = await Post.findById(postId);
             if (!post) {
-                return res.status(404).json({ message: 'Post non trouvé' });
+                return res.status(400).json({ message: 'Post non trouvé' });
             }
 
             // Vérifier si le modèle existe dans le post
             model = post.model;
             if (!model) {
-                return res.status(404).json({ message: 'Modèle non trouvé dans le post' });
+                return res.status(402).json({ message: 'Modèle non trouvé dans le post' });
             }
 
             // Empêcher un utilisateur de commander sur son propre post
@@ -111,7 +111,7 @@ export async function createCommande(req, res) {
 
             res.status(201).json(commande);
         } else {
-            res.status(400).json({ message: 'Le modèle n\'est plus disponible' });
+            res.status(500).json({ message: 'Le modèle n\'est plus disponible' });
         }
 
     } catch (error) {

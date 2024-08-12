@@ -19,41 +19,281 @@ security:
   - CookieAuth: [] 
 
 paths:
-/model:
+  /user/changeRole:
+    post:
+      summary: change user role
+      tags:
+        - Role
+        - Utilisateur      
+      responses:
+        '200':
+          description: Role changed successfully
+        '402':
+          description: Vous n'avez pas assez de crédits pour changer de role
+        '401':
+          description: Unauthorized
+        '500':
+          description: Erreur lors de la modification du role de l'utilisateur
 
-  /{userId}/getModels:
+  /chargeCredit:
+    post:
+      summary: charger credit
+      tags:
+        - Credit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - credits
+              properties:
+                credits:
+                  type: number
+
+      responses:
+        '200':
+          description: Credit charged successfully
+        '400':
+          description: Vous n'êtes pas connecté en tant que tailleur
+        '401':
+          description: Unauthorized
+        '402':
+          description: Vous devez saisir un montant valide 1000, 2000 ou 3000
+        '500':
+          description: Erreur lors de la modification du role de l'utilisateur   
+
+  /acheter-badge:
+    post:
+      summary: acheter un badge
+      tags:
+        - Badge
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - credits
+              properties:
+                credits:
+                  type: number
+
+      responses:
+        '200':
+          description: Badge obtenu avec succes
+        '400':
+          description: User not found
+        '401':
+          description: Unauthorized
+        '403':
+          description: Vous devez avoir au moins 100 follower pour acheter un badge
+        '405':
+          description: Badge déjà acquis
+        '406':
+          description: Crédit insuffisant
+        '500':
+          description: Erreur lors de la creation du badge   
+  
+  /user/{userID}/bloquer:
+     post:
+      summary: bloquer un utilisateur
+      tags:
+        - Bloquer
+      parameters:
+        - in : path
+          name: userID
+          schema: 
+            type: string
+          required: true
+          description: the id of the post to view
+      responses:
+        '200':
+          description: Utilisateur bloqué avec succès
+        '400':
+          description: Utilisateur non trouvé
+        '401':
+          description: Unauthorized
+        '403':
+          description: Vous ne pouvez pas vous bloquer vous-même
+        '402':
+          description: Vous avez déjà bloqué cet utilisateur
+        '406':
+          description: Crédit insuffisant
+        '500':
+          description: Erreur lors de la creation du badge
+
+  /user/{userID}/debloquer:
+     post:
+      summary: debloquer un utilisateur
+      tags:
+        - DeBloquer
+      parameters:
+        - in : path
+          name: userID
+          schema: 
+            type: string
+          required: true
+          description: the id of the post to view
+      responses:
+        '200':
+          description: Utilisateur debloqué avec succès
+        '400':
+          description: Utilisateur non trouvé
+        '401':
+          description: Unauthorized
+        '402':
+          description: cet utilisateur n'a pas ete bloquer
+        '500':
+          description: Erreur lors du deblocage de l'utilisateur
+
+  /post/{postId}:
+     post:
+      summary: marquer post comme vue
+      tags:
+        - vues
+        - Post
+      parameters:
+        - in : path
+          name: postId
+          schema: 
+            type: string
+          required: true
+          description: the id of the post to view
+      
+      responses:
+        '200':
+          description: Post viewed successfully
+        '400':
+          description: Post not found
+        '401':
+          description: Unauthorized
+        '500':
+          description: Erreur lors du deblocage de l'utilisateur
+
+  /post/{postId}/commande:
+    post:
+      summary: Commander
+      tags:
+        - Commander a partir d'un post
+      parameters:
+        - in : path
+          name: storyId
+          schema: 
+            type: string
+          required: true
+          description: the id of the story to commande
+        - in : path
+          name: postId
+          schema: 
+            type: string
+          required: true
+          description: the id of the post to commande
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - adresseLivraison
+              properties:
+                adresseLivraison:
+                  type: string
+      responses:
+        '201':
+          description: commande created successfully
+        '400':
+          description: Post not found
+        '401':
+          description: Unauthorized
+        '402':
+          description: Modèle non trouvé dans le post
+        '403':
+          description: Vous ne pouvez pas commander sur votre propre post
+        '500':
+          description: Le modèle n'est plus disponible
+  
+  /post/{storyId}/commande:
+    post:
+      summary: Commander
+      tags:
+        - Commander a partir d'un story
+      parameters:
+        - in : path
+          name: storyId
+          schema: 
+            type: string
+          required: true
+          description: the id of the story to commande
+        - in : path
+          name: postId
+          schema: 
+            type: string
+          required: true
+          description: the id of the post to commande
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - adresseLivraison
+              properties:
+                adresseLivraison:
+                  type: string
+      responses:
+        '201':
+          description: commande created successfully
+        '400':
+          description: Story not found
+        '401':
+          description: Unauthorized
+        '402':
+          description: Modèle non trouvé dans le story
+        '403':
+          description: Vous ne pouvez pas commander sur votre propre story
+        '500':
+          description: Le modèle n'est plus disponible
+
+  /model/{userId}/getModels:
     get:
       summary: Afficher tous les models d'un utilisateur
-        tags:
-          - Model
-        parameters:
-          - in: path
+      tags:
+        - Model
+      parameters:
+        - in: path
           name: userId
-          schema: string
+          schema: 
+            type: string
           required: true
           description: ID de l'utilisateur dont on veut afficher les models
-        responses:
-          '200':
-            description: Voici les models de l'utilisateur
-          '400':
-            description: ID de l'utilisateur est recquis
+      responses:
+        '200':
+          description: Voici les models de l'utilisateur
+        '400':
+          description: ID de l'utilisateur est recquis
 
-  /{modelId}/update:
+  /model/{modelId}/update:
     put: 
       summary: Modifier Un modèle
       tags:
         - Model
       parameters:
         - in: path
-        name: modelId
-        schema: string
-        required: true
-        description: ID du modèle à modifier
-        responses:
-          '200':
-            description: 'ID modèle valide !'
-          '400':
-            description: 'ID modèle invalide'
+          name: modelId
+          schema: 
+            type: string
+          required: true
+          description: ID du modèle à modifier
+      responses:
+        '200':
+          description: 'ID modèle valide !'
+        '400':
+          description: 'ID modèle invalide'
       requestBody:
         required: true
         content:
@@ -61,44 +301,41 @@ paths:
             schema:
               type: object
               properties:
-              libelle:
-                type: string
-              prix:
-                type: number
-      responses:
-        '200':
-          description: Modèle modifié avec succès !
-        '400':
-          description: Erreur de modification du modèle
+                libelle:
+                  type: string
+                prix:
+                  type: number
 
-  /{modelId}/delete:
+  /model/{modelId}/delete:
     delete:
       summary: Supprimer un modèle de la base de données
-        tags:
-          - Model
-          parameters:
-            - in: path
-            name: modelId
-            schema: string
-            required: true
-            description: ID du modèle à supprimer
-            response:
-              '200':
-                description: Modèle supprimé avec succès
-               '400':
-                description: ID modèle invalide
+      tags:
+        - Model
+      parameters:
+        - in: path
+          name: modelId
+          schema: 
+            type: string
+          required: true
+          description: ID du modèle à supprimer
+      responses:
+        '200':
+          description: Modèle supprimé avec succès
+        '400':
+          description: ID modèle invalide
 
-  /{modelId}:
+  /model/{modelId}:
     get:
       summary: Afficher un modèle en particulier
       tags:
       - Model
       parameters:
-       - in: path
-      name: modelId            
-      schema: string
-      required: true
-      description: ID du modèle à récupérer
+        - in: path
+          name: modelId            
+          schema: 
+            type: string
+          required: true
+          description: ID du modèle à récupérer
       responses:
         '200':
           description: ID modèle valide
@@ -489,6 +726,33 @@ paths:
         '500':
           description: Error server
 
+    delete:
+      summary: Remove a post from the user's favorites
+      tags:
+        - Favorite
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: Unique ID of the favorite post to remove
+        - in: header
+          name: Authorization
+          schema:
+            type: string
+          required: true
+          description: JWT authentication token
+      responses:
+        '200':
+          description: Favorite removed successfully
+        '401':
+          description: Unauthorized, authentication required
+        '404':
+          description: Favorite not found
+        '500':
+          description: Internal server error
+
   /post/{postId}/like:
     post:
       summary: Like a post
@@ -781,571 +1045,493 @@ paths:
           description: Lister les commandes trouver
         '401':
           description: Unauthorized
-/user/{id}/updateMeasurements:
-put:
-  summary: Mettre à jour les mesures d'un utilisateur
-  tags:
-    - Utilisateur
-  parameters:
-    - in: path
-      name: id
-      schema:
-        type: string
-      required: true
-      description: ID de l'utilisateur
-    - in: body
-      name: measurements
-      description: Objet contenant les mesures à mettre à jour
-      schema:
-        type: object
-        properties:
-          cou:
-            type: number
-            description: Tour de cou
-          longueurPantallon:
-            type: number
-            description: Longueur du pantalon
-          epaule:
-            type: number
-            description: Largeur des épaules
-          longueurManche:
-            type: number
-            description: Longueur de la manche
-          hanche:
-            type: number
-            description: Tour de hanche
-          poitrine:
-            type: number
-            description: Tour de poitrine
-          cuisse:
-            type: number
-            description: Tour de cuisse
-          longueur:
-            type: number
-            description: Longueur totale
-          tourBras:
-            type: number
-            description: Tour de bras
-          tourPoignet:
-            type: number
-            description: Tour de poignet
-          ceinture:
-            type: number
-            description: Tour de taille
-  responses:
-    '200':
-      description: Mesures mises à jour avec succès
-    '400':
-      description: Requête incorrecte, erreur de validation
-    '404':
-      description: Utilisateur non trouvé
-    '500':
-      description: Erreur interne du serveur
-
-/post:
-get:
-  summary: Retrieve all posts
-  tags:
-    - Post
-  parameters:
-    - in: header
-      name: Authorization
-      schema:
-        type: string
-      required: true
-      description: JWT authentication token
-  responses:
-    '200':
-      description: List of posts retrieved successfully
-    '401':
-      description: Unauthorized, authentication required
-    '500':
-      description: Internal server error
-
-
-/post/{id}:
-get:
-  summary: Retrieve a post by its ID
-  tags:
-    - Post
-  parameters:
-    - in: path
-      name: id
-      schema:
-        type: string
-      required: true
-      description: Unique ID of the post
-    - in: header
-      name: Authorization
-      schema:
-        type: string
-      required: true
-      description: JWT authentication token
-  responses:
-    '200':
-      description: Post retrieved successfully
-    '401':
-      description: Unauthorized, authentication required
-    '404':
-      description: Post not found
-    '500':
-      description: Internal server error
-
-delete:
-  summary: Delete a post by its ID
-  tags:
-    - Post
-  parameters:
-    - in: path
-      name: id
-      schema:
-        type: string
-      required: true
-      description: Unique ID of the post to delete
-    - in: header
-      name: Authorization
-      schema:
-        type: string
-      required: true
-      description: JWT authentication token
-  responses:
-    '200':
-      description: Post deleted successfully
-    '401':
-      description: Unauthorized, authentication required
-    '404':
-      description: Post not found or not accessible by the user
-    '500':
-      description: Internal server error
-
-
-/post/{id}/model:
-get:
-  summary: Retrieve the model associated with a post
-  tags:
-    - Post
-  parameters:
-    - in: path
-      name: id
-      schema:
-        type: string
-      required: true
-      description: Unique ID of the post
-    - in: header
-      name: Authorization
-      schema:
-        type: string
-      required: true
-      description: JWT authentication token
-  responses:
-    '200':
-      description: Model retrieved successfully
-    '401':
-      description: Unauthorized, authentication required
-    '404':
-      description: Post or model not found
-    '500':
-      description: Internal server error
-
-/post/favorite/remove/{id}:
-delete:
-  summary: Remove a post from the user's favorites
-  tags:
-    - Favorite
-  parameters:
-    - in: path
-      name: id
-      schema:
-        type: string
-      required: true
-      description: Unique ID of the favorite post to remove
-    - in: header
-      name: Authorization
-      schema:
-        type: string
-      required: true
-      description: JWT authentication token
-  responses:
-    '200':
-      description: Favorite removed successfully
-    '401':
-      description: Unauthorized, authentication required
-    '404':
-      description: Favorite not found
-    '500':
-      description: Internal server error
-
-/user/bloquer:
-get:
-  summary: Retrieve a list of blocked users for the authenticated user
-  tags:
-    - User
-  parameters:
-    - in: header
-      name: Authorization
-      schema:
-        type: string
-      required: true
-      description: JWT authentication token
-  responses:
-    '200':
-      description: List of blocked users retrieved successfully
-    '401':
-      description: Unauthorized, authentication required
-    '404':
-      description: User not found
-    '500':
-      description: Internal server error
-
-/post/{postId}/vues:
-get:
-  summary: Retrieve the number of views for a specific post
-  tags:
-    - Post
-  parameters:
-    - in: path
-      name: postId
-      schema:
-        type: string
-      required: true
-      description: Unique ID of the post
-    - in: header
-      name: Authorization
-      schema:
-        type: string
-      required: true
-      description: JWT authentication token
-  responses:
-    '200':
-      description: Number of views for the post
-    '401':
-      description: Unauthorized, authentication required
-    '404':
-      description: Post not found
-    '500':
-      description: Internal server error
-
-/user/discussion/{discussionId}/messages/{messageId}:
-delete:
-  summary: Delete a specific message from a discussion
-  tags:
-    - User
-  parameters:
-    - in: path
-      name: discussionId
-      schema:
-        type: string
-      required: true
-      description: Unique ID of the discussion from which the message will be deleted
-    - in: path
-      name: messageId
-      schema:
-        type: string
-      required: true
-      description: Unique ID of the message to be deleted
-    - in: header
-      name: Authorization
-      schema:
-        type: string
-      required: true
-      description: JWT authentication token
-  responses:
-    '200':
-      description: Message deleted successfully
-    '400':
-      description: Bad request, user not found
-    '404':
-      description: Message or discussion not found
-    '500':
-      description: Internal server error
-
-put:
-  summary: Update a specific message in a discussion
-  tags:
-    - User
-  parameters:
-    - in: path
-      name: discussionId
-      schema:
-        type: string
-      required: true
-      description: Unique ID of the discussion containing the message
-    - in: path
-      name: messageId
-      schema:
-        type: string
-      required: true
-      description: Unique ID of the message to be updated
-    - in: header
-      name: Authorization
-      schema:
-        type: string
-      required: true
-      description: JWT authentication token
-    - in: body
-      name: body
-      description: The new content of the message
-      required: true
-      schema:
-        type: object
-        properties:
-          newContent:
-            type: string
-            example: Updated message content
-  responses:
-    '200':
-      description: Message updated successfully
-    '400':
-      description: Bad request, user not found
-    '404':
-      description: Discussion or message not found or update failed
-    '500':
-      description: Internal server error
-
-/notifications:
-get:
-  summary: Retrieve notifications for the authenticated user
-  tags:
-    - Notifications
-  parameters:
-    - in: header
-      name: Authorization
-      schema:
-        type: string
-      required: true
-      description: JWT authentication token
-  responses:
-    '200':
-      description: Successfully retrieved notifications
-    '404':
-      description: User not found
-    '500':
-      description: Internal server error
-
-/notifications/{notificationId}:
-delete:
-  summary: Remove a specific notification for the authenticated user
-  tags:
-    - Notifications
-  parameters:
-    - in: path
-      name: notificationId
-      schema:
-        type: string
-      required: true
-      description: Unique ID of the notification to be removed
-    - in: header
-      name: Authorization
-      schema:
-        type: string
-      required: true
-      description: JWT authentication token
-  responses:
-    '200':
-      description: Notification removed successfully
-    '404':
-      description: User not found or notification not found
-    '500':
-      description: Internal server error
-/stories/{userId}:
-    get:
-      summary: Get all stories of a user
+  
+  /user/{id}/updateMeasurements:
+    put:
+      summary: Mettre à jour les mesures d'un utilisateur
       tags:
-        - Story
+        - Utilisateur
       parameters:
         - in: path
-          name: userId
+          name: id
           schema:
             type: string
           required: true
-          description: ID of the user whose stories are being retrieved
+          description: ID de l'utilisateur
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - modelID
+                - description
+                - blockedUsers
+              properties:
+                cou:
+                  type: number
+                  description: Tour de cou
+                longueurPantallon:
+                  type: number
+                  description: Longueur du pantalon
+                epaule:
+                  type: number
+                  description: Largeur des épaules
+                longueurManche:
+                  type: number
+                  description: Longueur de la manche
+                hanche:
+                  type: number
+                  description: Tour de hanche
+                poitrine:
+                  type: number
+                  description: Tour de poitrine
+                cuisse:
+                  type: number
+                  description: Tour de cuisse
+                longueur:
+                  type: number
+                  description: Longueur totale
+                tourBras:
+                  type: number
+                  description: Tour de bras
+                tourPoignet:
+                  type: number
+                  description: Tour de poignet
+                ceinture:
+                  type: number
+                  description: Tour de taille
       responses:
         '200':
-          description: List of stories retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
+          description: Mesures mises à jour avec succès
+        '400':
+          description: Requête incorrecte, erreur de validation
+        '404':
+          description: Utilisateur non trouvé
+        '500':
+          description: Erreur interne du serveur
+
+  /post:
+    get:
+      summary: Retrieve all posts
+      tags:
+        - Post
+      responses:
+        '200':
+          description: List of posts retrieved successfully
+        '401':
+          description: Unauthorized, authentication required
+        '500':
+          description: Internal server error
+
+
+  /post/{id}:
+    get:
+      summary: Retrieve a post by its ID
+      tags:
+        - Post
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: Unique ID of the post
+      responses:
+        '200':
+          description: Post retrieved successfully
+        '401':
+          description: Unauthorized, authentication required
+        '404':
+          description: Post not found
+        '500':
+          description: Internal server error
+
+    delete:
+      summary: Delete a post by its ID
+      tags:
+        - Post
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: Unique ID of the post to delete
+      responses:
+        '200':
+          description: Post deleted successfully
+        '401':
+          description: Unauthorized, authentication required
+        '404':
+          description: Post not found or not accessible by the user
+        '500':
+          description: Internal server error
+
+
+  /post/{id}/model:
+    get:
+      summary: Retrieve the model associated with a post
+      tags:
+        - Post
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: Unique ID of the post
+        - in: header
+          name: Authorization
+          schema:
+            type: string
+          required: true
+          description: JWT authentication token
+      responses:
+        '200':
+          description: Model retrieved successfully
+        '401':
+          description: Unauthorized, authentication required
+        '404':
+          description: Post or model not found
+        '500':
+          description: Internal server error
+
+  /user/bloquer:
+    get:
+      summary: Retrieve a list of blocked users for the authenticated user
+      tags:
+        - User
+      parameters:
+        - in: header
+          name: Authorization
+          schema:
+            type: string
+          required: true
+          description: JWT authentication token
+      responses:
+        '200':
+          description: List of blocked users retrieved successfully
+        '401':
+          description: Unauthorized, authentication required
+        '404':
+          description: User not found
+        '500':
+          description: Internal server error
+
+  /post/{postId}/vues:
+    get:
+      summary: Retrieve the number of views for a specific post
+      tags:
+        - Post
+      parameters:
+        - in: path
+          name: postId
+          schema:
+            type: string
+          required: true
+          description: Unique ID of the post
+      responses:
+        '200':
+          description: Number of views for the post
+        '401':
+          description: Unauthorized, authentication required
+        '404':
+          description: Post not found
+        '500':
+          description: Internal server error
+
+  /user/discussion/{discussionId}/messages/{messageId}:
+    delete:
+      summary: Delete a specific message from a discussion
+      tags:
+        - User
+      parameters:
+        - in: path
+          name: discussionId
+          schema:
+            type: string
+          required: true
+          description: Unique ID of the discussion from which the message will be deleted
+        - in: path
+          name: messageId
+          schema:
+            type: string
+          required: true
+          description: Unique ID of the message to be deleted
+      responses:
+        '200':
+          description: Message deleted successfully
+        '400':
+          description: Bad request, user not found
+        '404':
+          description: Message or discussion not found
+        '500':
+          description: Internal server error
+
+    put:
+      summary: Update a specific message in a discussion
+      tags:
+        - User
+      parameters:
+        - in: path
+          name: discussionId
+          schema:
+            type: string
+          required: true
+          description: Unique ID of the discussion containing the message
+        - in: path
+          name: messageId
+          schema:
+            type: string
+          required: true
+          description: Unique ID of the message to be updated
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - newContent
+              properties:
+                newContent:
+                  type: string
+      responses:
+        '200':
+          description: Message updated successfully
+        '400':
+          description: Bad request, user not found
+        '404':
+          description: Discussion or message not found or update failed
+        '500':
+          description: Internal server error
+
+  /notifications:
+    get:
+      summary: Retrieve notifications for the authenticated user
+      tags:
+        - Notifications
+      parameters:
+        - in: header
+          name: Authorization
+          schema:
+            type: string
+          required: true
+          description: JWT authentication token
+      responses:
+        '200':
+          description: Successfully retrieved notifications
+        '404':
+          description: User not found
+        '500':
+          description: Internal server error
+
+  /notifications/{notificationId}:
+    delete:
+      summary: Remove a specific notification for the authenticated user
+      tags:
+        - Notifications
+      parameters:
+        - in: path
+          name: notificationId
+          schema:
+            type: string
+          required: true
+          description: Unique ID of the notification to be removed
+        - in: header
+          name: Authorization
+          schema:
+            type: string
+          required: true
+          description: JWT authentication token
+      responses:
+        '200':
+          description: Notification removed successfully
+        '404':
+          description: User not found or notification not found
+        '500':
+          description: Internal server error
+
+  /stories/{userId}:
+      get:
+        summary: Get all stories of a user
+        tags:
+          - Story
+        parameters:
+          - in: path
+            name: userId
+            schema:
+              type: string
+            required: true
+            description: ID of the user whose stories are being retrieved
+        responses:
+          '200':
+            description: List of stories retrieved successfully
+            content:
+              application/json:
+                schema:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                      userId:
+                        type: string
+                      model:
+                        type: string
+                      description:
+                        type: string
+                      views:
+                        type: integer
+                      expiresAt:
+                        type: string
+                        format: date-time
+          '500':
+            description: Internal server error
+
+  /story/{id}/delete:
+      delete:
+        summary: Delete a story
+        tags:
+          - Story
+        parameters:
+          - in: path
+            name: id
+            schema:
+              type: string
+            required: true
+            description: ID of the story to be deleted
+        responses:
+          '200':
+            description: Story supprimée avec succès
+          '404':
+            description: Story non trouvée ou vous n\'êtes pas autorisé à la supprimer
+          '500':
+            description: Internal server error
+
+  /story/{id}/views:
+      get:
+        summary: Récupérer le nombre de vues pour une story
+        tags:
+          - Story
+        parameters:
+          - in: path
+            name: id
+            schema:
+              type: string
+            required: true
+            description: ID of the story
+        responses:
+          '200':
+            description: Nombre de vues de la story récupéré avec succès
+            content:
+              application/json:
+                schema:
                   type: object
                   properties:
-                    _id:
-                      type: string
-                    userId:
-                      type: string
-                    model:
-                      type: string
-                    description:
-                      type: string
                     views:
                       type: integer
-                    expiresAt:
-                      type: string
-                      format: date-time
-        '500':
-          description: Internal server error
+                      description: Number of views for the story
+          '404':
+            description: La story n'a pas été trouvée.
+          '500':
+            description: Une erreur interne est survenue. Veuillez réessayer plus tard.
 
-/story/{id}/delete:
-    delete:
-      summary: Delete a story
-      tags:
-        - Story
-      parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
-          description: ID of the story to be deleted
-      responses:
-        '200':
-          description: Story supprimée avec succès
-        '404':
-          description: Story non trouvée ou vous n\'êtes pas autorisé à la supprimer
-        '500':
-          description: Internal server error
-
-/story/{id}/view:
-    post:
-      summary: Increment views for a story
-      tags:
-        - Story
-      parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
-          description: ID of the story
-      responses:
-        '200':
-          description: Story view incremented successfully
-        '404':
-          description: La story n\'a pas été trouvée.
-        '500':
-          description: Une erreur interne est survenue. Veuillez réessayer plus tard.
-
-/story/{id}/views:
-    get:
-      summary: Récupérer le nombre de vues pour une story
-      tags:
-        - Story
-      parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
-          description: ID of the story
-      responses:
-        '200':
-          description: Nombre de vues de la story récupéré avec succès
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  views:
-                    type: integer
-                    description: Number of views for the story
-              '404':
-                description: La story n'a pas été trouvée.
-              '500':
-                description: Une erreur interne est survenue. Veuillez réessayer plus tard.
-paths:
-/tailleurs/filterCertificat:
-    get:
-      summary: Filtrer les tailleurs ayant un certificat
-      tags:
-        - Tailleurs
-      security:
-        - bearerAuth: []  # Assurez-vous que l'authentification est définie correctement dans votre spécification OpenAPI
-      responses:
-        '200':
-          description: Liste des tailleurs ayant un certificat récupérée avec succès
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        _id:
-                          type: string
-                          description: ID du tailleur
-                        nom:
-                          type: string
-                          description: Nom du tailleur
-                        prenom:
-                          type: string
-                          description: Prénom du tailleur
-                        email:
-                          type: string
-                          description: Email du tailleur
-                        photoProfile:
-                          type: string
-                          description: URL de la photo de profil du tailleur
-                        '401':
-                          description: L'utilisateur n'est pas premium et ne peut pas effectuer cette action
-                        '500':
-                          description: Une erreur interne est survenue. Veuillez réessayer plus tard.
-
-paths:
-/tailleurs/statistique:
-    get:
-      summary: Obtenir les statistiques des tailleurs
-      tags:
-        - Tailleurs
-      security:
-        - bearerAuth: []  # Assurez-vous que l'authentification est définie correctement dans votre spécification OpenAPI
-      responses:
-        '200':
-          description: Statistiques récupérées avec succès
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  mostSoldModel:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        _id:
-                          type: string
-                          description: ID du modèle
-                        nom:
-                          type: string
-                          description: Nom du modèle
-                        nombreDeCommande:
-                          type: integer
-                          description: Nombre de commandes pour ce modèle
-                  mostViewedPosts:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        _id:
-                          type: string
-                          description: ID du post
-                        titre:
-                          type: string
-                          description: Titre du post
-                        vues:
-                          type: array
-                          items:
+  /tailleurs/filterCertificat:
+      get:
+        summary: Filtrer les tailleurs ayant un certificat
+        tags:
+          - Tailleurs
+        security:
+          - bearerAuth: []  # Assurez-vous que l'authentification est définie correctement dans votre spécification OpenAPI
+        responses:
+          '200':
+            description: Liste des tailleurs ayant un certificat récupérée avec succès
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    message:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          _id:
                             type: string
-                          description: Liste des vues du post
-                        viewsCount:
-                          type: integer
-                          description: Nombre de vues calculé pour le post
-                  salesToPostsRatio:
-                    type: string
-                    description: Ratio des ventes par rapport aux posts, exprimé en pourcentage
-        '401':
-          description: L'utilisateur n'est pas premium et ne peut pas effectuer cette action
-        '500':
-          description: Une erreur interne est survenue. Veuillez réessayer plus tard.
+                            description: ID du tailleur
+                          nom:
+                            type: string
+                            description: Nom du tailleur
+                          prenom:
+                            type: string
+                            description: Prénom du tailleur
+                          email:
+                            type: string
+                            description: Email du tailleur
+                          photoProfile:
+                            type: string
+                            description: URL de la photo de profil du tailleur
+                          '401':
+                            description: L'utilisateur n'est pas premium et ne peut pas effectuer cette action
+                          '500':
+                            description: Une erreur interne est survenue. Veuillez réessayer plus tard.
+
+  /tailleurs/statistique:
+      get:
+        summary: Obtenir les statistiques des tailleurs
+        tags:
+          - Tailleurs
+        security:
+          - bearerAuth: []  # Assurez-vous que l'authentification est définie correctement dans votre spécification OpenAPI
+        responses:
+          '200':
+            description: Statistiques récupérées avec succès
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    mostSoldModel:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          _id:
+                            type: string
+                            description: ID du modèle
+                          nom:
+                            type: string
+                            description: Nom du modèle
+                          nombreDeCommande:
+                            type: integer
+                            description: Nombre de commandes pour ce modèle
+                    mostViewedPosts:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          _id:
+                            type: string
+                            description: ID du post
+                          titre:
+                            type: string
+                            description: Titre du post
+                          vues:
+                            type: array
+                            items:
+                              type: string
+                            description: Liste des vues du post
+                          viewsCount:
+                            type: integer
+                            description: Nombre de vues calculé pour le post
+                    salesToPostsRatio:
+                      type: string
+                      description: Ratio des ventes par rapport aux posts, exprimé en pourcentage
+          '401':
+            description: L'utilisateur n'est pas premium et ne peut pas effectuer cette action
+          '500':
+            description: Une erreur interne est survenue. Veuillez réessayer plus tard.
