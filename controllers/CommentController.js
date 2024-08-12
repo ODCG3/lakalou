@@ -8,7 +8,7 @@ export const addComment = async (req, res) => {
         const user = await User.findById(req.user.id);
         const post = await Post.findById(req.params.postId);
 
-        if (!post) return res.status(404).json({ msg: 'Post non trouvé' });
+        if (!post) return res.status(400).json({ msg: 'Post non trouvé' });
 
         const newComment = new Comment({
             users: req.user.id,
@@ -26,7 +26,7 @@ export const addComment = async (req, res) => {
         post.commentaires.push(newComment._id); // Ajouter l'ID du commentaire au tableau de commentaires
         await post.save();
 
-        res.json(newComment);
+        res.status(201).json(newComment);
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Erreur serveur');

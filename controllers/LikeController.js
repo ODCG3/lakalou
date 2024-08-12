@@ -25,7 +25,7 @@ export const likePost = async (req, res) => {
 
 
         // Envoyer un message de succès
-        res.status(201).json({ message: 'Post aimé avec succès.', like });
+        res.status(200).json({ message: 'Post aimé avec succès.', like });
     } catch (error) {
         res.status(500).json({ message: 'Erreur du serveur.', error });
     }

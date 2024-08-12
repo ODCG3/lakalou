@@ -9,7 +9,7 @@ export default class PostController {
     static async create(req, res) {
         const connectedUser = await user.findById(req.user.userID);
         if (connectedUser.role != "tailleur") {
-            return res.status(403).json({ error: 'Vous n\'êtes pas un tailleur , seul les tailleur peuvent cree des postes' });
+            return res.status(402).json({ error: 'Vous n\'êtes pas un tailleur , seul les tailleur peuvent cree des postes' });
         }
 
         const { model, description, titre } = req.body;
@@ -26,10 +26,9 @@ export default class PostController {
                 connectedUser.credits -= 1;
                 await connectedUser.save();
                 await PostController.notifyFollowers(utilisateur, createdPost._id); // Notifier les abonnés
-            res.status(201).json(createdPost);
                 res.status(201).json(createdPost);
             }else{
-                res.status(400).json({ error: 'Vous n\'avez pas assez de crédits pour poster veuillez recharger votre compte' });
+                res.status(403).json({ error: 'Vous n\'avez pas assez de crédits pour poster veuillez recharger votre compte' });
             }
         } catch (error) {
             res.status(500).json({ error: error.message });
@@ -182,7 +181,7 @@ export default class PostController {
             // Vérifier si le post appartient à l'utilisateur connecté
             const Post = await post.findById(id);
             if (!Post) {
-                return res.status(404).json({ error: "Post not found" });
+                return res.status(402).json({ error: "Post not found" });
             }
 
             // Vérifier si le post est déjà dans les favoris de l'utilisateur
@@ -217,7 +216,7 @@ export default class PostController {
             // Vérifier si le favori existe
             const favoriToRemove = await favori.findOne({ utilisateur: utilisateurId, post: id });
             if (!favoriToRemove) {
-                return res.status(404).json({ error: "Favorite not found" });
+                return res.status(400).json({ error: "Favorite not found" });
             }
 
             // Supprimer le favori
