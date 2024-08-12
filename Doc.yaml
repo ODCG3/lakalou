@@ -439,3 +439,207 @@ paths:
           description: Story view incremented successfully
         '401':
           description: Unauthorized
+
+/stories/{userId}:
+    get:
+      summary: Get all stories of a user
+      tags:
+        - Story
+      parameters:
+        - in: path
+          name: userId
+          schema:
+            type: string
+          required: true
+          description: ID of the user whose stories are being retrieved
+      responses:
+        '200':
+          description: List of stories retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    _id:
+                      type: string
+                    userId:
+                      type: string
+                    model:
+                      type: string
+                    description:
+                      type: string
+                    views:
+                      type: integer
+                    expiresAt:
+                      type: string
+                      format: date-time
+        '500':
+          description: Internal server error
+
+/story/{id}/delete:
+    delete:
+      summary: Delete a story
+      tags:
+        - Story
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: ID of the story to be deleted
+      responses:
+        '200':
+          description: Story supprimée avec succès
+        '404':
+          description: Story non trouvée ou vous n\'êtes pas autorisé à la supprimer
+        '500':
+          description: Internal server error
+
+/story/{id}/view:
+    post:
+      summary: Increment views for a story
+      tags:
+        - Story
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: ID of the story
+      responses:
+        '200':
+          description: Story view incremented successfully
+        '404':
+          description: La story n\'a pas été trouvée.
+        '500':
+          description: Une erreur interne est survenue. Veuillez réessayer plus tard.
+
+/story/{id}/views:
+    get:
+      summary: Récupérer le nombre de vues pour une story
+      tags:
+        - Story
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: ID of the story
+      responses:
+        '200':
+          description: Nombre de vues de la story récupéré avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  views:
+                    type: integer
+                    description: Number of views for the story
+              '404':
+                description: La story n'a pas été trouvée.
+              '500':
+                description: Une erreur interne est survenue. Veuillez réessayer plus tard.
+paths:
+/tailleurs/filterCertificat:
+    get:
+      summary: Filtrer les tailleurs ayant un certificat
+      tags:
+        - Tailleurs
+      security:
+        - bearerAuth: []  # Assurez-vous que l'authentification est définie correctement dans votre spécification OpenAPI
+      responses:
+        '200':
+          description: Liste des tailleurs ayant un certificat récupérée avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          description: ID du tailleur
+                        nom:
+                          type: string
+                          description: Nom du tailleur
+                        prenom:
+                          type: string
+                          description: Prénom du tailleur
+                        email:
+                          type: string
+                          description: Email du tailleur
+                        photoProfile:
+                          type: string
+                          description: URL de la photo de profil du tailleur
+                        '401':
+                          description: L'utilisateur n'est pas premium et ne peut pas effectuer cette action
+                        '500':
+                          description: Une erreur interne est survenue. Veuillez réessayer plus tard.
+
+paths:
+/tailleurs/statistique:
+    get:
+      summary: Obtenir les statistiques des tailleurs
+      tags:
+        - Tailleurs
+      security:
+        - bearerAuth: []  # Assurez-vous que l'authentification est définie correctement dans votre spécification OpenAPI
+      responses:
+        '200':
+          description: Statistiques récupérées avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mostSoldModel:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          description: ID du modèle
+                        nom:
+                          type: string
+                          description: Nom du modèle
+                        nombreDeCommande:
+                          type: integer
+                          description: Nombre de commandes pour ce modèle
+                  mostViewedPosts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          description: ID du post
+                        titre:
+                          type: string
+                          description: Titre du post
+                        vues:
+                          type: array
+                          items:
+                            type: string
+                          description: Liste des vues du post
+                        viewsCount:
+                          type: integer
+                          description: Nombre de vues calculé pour le post
+                  salesToPostsRatio:
+                    type: string
+                    description: Ratio des ventes par rapport aux posts, exprimé en pourcentage
+        '401':
+          description: L'utilisateur n'est pas premium et ne peut pas effectuer cette action
+        '500':
+          description: Une erreur interne est survenue. Veuillez réessayer plus tard.
+                           
