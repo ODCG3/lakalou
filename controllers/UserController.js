@@ -42,35 +42,35 @@ export default class UserController {
 
     if (password.length < 8) {
       return res
-        .status(400)
+        .status(401)
         .json({ error: "Le mot de passe doit contenir au moins 8 caractères" });
     }
 
     if (role != "tailleur" && role != "visiteur") {
-      return res.status(400).json({ error: "Le rôle doit être 'tailleur' ou 'visiteur'" });
+      return res.status(402).json({ error: "Le rôle doit être 'tailleur' ou 'visiteur'" });
     }
 
     if (password !== confirmationPassword) {
       return res
-        .status(400)
+        .status(405)
         .json({ error: "Les mots de passe ne correspondent pas" });
     }
 
     if (!isEmail(email)) {
-      return res.status(400).json({ error: "Cet email n'est pas valide" });
+      return res.status(406).json({ error: "Cet email n'est pas valide" });
     }
 
     if (!validateName(nom)) {
-      return res.status(400).json({ error: "Le nom n'est pas valide" });
+      return res.status(406).json({ error: "Le nom n'est pas valide" });
     }
 
     if (!validateName(prenom)) {
-      return res.status(400).json({ error: "Le prénom n'est pas valide" });
+      return res.status(406).json({ error: "Le prénom n'est pas valide" });
     }
 
     if (!validateImageExtension(photoProfile)) {
       return res
-        .status(400)
+        .status(406)
         .json({ error: "L'extension de l'image n'est pas valide" });
     }
 
@@ -79,7 +79,7 @@ export default class UserController {
     const existingUser = await UserModel.findOne({ email });
 
     if (existingUser) {
-      return res.status(400).json({ error: "Cet email est déjà utilisé" });
+      return res.status(407).json({ error: "Cet email est déjà utilisé" });
     }
 
     try {
@@ -126,7 +126,7 @@ export default class UserController {
       path: "/",
     });
 
-    res.json({ token, user });
+    res.status(200).json({ token, user });
   }
 
   static logout(req, res) {
@@ -136,7 +136,7 @@ export default class UserController {
       path: "/",
     });
 
-    res.json("logged out");
+    res.status(200).json("logged out");
   }
 
   static async addNote(req, res) {
@@ -154,12 +154,12 @@ export default class UserController {
 
     if (userToRate.role != "tailleur") {
       return res
-        .status(403)
+        .status(402)
         .json({ error: "Vous ne pouvez pas noter un visiteur" });
     }
 
     if (!userToRate) {
-      return res.status(404).json({ error: "Utilisateur non trouvé" });
+      return res.status(403).json({ error: "Utilisateur non trouvé" });
     }
 
     // if(!raterId){
@@ -210,7 +210,7 @@ export default class UserController {
 
     const userToReport = await UserModel.findById(id);
     if (!userToReport) {
-      return res.status(404).json({ error: "Utilisateur non trouvé" });
+      return res.status(402).json({ error: "Utilisateur non trouvé" });
     }
 
     try {
@@ -218,7 +218,7 @@ export default class UserController {
 
       if (userToReport._id.toString() === reporterId) {
         return res
-          .status(400)
+          .status(403)
           .json({ error: "Vous ne pouvez pas vous signaler vous-même" });
       }
 
@@ -227,7 +227,7 @@ export default class UserController {
       );
       if (alreadyReported) {
         return res
-          .status(400)
+          .status(405)
           .json({ error: "Vous avez déjà signalé cet utilisateur" });
       }
 
@@ -270,7 +270,7 @@ export default class UserController {
       const connectedUser = await UserModel.findById(userId);
 
       if ((connectedUser.credits < 1 && connectedUser.followings.length > 10) || (connectedUser.credits == 0 && connectedUser.followings.length > 10)) {
-        return res.status(401).json({ message: "Pour follow un autre utilisateur veuillez recharger vos credits" })
+        return res.status(403).json({ message: "Pour follow un autre utilisateur veuillez recharger vos credits" })
       }
 
       const userToFollow = await UserModel.findById(req.params.id);
@@ -300,7 +300,7 @@ export default class UserController {
         res.status(201).json({ message: "Follower ajouté avec succès !" });
       }
     } catch (err) {
-      res.status(400).json({ message: "Erreur ajout follower: " + err });
+      res.status(500).json({ message: "Erreur ajout follower: " + err });
     }
   }
 
@@ -331,7 +331,7 @@ export default class UserController {
       );
       res.status(201).json({ message: "Unfollowing ajouté avec succès !" });
     } catch (err) {
-      res.status(400).json({ message: "Erreur Unfollowing " + err });
+      res.status(500).json({ message: "Erreur Unfollowing " + err });
     }
   }
 
