@@ -695,3 +695,370 @@ paths:
           description: Lister les commandes trouver
         '401':
           description: Unauthorized
+/user/{id}/updateMeasurements:
+put:
+  summary: Mettre à jour les mesures d'un utilisateur
+  tags:
+    - Utilisateur
+  parameters:
+    - in: path
+      name: id
+      schema:
+        type: string
+      required: true
+      description: ID de l'utilisateur
+    - in: body
+      name: measurements
+      description: Objet contenant les mesures à mettre à jour
+      schema:
+        type: object
+        properties:
+          cou:
+            type: number
+            description: Tour de cou
+          longueurPantallon:
+            type: number
+            description: Longueur du pantalon
+          epaule:
+            type: number
+            description: Largeur des épaules
+          longueurManche:
+            type: number
+            description: Longueur de la manche
+          hanche:
+            type: number
+            description: Tour de hanche
+          poitrine:
+            type: number
+            description: Tour de poitrine
+          cuisse:
+            type: number
+            description: Tour de cuisse
+          longueur:
+            type: number
+            description: Longueur totale
+          tourBras:
+            type: number
+            description: Tour de bras
+          tourPoignet:
+            type: number
+            description: Tour de poignet
+          ceinture:
+            type: number
+            description: Tour de taille
+  responses:
+    '200':
+      description: Mesures mises à jour avec succès
+    '400':
+      description: Requête incorrecte, erreur de validation
+    '404':
+      description: Utilisateur non trouvé
+    '500':
+      description: Erreur interne du serveur
+
+/post:
+get:
+  summary: Retrieve all posts
+  tags:
+    - Post
+  parameters:
+    - in: header
+      name: Authorization
+      schema:
+        type: string
+      required: true
+      description: JWT authentication token
+  responses:
+    '200':
+      description: List of posts retrieved successfully
+    '401':
+      description: Unauthorized, authentication required
+    '500':
+      description: Internal server error
+
+
+/post/{id}:
+get:
+  summary: Retrieve a post by its ID
+  tags:
+    - Post
+  parameters:
+    - in: path
+      name: id
+      schema:
+        type: string
+      required: true
+      description: Unique ID of the post
+    - in: header
+      name: Authorization
+      schema:
+        type: string
+      required: true
+      description: JWT authentication token
+  responses:
+    '200':
+      description: Post retrieved successfully
+    '401':
+      description: Unauthorized, authentication required
+    '404':
+      description: Post not found
+    '500':
+      description: Internal server error
+
+delete:
+  summary: Delete a post by its ID
+  tags:
+    - Post
+  parameters:
+    - in: path
+      name: id
+      schema:
+        type: string
+      required: true
+      description: Unique ID of the post to delete
+    - in: header
+      name: Authorization
+      schema:
+        type: string
+      required: true
+      description: JWT authentication token
+  responses:
+    '200':
+      description: Post deleted successfully
+    '401':
+      description: Unauthorized, authentication required
+    '404':
+      description: Post not found or not accessible by the user
+    '500':
+      description: Internal server error
+
+
+/post/{id}/model:
+get:
+  summary: Retrieve the model associated with a post
+  tags:
+    - Post
+  parameters:
+    - in: path
+      name: id
+      schema:
+        type: string
+      required: true
+      description: Unique ID of the post
+    - in: header
+      name: Authorization
+      schema:
+        type: string
+      required: true
+      description: JWT authentication token
+  responses:
+    '200':
+      description: Model retrieved successfully
+    '401':
+      description: Unauthorized, authentication required
+    '404':
+      description: Post or model not found
+    '500':
+      description: Internal server error
+
+/post/favorite/remove/{id}:
+delete:
+  summary: Remove a post from the user's favorites
+  tags:
+    - Favorite
+  parameters:
+    - in: path
+      name: id
+      schema:
+        type: string
+      required: true
+      description: Unique ID of the favorite post to remove
+    - in: header
+      name: Authorization
+      schema:
+        type: string
+      required: true
+      description: JWT authentication token
+  responses:
+    '200':
+      description: Favorite removed successfully
+    '401':
+      description: Unauthorized, authentication required
+    '404':
+      description: Favorite not found
+    '500':
+      description: Internal server error
+
+/user/bloquer:
+get:
+  summary: Retrieve a list of blocked users for the authenticated user
+  tags:
+    - User
+  parameters:
+    - in: header
+      name: Authorization
+      schema:
+        type: string
+      required: true
+      description: JWT authentication token
+  responses:
+    '200':
+      description: List of blocked users retrieved successfully
+    '401':
+      description: Unauthorized, authentication required
+    '404':
+      description: User not found
+    '500':
+      description: Internal server error
+
+/post/{postId}/vues:
+get:
+  summary: Retrieve the number of views for a specific post
+  tags:
+    - Post
+  parameters:
+    - in: path
+      name: postId
+      schema:
+        type: string
+      required: true
+      description: Unique ID of the post
+    - in: header
+      name: Authorization
+      schema:
+        type: string
+      required: true
+      description: JWT authentication token
+  responses:
+    '200':
+      description: Number of views for the post
+    '401':
+      description: Unauthorized, authentication required
+    '404':
+      description: Post not found
+    '500':
+      description: Internal server error
+
+/user/discussion/{discussionId}/messages/{messageId}:
+delete:
+  summary: Delete a specific message from a discussion
+  tags:
+    - User
+  parameters:
+    - in: path
+      name: discussionId
+      schema:
+        type: string
+      required: true
+      description: Unique ID of the discussion from which the message will be deleted
+    - in: path
+      name: messageId
+      schema:
+        type: string
+      required: true
+      description: Unique ID of the message to be deleted
+    - in: header
+      name: Authorization
+      schema:
+        type: string
+      required: true
+      description: JWT authentication token
+  responses:
+    '200':
+      description: Message deleted successfully
+    '400':
+      description: Bad request, user not found
+    '404':
+      description: Message or discussion not found
+    '500':
+      description: Internal server error
+
+put:
+  summary: Update a specific message in a discussion
+  tags:
+    - User
+  parameters:
+    - in: path
+      name: discussionId
+      schema:
+        type: string
+      required: true
+      description: Unique ID of the discussion containing the message
+    - in: path
+      name: messageId
+      schema:
+        type: string
+      required: true
+      description: Unique ID of the message to be updated
+    - in: header
+      name: Authorization
+      schema:
+        type: string
+      required: true
+      description: JWT authentication token
+    - in: body
+      name: body
+      description: The new content of the message
+      required: true
+      schema:
+        type: object
+        properties:
+          newContent:
+            type: string
+            example: Updated message content
+  responses:
+    '200':
+      description: Message updated successfully
+    '400':
+      description: Bad request, user not found
+    '404':
+      description: Discussion or message not found or update failed
+    '500':
+      description: Internal server error
+
+/notifications:
+get:
+  summary: Retrieve notifications for the authenticated user
+  tags:
+    - Notifications
+  parameters:
+    - in: header
+      name: Authorization
+      schema:
+        type: string
+      required: true
+      description: JWT authentication token
+  responses:
+    '200':
+      description: Successfully retrieved notifications
+    '404':
+      description: User not found
+    '500':
+      description: Internal server error
+
+/notifications/{notificationId}:
+delete:
+  summary: Remove a specific notification for the authenticated user
+  tags:
+    - Notifications
+  parameters:
+    - in: path
+      name: notificationId
+      schema:
+        type: string
+      required: true
+      description: Unique ID of the notification to be removed
+    - in: header
+      name: Authorization
+      schema:
+        type: string
+      required: true
+      description: JWT authentication token
+  responses:
+    '200':
+      description: Notification removed successfully
+    '404':
+      description: User not found or notification not found
+    '500':
+      description: Internal server error
+      
