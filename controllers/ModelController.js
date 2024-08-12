@@ -109,12 +109,12 @@ export default class ModelController {
         try {
             const user = await User.findById(userId);
             if (!user) {
-                return res.status(404).json({ error: 'User not found' });
+                return res.status(402).json({ error: 'User not found' });
             }
     
             const foundModel = await model.findById(modelId);
             if (!foundModel) {
-                return res.status(404).json({ error: 'Model not found' });
+                return res.status(403).json({ error: 'Model not found' });
             }
     
             const existingNote = user.mesModels.find(element => element.idModel.toString() === modelId.toString());
@@ -130,7 +130,7 @@ export default class ModelController {
     
             await user.save();
     
-            res.json({ message: 'Model noted successfully' });
+            res.status(200).json({ message: 'Model noted successfully' });
     
         } catch (error) {
             res.status(500).json({ error: error.message });

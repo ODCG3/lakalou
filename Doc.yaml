@@ -4,6 +4,20 @@ info:
   description: API documentation for the Tailor Social Network
   version: 1.0.0
 
+servers:
+  - url: https://96a5-41-214-74-161.ngrok-free.app
+    description: Local server
+
+components:
+  securitySchemes:
+    CookieAuth:                 # Custom name for cookie-based auth
+      type: apiKey
+      in: cookie
+      name: token  
+
+security:
+  - CookieAuth: [] 
+
 paths:
   /register:
     post:
@@ -16,18 +30,49 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - email
+                - password
+                - role
+                - nom
+                - prenom
+                - confimationPassword
+                - photoProfile
               properties:
-                username:
+                nom:
                   type: string
                 email:
                   type: string
                 password:
                   type: string
+                prenom: 
+                  type: string
+                role:
+                  type: string
+                  enum:
+                    - tailleur
+                    - visiteur
+                confirmationPassword:
+                  type: string
+                photoProfile:
+                  type: string
       responses:
         '201':
           description: User registered successfully
         '400':
-          description: Invalid input
+          description: Tous les champs sont obligatoires
+        '401':
+          description: Le mot de passe doit contenir au moins 8 caractères
+        '403':
+          description: Le rôle doit être 'tailleur' ou 'visiteur'
+        '405':
+          description: Les mots de passe ne correspondent pas
+        '406':
+          description: Invalid field
+        '407':
+          description: Cet email est déjà utilisé
+        '500':
+          description: Erreur lors de l'enregistrement de l'utilisateur
           
   /login:
     post:
@@ -40,6 +85,9 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - email
+                - password
               properties:
                 email:
                   type: string
@@ -73,10 +121,18 @@ paths:
           required: true
           description: ID of the user to follow
       responses:
-        '200':
-          description: User followed successfully
+        '201':
+          description: Follower ajouté avec succès !
         '401':
           description: Unauthorized
+        '400':
+          description: Id non trouve
+        '402':
+          description: Vous ne pouvez pas suivre un visiteur
+        '403':
+          description: Pour follow un autre utilisateur veuillez recharger vos credits
+        '500':
+          description: Erreur ajout follower
 
   /unfollow/{id}:
     post:
@@ -91,10 +147,14 @@ paths:
           required: true
           description: ID of the user to unfollow
       responses:
-        '200':
-          description: User unfollowed successfully
+        '201':
+          description: Unfollowing ajouté avec succès !
         '401':
           description: Unauthorized
+        '400':
+          description: Id non trouve
+        '500':
+          description: Erreur unFollower
 
   /add-note/{id}:
     post:
@@ -114,15 +174,25 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - rate
               properties:
-                note:
+                rate:
                   type: integer
                   description: The note to add
       responses:
         '200':
-          description: Note added successfully
+          description: Note ajoutée avec succès
         '401':
           description: Unauthorized
+        '400':
+          description: La note doit être un nombre entre 1 et 5
+        '402':
+          description: Vous ne pouvez pas noter un visiteur
+        '403':
+          description: Utilisateur non trouvé
+        '500':
+          description: Erreur ajout note
 
   /signal/{id}:
     post:
@@ -142,6 +212,8 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - reason
               properties:
                 reason:
                   type: string
@@ -151,6 +223,16 @@ paths:
           description: User reported successfully
         '401':
           description: Unauthorized
+        '400':
+          description: la raison du signalement est requise
+        '402':
+          description: Utilisateur non trouvé
+        '403':
+          description: Vous ne pouvez pas vous signaler vous-même
+        '500':
+          description: Erreur création signalement
+        '405':
+          description: Vous avez déjà signalé cet utilisateur
 
   /model/create:
     post:
@@ -163,20 +245,29 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - libelle
+                - prix
+                - quantite
+                - contenu
               properties:
-                name:
+                libelle:
                   type: string
-                description:
-                  type: string
-                userId:
-                  type: string
+                prix:
+                  type: number
+                quantite:
+                  type: number
+                contenu:
+                  type: array
       responses:
         '201':
           description: Model created successfully
         '400':
-          description: Invalid input
+          description: Ce model existe deja
         '401':
           description: Unauthorized
+        '500':
+          description: Error creating model
 
   /model/{modelId}/note:
     post:
@@ -196,6 +287,8 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - note
               properties:
                 note:
                   type: integer
@@ -205,6 +298,12 @@ paths:
           description: Note added successfully
         '401':
           description: Unauthorized
+        '402':
+          description: User not found
+        '403':
+          description: model not found
+        '500':
+          description: Error adding mark to a model
 
   /model/{modelId}/unlike:
     post:
@@ -235,18 +334,28 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - model
+                - description
+                - titre
               properties:
-                content:
+                model:
                   type: string
-                userId:
+                description:
+                  type: string
+                titre:
                   type: string
       responses:
         '201':
           description: Post created successfully
-        '400':
-          description: Invalid input
+        '402':
+          description: Vous n'êtes pas un tailleur , seul les tailleur peuvent cree des postes
         '401':
           description: Unauthorized
+        '403':
+          description: Vous n'avez pas assez de credit pour poster  veuillez recharger votre compte
+        '500':
+          description: Error Server
 
   /post/favorite/create/{id}:
     post:
@@ -265,6 +374,12 @@ paths:
           description: Post added to favorites successfully
         '401':
           description: Unauthorized
+        '402':
+          description: Post not found
+        '400':
+          description: Post already marked as favorite
+        '500':
+          description: Failed to mark favorite
 
   /post/favorite/remove/{id}:
     post:
@@ -280,9 +395,13 @@ paths:
           description: ID of the post to remove from favorites
       responses:
         '200':
-          description: Post removed from favorites successfully
+          description: Favorite removed to post successfully
         '401':
           description: Unauthorized
+        '400':
+          description: Favorite not found
+        '500':
+          description: Error server
 
   /post/{postId}/like:
     post:
@@ -301,6 +420,26 @@ paths:
           description: Post liked successfully
         '401':
           description: Unauthorized
+        '400':
+          description: Vous avez deja liker le post
+        '500':
+          description: Erreur lors du like de post
+    get:
+      summary: Récuperer tous les likes d'un post 
+      tags:
+        - Like
+      parameters:
+        - in: path
+          name: postId
+          schema:
+            type: string
+          required: true
+          description: ID du post
+      responses:
+        '200':
+          description: Lister les likes return successfully
+        '401':
+          description: Unauthorized 
 
   /post/{postId}/like/{likeID}/unlike:
     post:
@@ -322,9 +461,13 @@ paths:
           description: ID of the like to remove
       responses:
         '200':
-          description: Post unliked successfully
+          description: Like retirer avec succes
+        '400':
+          description: Vous n'avez pas aimer ce post
         '401':
           description: Unauthorized
+        '500':
+          description: Erreur lors du unlike du post
 
   /post/{postId}/Dislike:
     post:
@@ -341,6 +484,27 @@ paths:
       responses:
         '200':
           description: Post disliked successfully
+        '400':
+          description: Vous avez deja disliké le post
+        '401':
+          description: Unauthorized
+        '500':
+          description: Error when disliking the post
+
+    get:
+      summary: Récuperer tous les dislike d'un poste 
+      tags:
+        - Dislike
+      parameters:
+        - in: path
+          name: postId
+          schema:
+            type: string
+          required: true
+          description: ID Du post
+      responses:
+        '200':
+          description: liste des dislike  successfully
         '401':
           description: Unauthorized
 
@@ -365,8 +529,12 @@ paths:
       responses:
         '200':
           description: Dislike removed successfully
+        '400':
+          description: Vous n'avez pas disliké ce post
         '401':
           description: Unauthorized
+        '500':
+          description: Error when removing the dislike from the post
 
   /post/{postId}/comment:
     post:
@@ -386,6 +554,8 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - content
               properties:
                 content:
                   type: string
@@ -394,9 +564,43 @@ paths:
         '201':
           description: Comment added successfully
         '400':
-          description: Invalid input
+          description: Post non trouvee
         '401':
           description: Unauthorized
+        '500':
+          description: Error creating comment
+    get:
+      summary: Récuprere tous les  commentaire d'un post
+      tags:
+        - Comment
+      parameters:
+        - in: path
+          name: postId
+          schema:
+            type: string
+          required: true
+          description: ID du post
+      responses:
+        '200':
+          description: Lister les commentaire
+        '401':
+          description: Unauthorized
+    delete:
+      summary: Supprimer un commentaire
+      tags:
+        - Comment
+      parameters:
+        - in: path
+          name: commentId
+          schema:
+            type: string
+          required: true
+          description: ID du commentair qu'on va supprimer 
+      responses:
+        '200':
+          description: commentair supprimmer avec succe
+        '401':
+          description: Unauthorized      
 
   /story/create:
     post:
@@ -409,18 +613,30 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - modelID
+                - description
+                - blockedUsers
               properties:
-                userId:
+                modelID:
                   type: string
-                content:
+                description:
                   type: string
+                blockedUsers:
+                  type: array
       responses:
         '201':
           description: Story created successfully
         '400':
-          description: Invalid input
+          description: Model non trouvee
+        '402':
+          description: Credit insuffisant pour creer un story
+        '403':
+          description: Vous n'etes pas un tailleur seul les tailleurs post des status
         '401':
           description: Unauthorized
+        '500':
+          description: Error creating story
 
   /story/{id}/view:
     post:
@@ -439,7 +655,412 @@ paths:
           description: Story view incremented successfully
         '401':
           description: Unauthorized
+        '400':
+          description: Story non trouvee
+        '500':
+          description: Erreur lors du vue du status
 
+  /commande/{commandeId}:
+    get:
+      summary: Récuperer une commande spécifique grace à son  ID
+      tags:
+        - Commande
+      parameters:
+        - in: path
+          name: commandeId
+          schema:
+            type: string
+          required: true
+          description: ID de la  commande
+      responses:
+        '200':
+          description: Commande retouver avec successfully
+        '401':
+          description: Unauthorized
+
+  /post/{postId}/commandes:
+    get:
+      summary: touver tous les commandes d'un post
+      tags:
+        - Commande
+      parameters:
+        - in: path
+          name: postId
+          schema:
+            type: string
+          required: true
+          description: ID du post
+      responses:
+        '200':
+          description: Lister les commandes trouver
+        '401':
+          description: Unauthorized
+/user/{id}/updateMeasurements:
+put:
+  summary: Mettre à jour les mesures d'un utilisateur
+  tags:
+    - Utilisateur
+  parameters:
+    - in: path
+      name: id
+      schema:
+        type: string
+      required: true
+      description: ID de l'utilisateur
+    - in: body
+      name: measurements
+      description: Objet contenant les mesures à mettre à jour
+      schema:
+        type: object
+        properties:
+          cou:
+            type: number
+            description: Tour de cou
+          longueurPantallon:
+            type: number
+            description: Longueur du pantalon
+          epaule:
+            type: number
+            description: Largeur des épaules
+          longueurManche:
+            type: number
+            description: Longueur de la manche
+          hanche:
+            type: number
+            description: Tour de hanche
+          poitrine:
+            type: number
+            description: Tour de poitrine
+          cuisse:
+            type: number
+            description: Tour de cuisse
+          longueur:
+            type: number
+            description: Longueur totale
+          tourBras:
+            type: number
+            description: Tour de bras
+          tourPoignet:
+            type: number
+            description: Tour de poignet
+          ceinture:
+            type: number
+            description: Tour de taille
+  responses:
+    '200':
+      description: Mesures mises à jour avec succès
+    '400':
+      description: Requête incorrecte, erreur de validation
+    '404':
+      description: Utilisateur non trouvé
+    '500':
+      description: Erreur interne du serveur
+
+/post:
+get:
+  summary: Retrieve all posts
+  tags:
+    - Post
+  parameters:
+    - in: header
+      name: Authorization
+      schema:
+        type: string
+      required: true
+      description: JWT authentication token
+  responses:
+    '200':
+      description: List of posts retrieved successfully
+    '401':
+      description: Unauthorized, authentication required
+    '500':
+      description: Internal server error
+
+
+/post/{id}:
+get:
+  summary: Retrieve a post by its ID
+  tags:
+    - Post
+  parameters:
+    - in: path
+      name: id
+      schema:
+        type: string
+      required: true
+      description: Unique ID of the post
+    - in: header
+      name: Authorization
+      schema:
+        type: string
+      required: true
+      description: JWT authentication token
+  responses:
+    '200':
+      description: Post retrieved successfully
+    '401':
+      description: Unauthorized, authentication required
+    '404':
+      description: Post not found
+    '500':
+      description: Internal server error
+
+delete:
+  summary: Delete a post by its ID
+  tags:
+    - Post
+  parameters:
+    - in: path
+      name: id
+      schema:
+        type: string
+      required: true
+      description: Unique ID of the post to delete
+    - in: header
+      name: Authorization
+      schema:
+        type: string
+      required: true
+      description: JWT authentication token
+  responses:
+    '200':
+      description: Post deleted successfully
+    '401':
+      description: Unauthorized, authentication required
+    '404':
+      description: Post not found or not accessible by the user
+    '500':
+      description: Internal server error
+
+
+/post/{id}/model:
+get:
+  summary: Retrieve the model associated with a post
+  tags:
+    - Post
+  parameters:
+    - in: path
+      name: id
+      schema:
+        type: string
+      required: true
+      description: Unique ID of the post
+    - in: header
+      name: Authorization
+      schema:
+        type: string
+      required: true
+      description: JWT authentication token
+  responses:
+    '200':
+      description: Model retrieved successfully
+    '401':
+      description: Unauthorized, authentication required
+    '404':
+      description: Post or model not found
+    '500':
+      description: Internal server error
+
+/post/favorite/remove/{id}:
+delete:
+  summary: Remove a post from the user's favorites
+  tags:
+    - Favorite
+  parameters:
+    - in: path
+      name: id
+      schema:
+        type: string
+      required: true
+      description: Unique ID of the favorite post to remove
+    - in: header
+      name: Authorization
+      schema:
+        type: string
+      required: true
+      description: JWT authentication token
+  responses:
+    '200':
+      description: Favorite removed successfully
+    '401':
+      description: Unauthorized, authentication required
+    '404':
+      description: Favorite not found
+    '500':
+      description: Internal server error
+
+/user/bloquer:
+get:
+  summary: Retrieve a list of blocked users for the authenticated user
+  tags:
+    - User
+  parameters:
+    - in: header
+      name: Authorization
+      schema:
+        type: string
+      required: true
+      description: JWT authentication token
+  responses:
+    '200':
+      description: List of blocked users retrieved successfully
+    '401':
+      description: Unauthorized, authentication required
+    '404':
+      description: User not found
+    '500':
+      description: Internal server error
+
+/post/{postId}/vues:
+get:
+  summary: Retrieve the number of views for a specific post
+  tags:
+    - Post
+  parameters:
+    - in: path
+      name: postId
+      schema:
+        type: string
+      required: true
+      description: Unique ID of the post
+    - in: header
+      name: Authorization
+      schema:
+        type: string
+      required: true
+      description: JWT authentication token
+  responses:
+    '200':
+      description: Number of views for the post
+    '401':
+      description: Unauthorized, authentication required
+    '404':
+      description: Post not found
+    '500':
+      description: Internal server error
+
+/user/discussion/{discussionId}/messages/{messageId}:
+delete:
+  summary: Delete a specific message from a discussion
+  tags:
+    - User
+  parameters:
+    - in: path
+      name: discussionId
+      schema:
+        type: string
+      required: true
+      description: Unique ID of the discussion from which the message will be deleted
+    - in: path
+      name: messageId
+      schema:
+        type: string
+      required: true
+      description: Unique ID of the message to be deleted
+    - in: header
+      name: Authorization
+      schema:
+        type: string
+      required: true
+      description: JWT authentication token
+  responses:
+    '200':
+      description: Message deleted successfully
+    '400':
+      description: Bad request, user not found
+    '404':
+      description: Message or discussion not found
+    '500':
+      description: Internal server error
+
+put:
+  summary: Update a specific message in a discussion
+  tags:
+    - User
+  parameters:
+    - in: path
+      name: discussionId
+      schema:
+        type: string
+      required: true
+      description: Unique ID of the discussion containing the message
+    - in: path
+      name: messageId
+      schema:
+        type: string
+      required: true
+      description: Unique ID of the message to be updated
+    - in: header
+      name: Authorization
+      schema:
+        type: string
+      required: true
+      description: JWT authentication token
+    - in: body
+      name: body
+      description: The new content of the message
+      required: true
+      schema:
+        type: object
+        properties:
+          newContent:
+            type: string
+            example: Updated message content
+  responses:
+    '200':
+      description: Message updated successfully
+    '400':
+      description: Bad request, user not found
+    '404':
+      description: Discussion or message not found or update failed
+    '500':
+      description: Internal server error
+
+/notifications:
+get:
+  summary: Retrieve notifications for the authenticated user
+  tags:
+    - Notifications
+  parameters:
+    - in: header
+      name: Authorization
+      schema:
+        type: string
+      required: true
+      description: JWT authentication token
+  responses:
+    '200':
+      description: Successfully retrieved notifications
+    '404':
+      description: User not found
+    '500':
+      description: Internal server error
+
+/notifications/{notificationId}:
+delete:
+  summary: Remove a specific notification for the authenticated user
+  tags:
+    - Notifications
+  parameters:
+    - in: path
+      name: notificationId
+      schema:
+        type: string
+      required: true
+      description: Unique ID of the notification to be removed
+    - in: header
+      name: Authorization
+      schema:
+        type: string
+      required: true
+      description: JWT authentication token
+  responses:
+    '200':
+      description: Notification removed successfully
+    '404':
+      description: User not found or notification not found
+    '500':
+      description: Internal server error
 /stories/{userId}:
     get:
       summary: Get all stories of a user
@@ -642,4 +1263,3 @@ paths:
           description: L'utilisateur n'est pas premium et ne peut pas effectuer cette action
         '500':
           description: Une erreur interne est survenue. Veuillez réessayer plus tard.
-                           
