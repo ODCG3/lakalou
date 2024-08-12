@@ -5,7 +5,7 @@ info:
   version: 1.0.0
 
 servers:
-  - url: http://localhost:3004
+  - url: https://96a5-41-214-74-161.ngrok-free.app
     description: Local server
 
 components:
@@ -85,6 +85,9 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - email
+                - password
               properties:
                 email:
                   type: string
@@ -171,8 +174,10 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - rate
               properties:
-                note:
+                rate:
                   type: integer
                   description: The note to add
       responses:
@@ -207,6 +212,8 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - reason
               properties:
                 reason:
                   type: string
@@ -238,13 +245,20 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - libelle
+                - prix
+                - quantite
+                - contenu
               properties:
-                name:
+                libelle:
                   type: string
-                description:
-                  type: string
-                userId:
-                  type: string
+                prix:
+                  type: number
+                quantite:
+                  type: number
+                contenu:
+                  type: array
       responses:
         '201':
           description: Model created successfully
@@ -273,6 +287,8 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - note
               properties:
                 note:
                   type: integer
@@ -318,10 +334,16 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - model
+                - description
+                - titre
               properties:
-                content:
+                model:
                   type: string
-                userId:
+                description:
+                  type: string
+                titre:
                   type: string
       responses:
         '201':
@@ -402,6 +424,22 @@ paths:
           description: Vous avez deja liker le post
         '500':
           description: Erreur lors du like de post
+    get:
+      summary: Récuperer tous les likes d'un post 
+      tags:
+        - Like
+      parameters:
+        - in: path
+          name: postId
+          schema:
+            type: string
+          required: true
+          description: ID du post
+      responses:
+        '200':
+          description: Lister les likes return successfully
+        '401':
+          description: Unauthorized 
 
   /post/{postId}/like/{likeID}/unlike:
     post:
@@ -453,6 +491,23 @@ paths:
         '500':
           description: Error when disliking the post
 
+    get:
+      summary: Récuperer tous les dislike d'un poste 
+      tags:
+        - Dislike
+      parameters:
+        - in: path
+          name: postId
+          schema:
+            type: string
+          required: true
+          description: ID Du post
+      responses:
+        '200':
+          description: liste des dislike  successfully
+        '401':
+          description: Unauthorized
+
   /post/{postId}/dislike/{dislikeID}/undislike:
     post:
       summary: Remove a dislike from a post
@@ -499,6 +554,8 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - content
               properties:
                 content:
                   type: string
@@ -512,6 +569,38 @@ paths:
           description: Unauthorized
         '500':
           description: Error creating comment
+    get:
+      summary: Récuprere tous les  commentaire d'un post
+      tags:
+        - Comment
+      parameters:
+        - in: path
+          name: postId
+          schema:
+            type: string
+          required: true
+          description: ID du post
+      responses:
+        '200':
+          description: Lister les commentaire
+        '401':
+          description: Unauthorized
+    delete:
+      summary: Supprimer un commentaire
+      tags:
+        - Comment
+      parameters:
+        - in: path
+          name: commentId
+          schema:
+            type: string
+          required: true
+          description: ID du commentair qu'on va supprimer 
+      responses:
+        '200':
+          description: commentair supprimmer avec succe
+        '401':
+          description: Unauthorized      
 
   /story/create:
     post:
@@ -524,11 +613,17 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - modelID
+                - description
+                - blockedUsers
               properties:
-                userId:
+                modelID:
                   type: string
-                content:
+                description:
                   type: string
+                blockedUsers:
+                  type: array
       responses:
         '201':
           description: Story created successfully
@@ -564,3 +659,39 @@ paths:
           description: Story non trouvee
         '500':
           description: Erreur lors du vue du status
+
+  /commande/{commandeId}:
+    get:
+      summary: Récuperer une commande spécifique grace à son  ID
+      tags:
+        - Commande
+      parameters:
+        - in: path
+          name: commandeId
+          schema:
+            type: string
+          required: true
+          description: ID de la  commande
+      responses:
+        '200':
+          description: Commande retouver avec successfully
+        '401':
+          description: Unauthorized
+
+  /post/{postId}/commandes:
+    get:
+      summary: touver tous les commandes d'un post
+      tags:
+        - Commande
+      parameters:
+        - in: path
+          name: postId
+          schema:
+            type: string
+          required: true
+          description: ID du post
+      responses:
+        '200':
+          description: Lister les commandes trouver
+        '401':
+          description: Unauthorized
