@@ -98,7 +98,7 @@ const viewStory = (req, res) => {
       }
     })
     .catch(error => {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: 'Une erreur interne est survenue. Veuillez réessayer plus tard.'});
     });
 };
 
@@ -109,13 +109,13 @@ const getStoryViews = async (req, res) => {
     const story = await Story.findById(storyId);
 
     if (!story) {
-      res.status(404).json({ message: "Story non trouvée" });
+      res.status(404).json({ message: "La story n'a pas été trouvée."  });
     }
 
     res.status(200).json({ views: story.views });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: "Une erreur interne est survenue. Veuillez réessayer plus tard. "});
   }
 };
 
