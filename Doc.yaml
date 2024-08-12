@@ -19,6 +19,92 @@ security:
   - CookieAuth: [] 
 
 paths:
+/model:
+
+  /{userId}/getModels:
+    get:
+      summary: Afficher tous les models d'un utilisateur
+        tags:
+          - Model
+        parameters:
+          - in: path
+          name: userId
+          schema: string
+          required: true
+          description: ID de l'utilisateur dont on veut afficher les models
+        responses:
+          '200':
+            description: Voici les models de l'utilisateur
+          '400':
+            description: ID de l'utilisateur est recquis
+
+  /{modelId}/update:
+    put: 
+      summary: Modifier Un modèle
+      tags:
+        - Model
+      parameters:
+        - in: path
+        name: modelId
+        schema: string
+        required: true
+        description: ID du modèle à modifier
+        responses:
+          '200':
+            description: 'ID modèle valide !'
+          '400':
+            description: 'ID modèle invalide'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+              libelle:
+                type: string
+              prix:
+                type: number
+      responses:
+        '200':
+          description: Modèle modifié avec succès !
+        '400':
+          description: Erreur de modification du modèle
+
+  /{modelId}/delete:
+    delete:
+      summary: Supprimer un modèle de la base de données
+        tags:
+          - Model
+          parameters:
+            - in: path
+            name: modelId
+            schema: string
+            required: true
+            description: ID du modèle à supprimer
+            response:
+              '200':
+                description: Modèle supprimé avec succès
+               '400':
+                description: ID modèle invalide
+
+  /{modelId}:
+    get:
+      summary: Afficher un modèle en particulier
+      tags:
+      - Model
+      parameters:
+       - in: path
+      name: modelId            
+      schema: string
+      required: true
+      description: ID du modèle à récupérer
+      responses:
+        '200':
+          description: ID modèle valide
+        '400':
+          description: ID modèle invalide
+
   /register:
     post:
       summary: Register a new user
