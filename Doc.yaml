@@ -4,6 +4,20 @@ info:
   description: API documentation for the Tailor Social Network
   version: 1.0.0
 
+servers:
+  - url: http://localhost:3004
+    description: Local server
+
+components:
+  securitySchemes:
+    CookieAuth:                 # Custom name for cookie-based auth
+      type: apiKey
+      in: cookie
+      name: token  
+
+security:
+  - CookieAuth: [] 
+
 paths:
   /register:
     post:
@@ -16,18 +30,49 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - email
+                - password
+                - role
+                - nom
+                - prenom
+                - confimationPassword
+                - photoProfile
               properties:
-                username:
+                nom:
                   type: string
                 email:
                   type: string
                 password:
                   type: string
+                prenom: 
+                  type: string
+                role:
+                  type: string
+                  enum:
+                    - tailleur
+                    - visiteur
+                confirmationPassword:
+                  type: string
+                photoProfile:
+                  type: string
       responses:
         '201':
           description: User registered successfully
         '400':
-          description: Invalid input
+          description: Tous les champs sont obligatoires
+        '401':
+          description: Le mot de passe doit contenir au moins 8 caractères
+        '403':
+          description: Le rôle doit être 'tailleur' ou 'visiteur'
+        '405':
+          description: Les mots de passe ne correspondent pas
+        '406':
+          description: Invalid field
+        '407':
+          description: Cet email est déjà utilisé
+        '500':
+          description: Erreur lors de l'enregistrement de l'utilisateur
           
   /login:
     post:
@@ -73,10 +118,18 @@ paths:
           required: true
           description: ID of the user to follow
       responses:
-        '200':
-          description: User followed successfully
+        '201':
+          description: Follower ajouté avec succès !
         '401':
           description: Unauthorized
+        '400':
+          description: Id non trouve
+        '402':
+          description: Vous ne pouvez pas suivre un visiteur
+        '403':
+          description: Pour follow un autre utilisateur veuillez recharger vos credits
+        '500':
+          description: Erreur ajout follower
 
   /unfollow/{id}:
     post:
@@ -91,10 +144,14 @@ paths:
           required: true
           description: ID of the user to unfollow
       responses:
-        '200':
-          description: User unfollowed successfully
+        '201':
+          description: Unfollowing ajouté avec succès !
         '401':
           description: Unauthorized
+        '400':
+          description: Id non trouve
+        '500':
+          description: Erreur unFollower
 
   /add-note/{id}:
     post:
@@ -120,9 +177,17 @@ paths:
                   description: The note to add
       responses:
         '200':
-          description: Note added successfully
+          description: Note ajoutée avec succès
         '401':
           description: Unauthorized
+        '400':
+          description: La note doit être un nombre entre 1 et 5
+        '402':
+          description: Vous ne pouvez pas noter un visiteur
+        '403':
+          description: Utilisateur non trouvé
+        '500':
+          description: Erreur ajout note
 
   /signal/{id}:
     post:
@@ -151,6 +216,16 @@ paths:
           description: User reported successfully
         '401':
           description: Unauthorized
+        '400':
+          description: la raison du signalement est requise
+        '402':
+          description: Utilisateur non trouvé
+        '403':
+          description: Vous ne pouvez pas vous signaler vous-même
+        '500':
+          description: Erreur création signalement
+        '405':
+          description: Vous avez déjà signalé cet utilisateur
 
   /model/create:
     post:
@@ -174,9 +249,11 @@ paths:
         '201':
           description: Model created successfully
         '400':
-          description: Invalid input
+          description: Ce model existe deja
         '401':
           description: Unauthorized
+        '500':
+          description: Error creating model
 
   /model/{modelId}/note:
     post:
@@ -205,6 +282,12 @@ paths:
           description: Note added successfully
         '401':
           description: Unauthorized
+        '402':
+          description: User not found
+        '403':
+          description: model not found
+        '500':
+          description: Error adding mark to a model
 
   /model/{modelId}/unlike:
     post:
@@ -243,10 +326,14 @@ paths:
       responses:
         '201':
           description: Post created successfully
-        '400':
-          description: Invalid input
+        '402':
+          description: Vous n'êtes pas un tailleur , seul les tailleur peuvent cree des postes
         '401':
           description: Unauthorized
+        '403':
+          description: Vous n'avez pas assez de credit pour poster  veuillez recharger votre compte
+        '500':
+          description: Error Server
 
   /post/favorite/create/{id}:
     post:
@@ -265,6 +352,12 @@ paths:
           description: Post added to favorites successfully
         '401':
           description: Unauthorized
+        '402':
+          description: Post not found
+        '400':
+          description: Post already marked as favorite
+        '500':
+          description: Failed to mark favorite
 
   /post/favorite/remove/{id}:
     post:
@@ -280,9 +373,13 @@ paths:
           description: ID of the post to remove from favorites
       responses:
         '200':
-          description: Post removed from favorites successfully
+          description: Favorite removed to post successfully
         '401':
           description: Unauthorized
+        '400':
+          description: Favorite not found
+        '500':
+          description: Error server
 
   /post/{postId}/like:
     post:
@@ -301,6 +398,10 @@ paths:
           description: Post liked successfully
         '401':
           description: Unauthorized
+        '400':
+          description: Vous avez deja liker le post
+        '500':
+          description: Erreur lors du like de post
 
   /post/{postId}/like/{likeID}/unlike:
     post:
@@ -322,9 +423,13 @@ paths:
           description: ID of the like to remove
       responses:
         '200':
-          description: Post unliked successfully
+          description: Like retirer avec succes
+        '400':
+          description: Vous n'avez pas aimer ce post
         '401':
           description: Unauthorized
+        '500':
+          description: Erreur lors du unlike du post
 
   /post/{postId}/Dislike:
     post:
@@ -341,8 +446,12 @@ paths:
       responses:
         '200':
           description: Post disliked successfully
+        '400':
+          description: Vous avez deja disliké le post
         '401':
           description: Unauthorized
+        '500':
+          description: Error when disliking the post
 
   /post/{postId}/dislike/{dislikeID}/undislike:
     post:
@@ -365,8 +474,12 @@ paths:
       responses:
         '200':
           description: Dislike removed successfully
+        '400':
+          description: Vous n'avez pas disliké ce post
         '401':
           description: Unauthorized
+        '500':
+          description: Error when removing the dislike from the post
 
   /post/{postId}/comment:
     post:
@@ -394,9 +507,11 @@ paths:
         '201':
           description: Comment added successfully
         '400':
-          description: Invalid input
+          description: Post non trouvee
         '401':
           description: Unauthorized
+        '500':
+          description: Error creating comment
 
   /story/create:
     post:
@@ -418,9 +533,15 @@ paths:
         '201':
           description: Story created successfully
         '400':
-          description: Invalid input
+          description: Model non trouvee
+        '402':
+          description: Credit insuffisant pour creer un story
+        '403':
+          description: Vous n'etes pas un tailleur seul les tailleurs post des status
         '401':
           description: Unauthorized
+        '500':
+          description: Error creating story
 
   /story/{id}/view:
     post:
@@ -439,3 +560,7 @@ paths:
           description: Story view incremented successfully
         '401':
           description: Unauthorized
+        '400':
+          description: Story non trouvee
+        '500':
+          description: Erreur lors du vue du status
