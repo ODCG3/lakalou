@@ -344,6 +344,24 @@ paths:
         '401':
           description: Unauthorized
 
+    /post/{postId}/Dislike:
+        get:
+          summary: Récuperer tous les dislike d'un poste 
+          tags:
+            - Dislike
+          parameters:
+            - in: path
+              name: postId
+              schema:
+                type: string
+              required: true
+              description: ID Du post
+          responses:
+            '200':
+              description: liste des dislike  successfully
+            '401':
+              description: Unauthorized
+
   /post/{postId}/dislike/{dislikeID}/undislike:
     post:
       summary: Remove a dislike from a post
@@ -437,5 +455,99 @@ paths:
       responses:
         '200':
           description: Story view incremented successfully
+        '401':
+          description: Unauthorized
+
+
+
+
+  /post/{postId}/likes:
+    get:
+      summary: Récuperer tous les likes d'un post 
+      tags:
+        - Like
+      parameters:
+        - in: path
+          name: postId
+          schema:
+            type: string
+          required: true
+          description: ID du post
+      responses:
+        '200':
+          description: Lister les likes return successfully
+        '401':
+          description: Unauthorized
+
+ 
+  /post/{postId}/comments:
+    get:
+      summary: Récuprere tous les  commentaire d'un post
+      tags:
+        - Comment
+      parameters:
+        - in: path
+          name: postId
+          schema:
+            type: string
+          required: true
+          description: ID du post
+      responses:
+        '200':
+          description: Lister les commentaire
+        '401':
+          description: Unauthorized
+
+  /comment/{commentId}:
+    delete:
+      summary: Supprimer un commentaire
+      tags:
+        - Comment
+      parameters:
+        - in: path
+          name: commentId
+          schema:
+            type: string
+          required: true
+          description: ID du commentair qu'on va supprimer 
+      responses:
+        '200':
+          description: commentair supprimmer avec succe
+        '401':
+          description: Unauthorized
+
+  /commande/{commandeId}:
+    get:
+      summary: Récuperer une commande spécifique grace à son  ID
+      tags:
+        - Commande
+      parameters:
+        - in: path
+          name: commandeId
+          schema:
+            type: string
+          required: true
+          description: ID de la  commande
+      responses:
+        '200':
+          description: Commande retouver avec successfully
+        '401':
+          description: Unauthorized
+
+  /post/{postId}/commandes:
+    get:
+      summary: touver tous les commandes d'un post
+      tags:
+        - Commande
+      parameters:
+        - in: path
+          name: postId
+          schema:
+            type: string
+          required: true
+          description: ID du post
+      responses:
+        '200':
+          description: Lister les commandes trouver
         '401':
           description: Unauthorized
