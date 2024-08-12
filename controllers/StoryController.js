@@ -19,7 +19,7 @@ const createStory = async (req, res) => {
       const Model = await model.findById(modelID);
     
     if (!Model) {
-        return res.status(404).json({ error: 'Modèle non trouvé' });
+        return res.status(400).json({ error: 'Modèle non trouvé' });
       }
 
     if (connectedUser.credits > 0) {
@@ -42,10 +42,10 @@ const createStory = async (req, res) => {
       });
     } else {
 
-      res.status(400).json({ error: 'Crédits insuffisants pour créer une story' });
+      res.status(402).json({ error: 'Crédits insuffisants pour créer une story' });
     }
   } catch (error) {
-    res.status(400).json({
+    res.status(500).json({
       error: error.message
     });
   }
@@ -94,7 +94,7 @@ const viewStory = (req, res) => {
       if (story) {
         res.status(200).json({ views: story.views });
       } else {
-        res.status(404).json({ message: 'Story non trouvée' });
+        res.status(400).json({ message: 'Story non trouvée' });
       }
     })
     .catch(error => {
