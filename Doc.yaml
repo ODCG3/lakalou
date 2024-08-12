@@ -1,0 +1,441 @@
+openapi: 3.0.0
+info:
+  title: Tailor Social Network API
+  description: API documentation for the Tailor Social Network
+  version: 1.0.0
+
+paths:
+  /register:
+    post:
+      summary: Register a new user
+      tags:
+        - User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '201':
+          description: User registered successfully
+        '400':
+          description: Invalid input
+          
+  /login:
+    post:
+      summary: Log in a user
+      tags:
+        - User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: User logged in successfully
+        '401':
+          description: Invalid credentials
+          
+  /logout:
+    post:
+      summary: Log out the current user
+      tags:
+        - User
+      responses:
+        '200':
+          description: User logged out successfully
+
+  /follow/{id}:
+    post:
+      summary: Follow a user
+      tags:
+        - User
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: ID of the user to follow
+      responses:
+        '200':
+          description: User followed successfully
+        '401':
+          description: Unauthorized
+
+  /unfollow/{id}:
+    post:
+      summary: Unfollow a user
+      tags:
+        - User
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: ID of the user to unfollow
+      responses:
+        '200':
+          description: User unfollowed successfully
+        '401':
+          description: Unauthorized
+
+  /add-note/{id}:
+    post:
+      summary: Add a note to a user
+      tags:
+        - User
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: ID of the user to add a note to
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note:
+                  type: integer
+                  description: The note to add
+      responses:
+        '200':
+          description: Note added successfully
+        '401':
+          description: Unauthorized
+
+  /signal/{id}:
+    post:
+      summary: Report a user
+      tags:
+        - User
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: ID of the user to report
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  description: Reason for reporting the user
+      responses:
+        '200':
+          description: User reported successfully
+        '401':
+          description: Unauthorized
+
+  /model/create:
+    post:
+      summary: Create a new model
+      tags:
+        - Model
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                userId:
+                  type: string
+      responses:
+        '201':
+          description: Model created successfully
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized
+
+  /model/{modelId}/note:
+    post:
+      summary: Add a note to a model
+      tags:
+        - Model
+      parameters:
+        - in: path
+          name: modelId
+          schema:
+            type: string
+          required: true
+          description: ID of the model to add a note to
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note:
+                  type: integer
+                  description: The note to add
+      responses:
+        '200':
+          description: Note added successfully
+        '401':
+          description: Unauthorized
+
+  /model/{modelId}/unlike:
+    post:
+      summary: Unlike a model
+      tags:
+        - Model
+      parameters:
+        - in: path
+          name: modelId
+          schema:
+            type: string
+          required: true
+          description: ID of the model to unlike
+      responses:
+        '200':
+          description: Model unliked successfully
+        '401':
+          description: Unauthorized
+
+  /post/create:
+    post:
+      summary: Create a new post
+      tags:
+        - Post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+                userId:
+                  type: string
+      responses:
+        '201':
+          description: Post created successfully
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized
+
+  /post/favorite/create/{id}:
+    post:
+      summary: Add a post to favorites
+      tags:
+        - Post
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: ID of the post to add to favorites
+      responses:
+        '200':
+          description: Post added to favorites successfully
+        '401':
+          description: Unauthorized
+
+  /post/favorite/remove/{id}:
+    post:
+      summary: Remove a post from favorites
+      tags:
+        - Post
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: ID of the post to remove from favorites
+      responses:
+        '200':
+          description: Post removed from favorites successfully
+        '401':
+          description: Unauthorized
+
+  /post/{postId}/like:
+    post:
+      summary: Like a post
+      tags:
+        - Post
+      parameters:
+        - in: path
+          name: postId
+          schema:
+            type: string
+          required: true
+          description: ID of the post to like
+      responses:
+        '200':
+          description: Post liked successfully
+        '401':
+          description: Unauthorized
+
+  /post/{postId}/like/{likeID}/unlike:
+    post:
+      summary: Unlike a post
+      tags:
+        - Post
+      parameters:
+        - in: path
+          name: postId
+          schema:
+            type: string
+          required: true
+          description: ID of the post
+        - in: path
+          name: likeID
+          schema:
+            type: string
+          required: true
+          description: ID of the like to remove
+      responses:
+        '200':
+          description: Post unliked successfully
+        '401':
+          description: Unauthorized
+
+  /post/{postId}/Dislike:
+    post:
+      summary: Dislike a post
+      tags:
+        - Post
+      parameters:
+        - in: path
+          name: postId
+          schema:
+            type: string
+          required: true
+          description: ID of the post to dislike
+      responses:
+        '200':
+          description: Post disliked successfully
+        '401':
+          description: Unauthorized
+
+  /post/{postId}/dislike/{dislikeID}/undislike:
+    post:
+      summary: Remove a dislike from a post
+      tags:
+        - Post
+      parameters:
+        - in: path
+          name: postId
+          schema:
+            type: string
+          required: true
+          description: ID of the post
+        - in: path
+          name: dislikeID
+          schema:
+            type: string
+          required: true
+          description: ID of the dislike to remove
+      responses:
+        '200':
+          description: Dislike removed successfully
+        '401':
+          description: Unauthorized
+
+  /post/{postId}/comment:
+    post:
+      summary: Add a comment to a post
+      tags:
+        - Comment
+      parameters:
+        - in: path
+          name: postId
+          schema:
+            type: string
+          required: true
+          description: ID of the post to comment on
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+                  description: The comment content
+      responses:
+        '201':
+          description: Comment added successfully
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized
+
+  /story/create:
+    post:
+      summary: Create a new story
+      tags:
+        - Story
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId:
+                  type: string
+                content:
+                  type: string
+      responses:
+        '201':
+          description: Story created successfully
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized
+
+  /story/{id}/view:
+    post:
+      summary: Increment views for a story
+      tags:
+        - Story
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: ID of the story
+      responses:
+        '200':
+          description: Story view incremented successfully
+        '401':
+          description: Unauthorized
