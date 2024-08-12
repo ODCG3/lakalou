@@ -445,7 +445,7 @@ export default class UserController {
       }
 
       if (userId.toString() === req.user.userID.toString()) {
-        return res.status(400).json({
+        return res.status(402).json({
           message:
             "Vous ne pouvez pas vous créer une discussion avec vous-même",
         });
@@ -457,7 +457,7 @@ export default class UserController {
       );
       if (discussionExists) {
         return res
-          .status(400)
+          .status(403)
           .json({ message: "Une discussion avec cet utilisateur existe déjà" });
       }
 
@@ -478,7 +478,7 @@ export default class UserController {
       }
 
       const discussions = user.discussions;
-      res.json(discussions);
+      res.status(200).json(discussions);
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
@@ -496,7 +496,7 @@ export default class UserController {
       const discussions = user.discussions.filter(
         (discussion) => discussion.user.toString() === userId
       );
-      res.json(discussions);
+      res.status(200).json(discussions);
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
@@ -515,7 +515,7 @@ export default class UserController {
         (discussion) => discussion.user.toString() === discussionUser
       );
       if (!discussion) {
-        return res.status(400).json({ message: "Discussion non trouvée" });
+        return res.status(402).json({ message: "Discussion non trouvée" });
       }
 
       user.discussions

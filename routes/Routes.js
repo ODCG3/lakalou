@@ -171,6 +171,13 @@ router.post('/user/:userID/debloquer',auth, UserController.debloquerUsers);
 router.get('/user/bloquer',auth, UserController.getUserBloquer);
 router.post('/post/:postId',auth, PostController.marquerVue);
 router.get('/post/:postId/vues',auth, PostController.getVues);
+
+
+// Routes pour les discussions
+router.post('/user/discussion/create',auth, UserController.createDiscussion);
+router.get('/user/discussion/',auth, UserController.getDiscussions);
+router.get('/user/discussion/:userId',auth, UserController.getDiscussionsByUser);
+router.post('user/discussion/:discussionId/messages/send',auth, UserController.sendMessageToDiscussion)
 router.delete('/user/discussion/:discussionId/messages/:messageId',auth, UserController.deleteMessage);
 router.put('/user/discussion/:discussionId/messages/:messageId',auth, UserController.modifierMessages);
 
