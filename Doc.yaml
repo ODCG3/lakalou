@@ -5,7 +5,7 @@ info:
   version: 1.0.0
 
 servers:
-  - url: http://localhost:3004
+  - url: https://96a5-41-214-74-161.ngrok-free.app
     description: Local server
 
 components:
@@ -85,6 +85,9 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - email
+                - password
               properties:
                 email:
                   type: string
@@ -171,8 +174,10 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - rate
               properties:
-                note:
+                rate:
                   type: integer
                   description: The note to add
       responses:
@@ -207,6 +212,8 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - reason
               properties:
                 reason:
                   type: string
@@ -238,13 +245,20 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - libelle
+                - prix
+                - quantite
+                - contenu
               properties:
-                name:
+                libelle:
                   type: string
-                description:
-                  type: string
-                userId:
-                  type: string
+                prix:
+                  type: number
+                quantite:
+                  type: number
+                contenu:
+                  type: array
       responses:
         '201':
           description: Model created successfully
@@ -273,6 +287,8 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - note
               properties:
                 note:
                   type: integer
@@ -318,10 +334,16 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - model
+                - description
+                - titre
               properties:
-                content:
+                model:
                   type: string
-                userId:
+                description:
+                  type: string
+                titre:
                   type: string
       responses:
         '201':
@@ -499,6 +521,8 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - content
               properties:
                 content:
                   type: string
@@ -524,11 +548,17 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - modelID
+                - description
+                - blockedUsers
               properties:
-                userId:
+                modelID:
                   type: string
-                content:
+                description:
                   type: string
+                blockedUsers:
+                  type: array
       responses:
         '201':
           description: Story created successfully
