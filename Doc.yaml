@@ -13,7 +13,562 @@ components:
     CookieAuth:                 # Custom name for cookie-based auth
       type: apiKey
       in: cookie
-      name: token  
+      name: token 
+       
+  schemas:
+    User:
+      type: object
+      properties:
+        nom:
+          type: string
+          description: Nom de l'utilisateur
+          example: Doe
+        prenom:
+          type: string
+          description: Prénom de l'utilisateur
+          example: John
+        email:
+          type: string
+          description: Email de l'utilisateur
+          example: john.doe@example.com
+        password:
+          type: string
+          description: Mot de passe de l'utilisateur
+          example: secretPassword123
+        photoProfile:
+          type: string
+          description: URL de la photo de profil de l'utilisateur
+          example: http://example.com/profile.jpg
+        role:
+          type: string
+          description: Rôle de l'utilisateur
+          example: user
+        MesCommand:
+          type: array
+          items:
+            type: string
+            format: ObjectId
+            description: Identifiant de la commande
+        notes:
+          type: array
+          items:
+            type: object
+            properties:
+              rate:
+                type: integer
+                description: Note attribuée
+                minimum: 1
+                maximum: 5
+              raterId:
+                type: string
+                format: ObjectId
+                description: Identifiant de l'utilisateur qui a attribué la note
+        signals:
+          type: array
+          items:
+            type: object
+            properties:
+              reason:
+                type: string
+                description: Raison du signalement
+                example: Contenu inapproprié
+              idReporter:
+                type: string
+                format: ObjectId
+                description: Identifiant de l'utilisateur ayant signalé
+        mesures:
+          type: object
+          properties:
+            cou:
+              type: number
+            longueurPantallon:
+              type: number
+            epaule:
+              type: number
+            longueurManche:
+              type: number
+            hanche:
+              type: number
+            poitrine:
+              type: number
+            cuisse:
+              type: number
+            longueur:
+              type: number
+            tourBras:
+              type: number
+            tourPoignet:
+              type: number
+            ceinture:
+              type: number
+        utilisateurBloque:
+          type: array
+          items:
+            type: string
+            format: ObjectId
+            description: Identifiant de l'utilisateur bloqué
+        credits:
+          type: number
+          description: Crédits disponibles pour l'utilisateur
+          example: 100
+        followers:
+          type: array
+          items:
+            type: string
+            description: Liste des identifiants des abonnés
+            example: user123
+        followings:
+          type: array
+          items:
+            type: string
+            description: Liste des identifiants des utilisateurs suivis
+            example: user456
+        listeSouhaits:
+          type: array
+          items:
+            type: string
+            format: ObjectId
+            description: Identifiant des posts dans la liste de souhaits
+        notifications:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                description: Type de la notification
+                example: post
+              message:
+                type: string
+                description: Message de la notification
+                example: Nouvelle publication
+              postId:
+                type: string
+                format: ObjectId
+                description: Identifiant du post lié à la notification
+              createdAt:
+                type: string
+                format: date-time
+                description: Date de création de la notification
+                example: 2023-08-13T10:20:30Z
+        discussions:
+          type: array
+          items:
+            type: object
+            properties:
+              user:
+                type: string
+                format: ObjectId
+                description: Identifiant de l'utilisateur participant à la discussion
+              messages:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    content:
+                      type: string
+                      description: Contenu du message
+                      example: Salut, comment ça va ?
+                    createdAt:
+                      type: string
+                      format: date-time
+                      description: Date de création du message
+                      example: 2023-08-13T10:20:30Z
+        CommandesUtilisateur:
+          type: array
+          items:
+            type: object
+            properties:
+              commandeId:
+                type: string
+                format: ObjectId
+                description: Identifiant de la commande
+              userId:
+                type: string
+                format: ObjectId
+                description: Identifiant de l'utilisateur ayant passé la commande
+        badges:
+          type: array
+          items:
+            type: object
+            properties:
+              acquiredAt:
+                type: string
+                format: date-time
+                description: Date d'acquisition du badge
+                example: 2023-08-13T10:20:30Z
+        status:
+          type: string
+          enum:
+            - Premium
+            - normal
+          description: Statut de l'utilisateur
+          example: normal
+        certificat:
+          type: boolean
+          description: Certificat de l'utilisateur
+          example: false
+        posts:
+          type: array
+          items:
+            type: string
+            format: ObjectId
+            description: Identifiant des posts créés par l'utilisateur
+        mesModels:
+          type: array
+          items:
+            type: object
+            properties:
+              idModel:
+                type: string
+                format: ObjectId
+                description: Identifiant du modèle
+              libelle:
+                type: string
+                description: Libellé du modèle
+                example: T-shirt
+              nombreDeCommande:
+                type: integer
+                description: Nombre de commandes du modèle
+                example: 10
+              note:
+                type: array
+                items:
+                  type: number
+                  description: Note attribuée au modèle
+        favories:
+          type: array
+          items:
+            type: string
+            format: ObjectId
+            description: Identifiant des posts favoris
+        stories:
+          type: array
+          items:
+            type: string
+            format: ObjectId
+            description: Identifiant des stories de l'utilisateur
+    
+    Post:
+      type: object
+      properties:
+        model:
+          type: string
+          format: ObjectId
+          description: Identifiant du modèle associé au post
+          example: 64d1e8ef2f8b3c6b287aa4c9
+        utilisateur:
+          type: string
+          format: ObjectId
+          description: Identifiant de l'utilisateur qui a créé le post
+          example: 64d1e8ef2f8b3c6b287aa4a1
+        datePublication:
+          type: string
+          format: date-time
+          description: Date de publication du post
+          example: 2024-08-13T10:20:30Z
+        commentaires:
+          type: array
+          items:
+            type: string
+            format: ObjectId
+            description: Identifiant des commentaires liés au post
+          example:
+            - 64d1e8ef2f8b3c6b287aa4b2
+        partages:
+          type: array
+          items:
+            type: string
+            format: ObjectId
+            description: Identifiant des partages liés au post
+          example:
+            - 64d1e8ef2f8b3c6b287aa4b3
+        dislikes:
+          type: array
+          items:
+            type: string
+            format: ObjectId
+            description: Identifiant des utilisateurs ayant disliké le post
+          example:
+            - 64d1e8ef2f8b3c6b287aa4b4
+        likes:
+          type: array
+          items:
+            type: string
+            format: ObjectId
+            description: Identifiant des utilisateurs ayant liké le post
+          example:
+            - 64d1e8ef2f8b3c6b287aa4b5
+        description:
+          type: string
+          description: Description du post
+          example: "Ceci est un exemple de description de post."
+        titre:
+          type: string
+          description: Titre du post
+          example: "Titre de l'exemple de post"
+        vues:
+          type: array
+          items:
+            type: object
+            properties:
+              user:
+                type: string
+                format: ObjectId
+                description: Identifiant de l'utilisateur ayant vu le post
+                example: 64d1e8ef2f8b3c6b287aa4b6
+              date:
+                type: string
+                format: date-time
+                description: Date à laquelle le post a été vu
+                example: 2024-08-13T10:20:30Z
+
+    Partage:
+      type: object
+      properties:
+        sender:
+          type: string
+          format: ObjectId
+          description: Identifiant de l'utilisateur qui a partagé le post
+          example: 64d1e8ef2f8b3c6b287aa4a7
+        post:
+          type: string
+          format: ObjectId
+          description: Identifiant du post partagé
+          example: 64d1e8ef2f8b3c6b287aa4b8
+        receiver:
+          type: string
+          format: ObjectId
+          description: Identifiant de l'utilisateur qui a reçu le partage
+          example: 64d1e8ef2f8b3c6b287aa4a9
+        sharedAt:
+          type: string
+          format: date-time
+          description: Date et heure du partage
+          example: 2024-08-13T10:20:30Z
+  
+    Notification:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Contenu du message de la notification
+          example: "Votre post a reçu un nouveau commentaire."
+        post:
+          type: string
+          format: ObjectId
+          description: Identifiant du post associé à la notification
+          example: 64d1e8ef2f8b3c6b287aa4b8
+        createdAt:
+          type: string
+          format: date-time
+          description: Date et heure de création de la notification
+          example: 2024-08-13T10:20:30Z
+
+    Model:
+      type: object
+      properties:
+        libelle:
+          type: string
+          description: Nom ou libellé du modèle
+          example: "T-shirt personnalisé"
+        prix:
+          type: number
+          description: Prix du modèle
+          example: 29.99
+        quantite:
+          type: number
+          description: Quantité disponible du modèle
+          example: 50
+        contenu:
+          type: array
+          items:
+            type: string
+          description: Liste des contenus associés au modèle (liens vers images ou vidéos)
+          example:
+            - "https://example.com/image1.jpg"
+            - "https://example.com/image2.jpg"
+        note:
+          type: array
+          items:
+            type: object
+            properties:
+              note:
+                type: number
+                description: Note attribuée au modèle
+                example: 4.5
+              commentaire:
+                type: string
+                description: Commentaire associé à la note
+                example: "Super modèle, bonne qualité !"
+              userId:
+                type: string
+                format: ObjectId
+                description: Identifiant de l'utilisateur ayant noté le modèle
+                example: 64d1e8ef2f8b3c6b287aa4a1
+              createdAt:
+                type: string
+                format: date-time
+                description: Date et heure de la création de la note
+                example: 2024-08-13T10:20:30Z
+
+    Like:
+      type: object
+      properties:
+        users:
+          type: string
+          format: ObjectId
+          description: Identifiant de l'utilisateur qui a aimé le post
+          example: 64d1e8ef2f8b3c6b287aa4a7
+        post:
+          type: string
+          format: ObjectId
+          description: Identifiant du post aimé
+          example: 64d1e8ef2f8b3c6b287aa4b8
+        createdAt:
+          type: string
+          format: date-time
+          description: Date et heure à laquelle le like a été enregistré
+          example: 2024-08-13T10:20:30Z
+
+    Favori:
+      type: object
+      properties:
+        utilisateur:
+          type: string
+          format: ObjectId
+          description: Identifiant de l'utilisateur qui a ajouté le post aux favoris
+          example: 64d1e8ef2f8b3c6b287aa4a7
+        post:
+          type: string
+          format: ObjectId
+          description: Identifiant du post ajouté aux favoris
+          example: 64d1e8ef2f8b3c6b287aa4b8
+        createDate:
+          type: string
+          format: date-time
+          description: Date et heure à laquelle le post a été ajouté aux favoris
+          example: 2024-08-13T10:20:30Z
+
+    Dislike:
+      type: object
+      properties:
+        users:
+          type: string
+          format: ObjectId
+          description: Identifiant de l'utilisateur qui a disliké le post
+          example: 64d1e8ef2f8b3c6b287aa4a7
+        post:
+          type: string
+          format: ObjectId
+          description: Identifiant du post qui a été disliké
+          example: 64d1e8ef2f8b3c6b287aa4b8
+        createdAt:
+          type: string
+          format: date-time
+          description: Date et heure à laquelle le dislike a été enregistré
+          example: 2024-08-13T10:20:30Z
+
+    Comment:
+      type: object
+      properties:
+        users:
+          type: string
+          format: ObjectId
+          description: Identifiant de l'utilisateur qui a commenté
+          example: 64d1e8ef2f8b3c6b287aa4a7
+        post:
+          type: string
+          format: ObjectId
+          description: Identifiant du post commenté
+          example: 64d1e8ef2f8b3c6b287aa4b8
+        createdAt:
+          type: string
+          format: date-time
+          description: Date et heure à laquelle le commentaire a été créé
+          example: 2024-08-13T10:20:30Z
+        content:
+          type: string
+          description: Contenu du commentaire
+          example: "Ce post est très intéressant !"
+
+    Commande:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: ObjectId
+          description: Identifiant de l'utilisateur qui a passé la commande
+          example: 64d1e8ef2f8b3c6b287aa4a7
+        post_id:
+          type: string
+          format: ObjectId
+          description: Identifiant du post associé à la commande (peut être nul)
+          example: 64d1e8ef2f8b3c6b287aa4b8
+        story_id:
+          type: string
+          format: ObjectId
+          description: Identifiant de l'histoire associée à la commande (peut être nul)
+          example: 64d1e8ef2f8b3c6b287aa4b9
+        model_libelle:
+          type: string
+          format: ObjectId
+          description: Identifiant du modèle associé à la commande
+          example: 64d1e8ef2f8b3c6b287aa4ba
+        date_de_command:
+          type: string
+          format: date-time
+          description: Date et heure à laquelle la commande a été passée
+          example: 2024-08-13T10:20:30Z
+        adresseLivraison:
+          type: string
+          description: Adresse de livraison pour la commande
+          example: "123 Rue Exemple, 75000 Paris, France"
+      required:
+        - user_id
+        - model_libelle
+
+    Story:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: ObjectId
+          description: Identifiant de l'utilisateur qui a créé l'histoire
+          example: 64d1e8ef2f8b3c6b287aa4a7
+        model:
+          type: string
+          format: ObjectId
+          description: Identifiant du modèle associé à l'histoire
+          example: 64d1e8ef2f8b3c6b287aa4b8
+        description:
+          type: string
+          description: Description de l'histoire
+          example: "Une nouvelle histoire passionnante sur le modèle XYZ."
+        createdAt:
+          type: string
+          format: date-time
+          description: Date et heure à laquelle l'histoire a été créée
+          example: 2024-08-13T10:20:30Z
+        expiresAt:
+          type: string
+          format: date-time
+          description: Date et heure à laquelle l'histoire expirera
+          example: 2024-08-14T10:20:30Z
+        views:
+          type: integer
+          description: Nombre de vues de l'histoire
+          example: 123
+        blockedUsers:
+          type: array
+          items:
+            type: string
+            format: ObjectId
+          description: Liste des utilisateurs qui ont été bloqués pour cette histoire
+          example:
+            - 64d1e8ef2f8b3c6b287aa4a8
+            - 64d1e8ef2f8b3c6b287aa4a9
+
 
 security:
   - CookieAuth: [] 
