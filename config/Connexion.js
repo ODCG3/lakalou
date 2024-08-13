@@ -9,7 +9,7 @@ export default class Connexion {
     static async connect() {
         try {
             if(this.db == null)
-            this.db = await mongoose.connect(process.env.MongoDbConnection);
+            this.db = await mongoose.connect(process.env.MONGODB_URI);
             console.log('Connected to MongoDB');
             return this.db;
         } catch (error) {
