@@ -1,0 +1,122 @@
+model UsersDiscussions {
+  id         String                     @id @default(uuid()) @map("_id")
+  messagesId String
+  message    UsersDiscussionsMessages[]
+  userId     Users @relation("Sender")
+  receiverId Users @relation("Receiver")
+}
+
+model UsersDiscussionsMessages {
+  id        String   @id @default(uuid()) @map("_id")
+  content   String
+  createdAt DateTime @default(now())
+  senderId  String   // Foreign key scalar field
+  sender    Users    @relation(fields: [senderId], references: [id])
+}
+
+model UsersMesModels {
+  id               String   @id @default(uuid()) @map("_id")
+  libelle          String
+  nombreDeCommande Int
+  note             Int
+  modelId          String   // Foreign key scalar field
+  model            Models   @relation(fields: [modelId], references: [id])
+}
+
+model UsersNotes {
+  id      String @id @default(uuid()) @map("_id")
+  rate    Int
+  userId  String  // Foreign key scalar field
+  user    Users   @relation(fields: [userId], references: [id])
+}
+
+model UsersNotifications {
+  id        String   @id @default(uuid()) @map("_id")
+  createdAt DateTime @default(now())
+  message   String
+  postId    String   // Foreign key scalar field
+  post      Posts    @relation(fields: [postId], references: [id])
+}
+
+model Models {
+  id       String @id @default(uuid()) @map("_id")
+  contenu  String
+  libelle  String
+  prix     Int
+  quantite Int
+}
+
+model UsersSignals {
+  id         String @id @default(uuid()) @map("_id")
+  reporterId String  // Foreign key scalar field
+  reporter   Users   @relation("userReporters",fields: [reporterId], references: [id])
+  reason     String
+  userId     String  // Foreign key scalar field
+  user       Users   @relation(fields: [userId], references: [id])
+}
+
+model CommandeModels {
+  id               String   @id @default(uuid()) @map("_id")
+  adresseLivraison String
+  dateDeCommand    DateTime @default(now())
+  modelLibelleId   String   // Foreign key scalar field
+  modelLibelle     Models   @relation(fields: [modelLibelleId], references: [id])
+  postId           String?  // Foreign key scalar field
+  post             Posts?   @relation(fields: [postId], references: [id])
+  storyId          String?  // Foreign key scalar field
+  story            Stories? @relation(fields: [storyId], references: [id])
+  userId           String   // Foreign key scalar field
+  user             Users    @relation(fields: [userId], references: [id])
+}
+
+model Comments {
+  id        String   @id @default(uuid()) @map("_id")
+  content   String?
+  createdAt DateTime @default(now())
+  userId    String   // Foreign key scalar field
+  user      Users    @relation(fields: [userId], references: [id])
+}
+
+model Dislikes {
+  id      String @id @default(uuid()) @map("_id")
+  userId  String  // Foreign key scalar field
+  user    Users   @relation(fields: [userId], references: [id])
+}
+
+model Favoris {
+  id         String   @id @default(uuid()) @map("_id")
+  createDate DateTime @default(now())
+  userId     String   // Foreign key scalar field
+  user       Users    @relation(fields: [userId], references: [id])
+}
+
+model Likes {
+  id        String   @id @default(uuid()) @map("_id")
+  createdAt DateTime @default(now())
+  users     Users[]
+}
+
+model Partages {
+  id         String   @id @default(uuid()) @map("_id")
+  postId     String   // Foreign key scalar field
+  post       Posts    @relation(fields: [postId], references: [id])
+  receiverId String   // Foreign key scalar field
+  receiver   Users    @relation("ReceiverRelation", fields: [receiverId], references: [id])
+  senderId   String   // Foreign key scalar field
+  sender     Users    @relation("SenderRelation", fields: [senderId], references: [id])
+  sharedAt   DateTime @default(now())
+}
+
+
+
+model Stories {
+  id                 String   @id @default(uuid()) @map("_id")
+  expiresAt          DateTime?
+  utilisateurBloqueIds Users[] @relation("utilisateurBloque")
+  CommandeModels     CommandeModels[]
+  utilisateurBloque  Users    @relation("BlockedUsers")
+  modelStory            String   // Foreign key scalar field
+  model              Models   @relation("storyModel",fields: [modelStory], references: [id])
+  userStory             String   // Foreign key scalar field
+  user               Users    @relation("storyUser",fields: [userStory], references: [id])
+}
