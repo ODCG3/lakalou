@@ -2,7 +2,7 @@ import UserModel from "../models/UserModel.js";
 import Model from "../models/ModelModel.js";
 import Post from "../models/PostModel.js";
 import isEmail from "validator/lib/isEmail.js";
-import validateName, { validateImageExtension } from "../utils/Validator.js";
+import  {validateName, validateImageExtension } from "../utils/Validator.js";
 import validator from "validator";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";

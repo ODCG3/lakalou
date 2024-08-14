@@ -38,3 +38,10 @@ Pour démarrer le serveur en mode développement:
 ```
 nodemon app.js
 ```
+
+# add these data to your .env file
+```
+MONGODB_URI=mongodb+srv://safnabanopy:safnabanopy@cluster0.fa6xdiy.mongodb.net/safnabanopy?retryWrites=true&w=majority&appName=Cluster0
+TokenKey=safnabanopy
+DATABASE_URL=mysql://bakemono:bakemono@localhost:3306/safnabanoppy
+```

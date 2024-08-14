@@ -1,0 +1,304 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model CommandeModels {
+  id               Int       @id @default(autoincrement())
+  adresseLivraison String?   @db.VarChar(255)
+  dateDeCommand    DateTime? @default(now()) @db.DateTime(0)
+  modelID          Int
+  postId           Int?
+  storyId          Int?
+  userId           Int
+  Models           Models    @relation(fields: [modelID], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "CommandeModels_ibfk_1")
+  Posts            Posts?    @relation(fields: [postId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "CommandeModels_ibfk_2")
+  Stories          Stories?  @relation(fields: [storyId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "CommandeModels_ibfk_3")
+  Users            Users     @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "CommandeModels_ibfk_4")
+
+  @@index([modelID], map: "modelID")
+  @@index([postId], map: "postId")
+  @@index([storyId], map: "storyId")
+  @@index([userId], map: "userId")
+}
+
+model Comments {
+  id        Int       @id @default(autoincrement())
+  content   String?   @db.Text
+  createdAt DateTime? @default(now()) @db.DateTime(0)
+  postId    Int
+  userId    Int
+  Posts     Posts     @relation(fields: [postId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Comments_ibfk_1")
+  Users     Users     @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Comments_ibfk_2")
+
+  @@index([postId], map: "postId")
+  @@index([userId], map: "userId")
+}
+
+model Dislikes {
+  id     Int   @id @default(autoincrement())
+  userId Int
+  postId Int
+  Posts  Posts @relation(fields: [postId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Dislikes_ibfk_1")
+  Users  Users @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Dislikes_ibfk_2")
+
+  @@index([postId], map: "postId")
+  @@index([userId], map: "userId")
+}
+
+model Favoris {
+  id         Int       @id @default(autoincrement())
+  createDate DateTime? @default(now()) @db.DateTime(0)
+  postId     Int
+  userId     Int
+  Posts      Posts     @relation(fields: [postId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Favoris_ibfk_1")
+  Users      Users     @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Favoris_ibfk_2")
+
+  @@index([postId], map: "postId")
+  @@index([userId], map: "userId")
+}
+
+model Followers {
+  id                                Int   @id @default(autoincrement())
+  userId                            Int
+  followerId                        Int
+  Users_Followers_userIdToUsers     Users @relation("Followers_userIdToUsers", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Followers_ibfk_1")
+  Users_Followers_followerIdToUsers Users @relation("Followers_followerIdToUsers", fields: [followerId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Followers_ibfk_2")
+
+  @@index([followerId], map: "followerId")
+  @@index([userId], map: "userId")
+}
+
+model Likes {
+  id        Int       @id @default(autoincrement())
+  createdAt DateTime? @default(now()) @db.DateTime(0)
+  postId    Int
+  userId    Int
+  Posts     Posts     @relation(fields: [postId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Likes_ibfk_1")
+  Users     Users     @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Likes_ibfk_2")
+
+  @@index([postId], map: "postId")
+  @@index([userId], map: "userId")
+}
+
+model ListeSouhaits {
+  userId Int
+  postId Int
+  Users  Users @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ListeSouhaits_ibfk_1")
+  Posts  Posts @relation(fields: [postId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ListeSouhaits_ibfk_2")
+
+  @@id([userId, postId])
+  @@index([postId], map: "postId")
+}
+
+model MesModels {
+  userId  Int
+  modelId Int
+  Users   Users  @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "MesModels_ibfk_1")
+  Models  Models @relation(fields: [modelId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "MesModels_ibfk_2")
+
+  @@id([userId, modelId])
+  @@index([modelId], map: "modelId")
+}
+
+model Models {
+  id             Int              @id @default(autoincrement())
+  contenu        Json?
+  libelle        String?          @db.VarChar(255)
+  prix           Int?
+  quantite       Int?
+  tailleurID     Int
+  CommandeModels CommandeModels[]
+  MesModels      MesModels[]
+  Users          Users            @relation(fields: [tailleurID], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Models_ibfk_1")
+  Posts          Posts[]
+  Stories        Stories[]
+  UsersMesModels UsersMesModels[]
+
+  @@index([tailleurID], map: "tailleurID")
+}
+
+model Partages {
+  id                               Int       @id @default(autoincrement())
+  postId                           Int
+  receiverId                       Int
+  senderId                         Int
+  sharedAt                         DateTime? @default(now()) @db.DateTime(0)
+  Posts                            Posts     @relation(fields: [postId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Partages_ibfk_1")
+  Users_Partages_receiverIdToUsers Users     @relation("Partages_receiverIdToUsers", fields: [receiverId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Partages_ibfk_2")
+  Users_Partages_senderIdToUsers   Users     @relation("Partages_senderIdToUsers", fields: [senderId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Partages_ibfk_3")
+
+  @@index([postId], map: "postId")
+  @@index([receiverId], map: "receiverId")
+  @@index([senderId], map: "senderId")
+}
+
+model Posts {
+  id                 Int                  @id @default(autoincrement())
+  datePublication    DateTime?            @default(now()) @db.DateTime(0)
+  description        String?              @db.Text
+  modelId            Int
+  titre              String?              @db.VarChar(255)
+  utilisateurId      Int
+  vues               Int?                 @default(0)
+  CommandeModels     CommandeModels[]
+  Comments           Comments[]
+  Dislikes           Dislikes[]
+  Favoris            Favoris[]
+  Likes              Likes[]
+  ListeSouhaits      ListeSouhaits[]
+  Partages           Partages[]
+  Models             Models               @relation(fields: [modelId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Posts_ibfk_1")
+  Users              Users                @relation(fields: [utilisateurId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Posts_ibfk_2")
+  UsersNotifications UsersNotifications[]
+
+  @@index([modelId], map: "modelId")
+  @@index([utilisateurId], map: "utilisateurId")
+}
+
+model Stories {
+  id             Int              @id @default(autoincrement())
+  expiresAt      DateTime?        @db.DateTime(0)
+  modelId        Int
+  userId         Int
+  Views          Int              @default(0)
+  BlockedUsers   BlockedUsers[]
+  CommandeModels CommandeModels[]
+  Models         Models           @relation(fields: [modelId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Stories_ibfk_1")
+  Users          Users            @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Stories_ibfk_2")
+
+  @@index([modelId], map: "modelId")
+  @@index([userId], map: "userId")
+}
+
+model Users {
+  id                                                  Int                        @id @default(autoincrement())
+  email                                               String?                    @unique(map: "email") @db.VarChar(255)
+  nom                                                 String?                    @db.VarChar(255)
+  prenom                                              String?                    @db.VarChar(255)
+  password                                            String?                    @db.VarChar(255)
+  photoProfile                                        String?                    @db.VarChar(255)
+  role                                                Users_role?
+  status                                              String?                    @db.VarChar(50)
+  badges                                              Boolean?
+  certificat                                          Boolean?
+  credits                                             Int?
+  BlockedUsers                                        BlockedUsers[]
+  CommandeModels                                      CommandeModels[]
+  Comments                                            Comments[]
+  Dislikes                                            Dislikes[]
+  Favoris                                             Favoris[]
+  Followers_Followers_userIdToUsers                   Followers[]                @relation("Followers_userIdToUsers")
+  Followers_Followers_followerIdToUsers               Followers[]                @relation("Followers_followerIdToUsers")
+  Likes                                               Likes[]
+  ListeSouhaits                                       ListeSouhaits[]
+  MesModels                                           MesModels[]
+  Models                                              Models[]
+  Partages_Partages_receiverIdToUsers                 Partages[]                 @relation("Partages_receiverIdToUsers")
+  Partages_Partages_senderIdToUsers                   Partages[]                 @relation("Partages_senderIdToUsers")
+  Posts                                               Posts[]
+  Stories                                             Stories[]
+  UsersDiscussions_UsersDiscussions_userIdToUsers     UsersDiscussions[]         @relation("UsersDiscussions_userIdToUsers")
+  UsersDiscussions_UsersDiscussions_receiverIdToUsers UsersDiscussions[]         @relation("UsersDiscussions_receiverIdToUsers")
+  UsersDiscussionsMessages                            UsersDiscussionsMessages[]
+  UsersMesModels                                      UsersMesModels[]
+  UsersNotes_UsersNotes_raterIDToUsers                UsersNotes[]               @relation("UsersNotes_raterIDToUsers")
+  UsersNotes_UsersNotes_userIdToUsers                 UsersNotes[]               @relation("UsersNotes_userIdToUsers")
+  UsersNotifications                                  UsersNotifications[]
+  UsersSignals_UsersSignals_reporterIdToUsers         UsersSignals[]             @relation("UsersSignals_reporterIdToUsers")
+  UsersSignals_UsersSignals_userIdToUsers             UsersSignals[]             @relation("UsersSignals_userIdToUsers")
+}
+
+model UsersDiscussions {
+  id                                       Int                        @id @default(autoincrement())
+  userId                                   Int
+  receiverId                               Int
+  Users_UsersDiscussions_userIdToUsers     Users                      @relation("UsersDiscussions_userIdToUsers", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "UsersDiscussions_ibfk_1")
+  Users_UsersDiscussions_receiverIdToUsers Users                      @relation("UsersDiscussions_receiverIdToUsers", fields: [receiverId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "UsersDiscussions_ibfk_2")
+  UsersDiscussionsMessages                 UsersDiscussionsMessages[]
+
+  @@index([receiverId], map: "receiverId")
+  @@index([userId], map: "userId")
+}
+
+model UsersDiscussionsMessages {
+  id               Int              @id @default(autoincrement())
+  content          String?          @db.Text
+  createdAt        DateTime?        @default(now()) @db.DateTime(0)
+  senderId         Int
+  discussionId     Int
+  Users            Users            @relation(fields: [senderId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "UsersDiscussionsMessages_ibfk_1")
+  UsersDiscussions UsersDiscussions @relation(fields: [discussionId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "UsersDiscussionsMessages_ibfk_2")
+
+  @@index([discussionId], map: "discussionId")
+  @@index([senderId], map: "senderId")
+}
+
+model UsersMesModels {
+  id               Int    @id @default(autoincrement())
+  nombreDeCommande Int?
+  modelId          Int
+  userId           Int
+  Models           Models @relation(fields: [modelId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "UsersMesModels_ibfk_1")
+  Users            Users  @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "UsersMesModels_ibfk_2")
+
+  @@index([modelId], map: "modelId")
+  @@index([userId], map: "userId")
+}
+
+model UsersNotes {
+  id                              Int   @id @default(autoincrement())
+  rate                            Int?
+  raterID                         Int
+  userId                          Int
+  Users_UsersNotes_raterIDToUsers Users @relation("UsersNotes_raterIDToUsers", fields: [raterID], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "UsersNotes_ibfk_1")
+  Users_UsersNotes_userIdToUsers  Users @relation("UsersNotes_userIdToUsers", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "UsersNotes_ibfk_2")
+
+  @@index([raterID], map: "raterID")
+  @@index([userId], map: "userId")
+}
+
+model UsersNotifications {
+  id        Int       @id @default(autoincrement())
+  createdAt DateTime? @default(now()) @db.DateTime(0)
+  message   String?   @db.Text
+  postId    Int
+  userId    Int
+  Posts     Posts     @relation(fields: [postId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "UsersNotifications_ibfk_1")
+  Users     Users     @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "UsersNotifications_ibfk_2")
+
+  @@index([postId], map: "postId")
+  @@index([userId], map: "userId")
+}
+
+model UsersSignals {
+  id                                   Int     @id @default(autoincrement())
+  reporterId                           Int
+  reason                               String? @db.Text
+  userId                               Int
+  Users_UsersSignals_reporterIdToUsers Users   @relation("UsersSignals_reporterIdToUsers", fields: [reporterId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "UsersSignals_ibfk_1")
+  Users_UsersSignals_userIdToUsers     Users   @relation("UsersSignals_userIdToUsers", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "UsersSignals_ibfk_2")
+
+  @@index([reporterId], map: "reporterId")
+  @@index([userId], map: "userId")
+}
+
+model BlockedUsers {
+  id            Int      @id @default(autoincrement())
+  storyId       Int
+  blockedUserId Int
+  Stories       Stories @relation(fields: [storyId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "BlockedUsers_ibfk_1")
+  Users         Users   @relation(fields: [blockedUserId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "BlockedUsers_ibfk_2")
+
+  @@index([blockedUserId], map: "blockedUserId")
+}
+
+enum Users_role {
+  tailleur
+  visiteur
+  vendeur
+}

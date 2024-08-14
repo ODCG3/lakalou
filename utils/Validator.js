@@ -1,4 +1,4 @@
-export default function validateName(name) {
+export function validateName(name) {
     const nameRegex = /^(?!\s*$)[A-Za-zÀ-ÖØ-öø-ÿ\s'-]+$/;
     return nameRegex.test(name);
 }
