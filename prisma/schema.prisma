@@ -83,6 +83,7 @@ model Likes {
 
   @@index([postId], map: "postId")
   @@index([userId], map: "userId")
+  @@unique([userId, postId])
 }
 
 model ListeSouhaits {
