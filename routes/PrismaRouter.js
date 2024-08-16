@@ -7,7 +7,10 @@ import StoryController from "../dist/StoryController.js";
 
 router.route("/register").post((req, res) => PrismaUserController.create(req, res));
 router.route("/login").post((req, res) => PrismaUserController.login(req, res));
-router.route("/logout").post(auth, (req, res) => PrismaUserController.logout(req, res));
+
+router.route("/logout").post(auth,(req, res) => PrismaUserController.logout(req, res));
+router.route("/Notes/:id").post(auth,(req, res) => PrismaUserController.addNotes(req, res));
+
 
 router
     .route("/model/create")
