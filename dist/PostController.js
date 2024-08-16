@@ -77,13 +77,6 @@ export default class PostController {
                 // Récupérer le post par son ID avec Prisma
                 const postData = yield prisma.posts.findUnique({
                     where: { id: parseInt(postId) }
-                    // include: {
-                    //     utilisateurId: true, // Inclure les informations de l'utilisateur ayant créé le post
-                    //     model: true, // Inclure les informations du modèle lié au post
-                    //     likes: true, // Inclure les likes associés au post
-                    //     dislikes: true, // Inclure les dislikes associés au post
-                    //     comments: true, // Inclure les commentaires associés au post
-                    // },
                 });
                 // Vérifier si le post existe
                 if (!postData) {
@@ -121,6 +114,46 @@ export default class PostController {
             }
             catch (error) {
                 res.status(500).json({ error: 'Erreur interne du serveur.' });
+            }
+        });
+    }
+    static addView(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const { postId } = req.params;
+            try {
+                const post = yield prisma.posts.update({
+                    where: { id: parseInt(postId) },
+                    data: { vues: { increment: 1 } }
+                });
+                if (!post) {
+                    return res.status(404).json({ error: "Post non trouvé." });
+                }
+                res.status(200).json({ message: "Vue ajoutée avec succès" });
+            }
+            catch (error) {
+                res.status(500).json({ error: 'Erreur interne du serveur' });
+            }
+        });
+    }
+    static getVues(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const { postId } = req.params;
+            try {
+                // Récupérer le post avec le nombre de vues
+                const postData = yield prisma.posts.findUnique({
+                    where: { id: parseInt(postId) }
+                });
+                // Vérifier si le post existe
+                if (!postData) {
+                    return res.status(404).json({ error: "Post not found" });
+                }
+                // Utiliser directement le nombre de vues
+                const numberOfVues = postData.vues;
+                // Retourner le nombre de vues
+                res.status(200).json({ vues: numberOfVues });
+            }
+            catch (error) {
+                res.status(500).json({ error: 'Erreur interne du serveur' });
             }
         });
     }
