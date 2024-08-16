@@ -29,5 +29,7 @@ router
 
 router.route("/post/create").post(auth,(req, res) => PostController.createPost(req, res));
 router.route("/post").get(auth,(req, res) => PostController.getPosts(req, res));
+router.route("/post/:postId").get(auth,(req, res) => PostController.getPostById(req, res));
+router.route("/post/:postId").delete(auth,(req, res) => PostController.deletePost(req, res));
 
 export default router;
