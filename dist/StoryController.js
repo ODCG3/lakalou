@@ -71,7 +71,7 @@ const getStories = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         // Fetch stories of the user while excluding those where the requesting user is blocked
         const stories = yield prisma.stories.findMany({
             where: {
-                userId: ownerId,
+                userId: parseInt(ownerId),
                 expiresAt: { gt: new Date() },
                 BlockedUsers: { none: { id: viewerId } } // Exclude stories where viewerId is in the blocked users list
             }
@@ -88,7 +88,7 @@ const deleteStory = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     try {
         const result = yield prisma.stories.deleteMany({
             where: {
-                id: storyId,
+                id: parseInt(storyId),
                 userId: userID
             }
         });
@@ -107,7 +107,7 @@ const viewStory = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const storyId = req.params.id;
     try {
         const story = yield prisma.stories.update({
-            where: { id: storyId },
+            where: { id: parseInt(storyId) },
             data: { Views: { increment: 1 } }
         });
         if (story) {
@@ -125,7 +125,7 @@ const getStoryViews = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     const storyId = req.params.id;
     try {
         const story = yield prisma.stories.findUnique({
-            where: { id: storyId }
+            where: { id: parseInt(storyId) }
         });
         if (!story) {
             res.status(404).json({ message: "La story n'a pas été trouvée." });
