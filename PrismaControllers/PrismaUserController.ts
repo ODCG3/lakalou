@@ -150,4 +150,60 @@ export default class PrismaUserController {
 
     res.status(200).json('Déconnexion réussie');
   }
+  //addNote
+  static async addNotes(req: Request, res: Response) {
+    const { id } = req.params;
+    const { rate } = req.body;
+
+    // Validate rate
+    if (typeof rate !== 'number' || rate < 1 || rate > 5) {
+      return res.status(400).json({ error: 'La note doit être un nombre entre 1 et 5' });
+    }
+
+    try {
+      const userToRate = await prisma.users.findUnique({
+        where: { id: parseInt(id, 10) },
+        include: { UsersNotes_UsersNotes_raterIDToUsers: true },
+      });
+
+      if (!userToRate) {
+        return res.status(403).json({ error: 'Utilisateur non trouvé' });
+      }
+
+      if (userToRate.role !== 'tailleur') {
+        return res.status(402).json({ error: 'Vous ne pouvez pas noter un visiteur' });
+      }
+
+      const raterId = req.user?.userID;
+
+      if (!raterId) {
+        return res.status(403).json({ error: "Connectez-vous d'abord pour noter" });
+      }
+
+      if (userToRate.id === raterId) {
+        return res.status(400).json({ error: 'Vous ne pouvez pas vous noter vous-même' });
+      }
+
+      const existingNote = userToRate.UsersNotes_UsersNotes_raterIDToUsers.find(
+        (note) => note.raterID === raterId
+      );
+
+      if (existingNote) {
+        return res.status(400).json({ error: 'Vous avez déjà noté cet utilisateur' });
+      }
+
+      const note = await prisma.usersNotes.create({
+        data: {
+          rate,
+          raterID: raterId,
+          userId: userToRate.id,
+        },
+      });
+
+      res.status(200).json({ message: 'Note ajoutée avec succès', note });
+    } catch (error) {
+      res.status(500).json({ error: 'Erreur interne du serveur' });
+    }
+  }
+
 }

@@ -1,8 +1,9 @@
+import { Request, Response } from 'express';
 declare const _default: {
-    createStory: (req: any, res: any) => Promise<any>;
-    getStories: (req: any, res: any) => Promise<void>;
-    deleteStory: (req: any, res: any) => Promise<void>;
-    viewStory: (req: any, res: any) => Promise<void>;
-    getStoryViews: (req: any, res: any) => Promise<void>;
+    createStory: (req: Request, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+    getStories: (req: Request, res: Response) => Promise<void>;
+    deleteStory: (req: Request, res: Response) => Promise<void>;
+    viewStory: (req: Request, res: Response) => Promise<void>;
+    getStoryViews: (req: Request, res: Response) => Promise<void>;
 };
 export default _default;
