@@ -41,7 +41,21 @@ nodemon app.js
 
 # add these data to your .env file
 ```
-MONGODB_URI=mongodb+srv://safnabanopy:safnabanopy@cluster0.fa6xdiy.mongodb.net/safnabanopy?retryWrites=true&w=majority&appName=Cluster0
+MONGODB_URI=mongodb+srv://username:password@cluster0.fa6xdiy.mongodb.net/safnabanopy?retryWrites=true&w=majority&appName=Cluster0
 TokenKey=safnabanopy
-DATABASE_URL=mysql://bakemono:bakemono@localhost:3306/safnabanoppy
+DATABASE_URL=mysql://username:password@localhost:3306/safnabanoppy
 ```
+
+# step to setup your local ennvironment
+
+  - pull the project or clone it 
+  - create the .env file with the corrects datas
+  - migrate your prisma schema into the database
+  ``` npx prisma migrate dev ```
+  - Then start working
+
+# Guide to test your functionalities
+  - compile the typescript code
+    ``` npx tsc ```
+  - then start the app 
+  - open postman and test the endpoints
