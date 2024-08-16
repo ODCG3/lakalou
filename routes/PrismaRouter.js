@@ -3,6 +3,7 @@ const router = express.Router();
 import auth from "../middlewares/auth.js";
 import PrismaUserController from "../dist/PrismaUserController.js";
 import ModelController from "../dist/ModelController.js";
+import PostController from "../dist/PostController.js";
 
 router.route("/register").post((req, res) => PrismaUserController.create(req, res));
 router.route("/login").post((req, res) => PrismaUserController.login(req, res));
@@ -25,5 +26,8 @@ router
   router
   .route("/model/:modelId")
   .get(auth, (req, res) => ModelController.getModelById(req, res));
+
+router.route("/post/create").post(auth,(req, res) => PostController.createPost(req, res));
+router.route("/post").get(auth,(req, res) => PostController.getPosts(req, res));
 
 export default router;
