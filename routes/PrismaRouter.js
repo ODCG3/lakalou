@@ -33,5 +33,10 @@ router.route("/post/:postId").get(auth,(req, res) => PostController.getPostById(
 router.route("/post/:postId").delete(auth,(req, res) => PostController.deletePost(req, res));
 router.route("/post/:postId").post(auth,(req, res) => PostController.addView(req, res));
 router.route("/post/:postId").get(auth,(req, res) => PostController.getVues(req, res));
+router.route("/post/favorite/create/:postId").post(auth, (req, res) => PostController.addFavoris(req, res));
+router.route("/post/favorite/remove/:postId").delete(auth,(req, res) => PostController.deleteFavoris(req, res));
+//router.route("/post/favorite").get(auth, (req, res) => PostController.getAllFavoris(req, res));
+
+ 
 
 export default router;

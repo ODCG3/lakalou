@@ -157,4 +157,96 @@ export default class PostController {
             }
         });
     }
+    static addFavoris(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const { postId } = req.params;
+            const utilisateurId = req.user.userID;
+            try {
+                // Vérifier si le post existe
+                const postExists = yield prisma.posts.findUnique({
+                    where: { id: parseInt(postId) },
+                });
+                if (!postExists) {
+                    return res.status(404).json({ error: "Post non trouvé." });
+                }
+                // Vérifier si le post est déjà dans les favoris de l'utilisateur
+                const favorisExists = yield prisma.favoris.findFirst({
+                    where: {
+                        postId: parseInt(postId),
+                        userId: utilisateurId
+                    }
+                });
+                if (favorisExists) {
+                    return res.status(400).json({ error: "Ce post est déjà dans vos favoris." });
+                }
+                // Ajouter le post aux favoris
+                const favoris = yield prisma.favoris.create({
+                    data: {
+                        createDate: new Date(), // Utiliser la date actuelle
+                        postId: parseInt(postId),
+                        userId: utilisateurId
+                    }
+                });
+                res.status(201).json({ message: "Post ajouté aux favoris" });
+            }
+            catch (error) {
+                res.status(500).json({ error: 'Erreur interne du serveur' });
+            }
+        });
+    }
+    // static async getAllFavoris(req: Request, res: Response) {
+    //     const utilisateurId = req.user!.userID; // Assurez-vous que req.user est défini
+    //     console.log(utilisateurId);
+    //     if (!utilisateurId) {
+    //         return res.status(401).json({ error: "Utilisateur non authentifié." });
+    //     }
+    //     try {
+    //         // Récupérer tous les favoris de l'utilisateur
+    //         const favorisList = await prisma.favoris.findMany({
+    //             where: { userId: utilisateurId },
+    //             include: {
+    //                 Posts: true // Ajoute les détails des posts si nécessaire
+    //             }
+    //         });
+    //         // Vérifier si des favoris existent
+    //         if (favorisList.length === 0) {
+    //             return res.status(404).json({ message: "Aucun favori trouvé pour cet utilisateur." });
+    //         }
+    //         // Retourner la liste des favoris
+    //         res.status(200).json({ favoris: favorisList });
+    //     } catch (error) {
+    //         console.log('Erreur lors de la récupération des favoris:', error); // Pour débogage
+    //         res.status(500).json({ error: 'Erreur interne du serveur' });
+    //     }
+    // }
+    static deleteFavoris(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const { postId } = req.params;
+            const utilisateurId = req.user.userID;
+            if (!utilisateurId) {
+                return res.status(401).json({ error: "Utilisateur non authentifié." });
+            }
+            try {
+                // Vérifier si le favori existe en utilisant findFirst
+                const favoris = yield prisma.favoris.findFirst({
+                    where: {
+                        postId: parseInt(postId),
+                        userId: utilisateurId
+                    }
+                });
+                if (!favoris) {
+                    return res.status(404).json({ error: "Favori non trouvé." });
+                }
+                // Supprimer le favori
+                yield prisma.favoris.delete({
+                    where: { id: favoris.id } // Utiliser l'ID unique du favori
+                });
+                res.status(200).json({ message: "Favori supprimé avec succès." });
+            }
+            catch (error) {
+                console.error('Erreur lors de la suppression du favori:', error); // Pour débogage
+                res.status(500).json({ error: 'Erreur interne du serveur' });
+            }
+        });
+    }
 }
