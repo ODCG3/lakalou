@@ -269,23 +269,26 @@ export default class PostController {
                 if (!utilisateurCibleData) {
                     return res.status(404).json({ error: "Utilisateur cible non trouvé." });
                 }
-                // Créer l'entrée de partage dans la table Partages
+                // Créer un enregistrement de partage
                 const donneePartage = yield prisma.partages.create({
                     data: {
-                        senderId: utilisateurId,
                         postId: parseInt(postId),
                         receiverId: utilisateurCible,
-                        sharedAt: new Date() // Facultatif, mais explicite
+                        senderId: utilisateurId,
+                        sharedAt: new Date()
                     }
                 });
+                if (!donneePartage) {
+                    return res.status(500).json({ error: "Échec du partage du post." });
+                }
                 res.status(200).json({
-                    message: "Post partagé avec succès",
+                    message: "Post partagé avec succès.",
                     partage: donneePartage
                 });
             }
             catch (error) {
-                console.error("Erreur lors du partage du post:", error); // Pour débogage
-                res.status(500).json({ error: "Erreur interne du serveur", details: error });
+                console.error('Erreur lors du partage du post:', error); // Pour débogage
+                res.status(500).json({ error: 'Erreur interne du serveur' });
             }
         });
     }

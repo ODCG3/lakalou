@@ -4,6 +4,7 @@ import auth from "../middlewares/auth.js";
 import PrismaUserController from "../dist/PrismaUserController.js";
 import ModelController from "../dist/ModelController.js";
 import PostController from "../dist/PostController.js";
+import CommandeModelController from "../dist/CommandeModelController.js"
 
 router.route("/register").post((req, res) => PrismaUserController.create(req, res));
 router.route("/login").post((req, res) => PrismaUserController.login(req, res));
@@ -37,6 +38,12 @@ router.route("/post/favorite/create/:postId").post(auth, (req, res) => PostContr
 router.route("/post/favorite/remove/:postId").delete(auth,(req, res) => PostController.deleteFavoris(req, res));
 //router.route("/post/favorite").get(auth, (req, res) => PostController.getAllFavoris(req, res));
 router.route("/post/:postId/share").post(auth, (req, res) => PostController.partagerPost(req, res));
+
+router.route('/commandes/post/:postId').post(auth, (req, res) => CommandeModelController.createCommande(req, res));
+router.route('/commandes/story/:storyId').post(auth, (req, res) => CommandeModelController.createCommande(req, res));
+router.route('/commandes/post/:postId').get(auth, (req, res) => CommandeModelController.getCommandes(req, res));
+router.route('/commandes/story/:storyId').get(auth, (req, res) => CommandeModelController.getCommandes(req, res));
+router.route('/commandes/:commandeId').get(auth, (req, res) => CommandeModelController.getCommandeById(req, res));
 
 
 export default router;
