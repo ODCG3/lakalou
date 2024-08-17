@@ -36,7 +36,7 @@ router.route("/post/:postId").get(auth,(req, res) => PostController.getVues(req,
 router.route("/post/favorite/create/:postId").post(auth, (req, res) => PostController.addFavoris(req, res));
 router.route("/post/favorite/remove/:postId").delete(auth,(req, res) => PostController.deleteFavoris(req, res));
 //router.route("/post/favorite").get(auth, (req, res) => PostController.getAllFavoris(req, res));
+router.route("/post/:postId/share").post(auth, (req, res) => PostController.partagerPost(req, res));
 
- 
 
 export default router;
