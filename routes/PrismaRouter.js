@@ -22,8 +22,10 @@ router
 router
   .route("/model/:modelId/delete")
   .delete(auth, (req, res) => ModelController.deleteModel(req, res));
-  router
+router
   .route("/model/:modelId")
   .get(auth, (req, res) => ModelController.getModelById(req, res));
 
+  router.post('/signale/:userId', auth, PrismaUserController.reportUser);
+  
 export default router;

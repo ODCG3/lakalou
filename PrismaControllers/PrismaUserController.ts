@@ -206,4 +206,58 @@ export default class PrismaUserController {
     }
   }
 
+    //reportUser
+    static async reportUser(req: Request, res: Response) {
+      const { id } = req.params;
+      const { reason } = req.body;
+  
+      if (!reason || typeof reason !== 'string') {
+        return res.status(400).json({ error: 'La raison du signalement est requise' });
+      }
+  
+      console.log(reason);
+      console.log(id);
+       try { 
+        
+        const userToReport = await prisma.users.findUnique({
+          where: { id: parseInt(id, 30) },
+          include: { UsersSignals_UsersSignals_reporterIdToUsers: true },
+        });
+        /* console.log(userToReport);  */                             
+        if (!userToReport) {
+          return res.status(402).json({ error: 'Utilisateur non trouvé' });
+        }
+  
+        const reporterId = req.user?.userID;
+  
+        if (!reporterId) {
+          return res.status(403).json({ error: "Connectez-vous d'abord pour signaler" });
+        }
+  
+        if (userToReport.id === reporterId) {
+          return res.status(403).json({ error: 'Vous ne pouvez pas vous signaler vous-même' });
+        }
+  
+        const alreadyReported = userToReport.UsersSignals_UsersSignals_reporterIdToUsers.some(
+          (signal) => signal.reporterId === reporterId
+        );
+  
+        if (alreadyReported) {
+          return res.status(405).json({ error: 'Vous avez déjà signalé cet utilisateur' });
+        }
+  
+        const signal = await prisma.usersSignals.create({
+          data: {
+            reason,
+            reporterId: reporterId,
+            userId: userToReport.id,
+          },
+        });
+  
+        res.status(200).json({ message: 'Signalement ajouté avec succès', signal });
+      } catch (error) {
+        res.status(500).json({ error: 'Erreur interne du serveur' });
+      } 
+    }
+    
 }
