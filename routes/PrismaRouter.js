@@ -54,6 +54,8 @@ router.route('/user/discussions/:userId').get(auth, (req, res) => MessagesDiscus
 router.route('/user/discussions/:discussionUser/messages').post(auth, (req, res) => MessagesDiscussionController.sendMessageToDiscussion(req, res));
 router.route('/user/discussions/:discussionId/messages/:messageId').delete(auth, (req, res) => MessagesDiscussionController.deleteMessage(req, res));
 router.route('/user/discussions/:discussionId/messages/:messageId').put(auth, (req, res) => MessagesDiscussionController.modifierMessages(req, res));
+router.route('/user/chargeCredit').post(auth, (req, res) => PrismaUserController.chargeCredit(req, res));
+
 
 
 export default router;
