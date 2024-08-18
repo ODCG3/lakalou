@@ -85,22 +85,36 @@ export default class CommandeModelController {
                     where: { id: modelId },
                     data: { quantite: { decrement: 1 } }
                 });
-                // Mise à jour des modèles de l'utilisateur
-                const user = yield prisma.users.findUnique({
-                    where: { id: userId }
+                // Mise à jour des modèles de l'utilisateur (MesModels)
+                const existingMesModel = yield prisma.mesModels.findUnique({
+                    where: { userId_modelId: { userId, modelId } }
                 });
-                if (user) {
-                    const existingEntry = yield prisma.mesModels.findUnique({
-                        where: { userId_modelId: { userId, modelId } }
+                if (!existingMesModel) {
+                    yield prisma.mesModels.create({
+                        data: {
+                            userId,
+                            modelId
+                        }
                     });
-                    if (!existingEntry) {
-                        yield prisma.mesModels.create({
-                            data: {
-                                userId,
-                                modelId
-                            }
-                        });
-                    }
+                }
+                // Mise à jour ou création dans UsersMesModels
+                const existingUsersMesModel = yield prisma.usersMesModels.findFirst({
+                    where: { userId, modelId }
+                });
+                if (existingUsersMesModel) {
+                    yield prisma.usersMesModels.update({
+                        where: { id: existingUsersMesModel.id },
+                        data: { nombreDeCommande: { increment: 1 } }
+                    });
+                }
+                else {
+                    yield prisma.usersMesModels.create({
+                        data: {
+                            userId,
+                            modelId,
+                            nombreDeCommande: 1
+                        }
+                    });
                 }
                 // Réponse
                 res.status(201).json(commande);

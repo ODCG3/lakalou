@@ -5,6 +5,7 @@ import PrismaUserController from "../dist/PrismaUserController.js";
 import ModelController from "../dist/ModelController.js";
 import PostController from "../dist/PostController.js";
 import CommandeModelController from "../dist/CommandeModelController.js"
+import MessagesDiscussionController from "../dist/MessagesDiscussionController.js"
 
 router.route("/register").post((req, res) => PrismaUserController.create(req, res));
 router.route("/login").post((req, res) => PrismaUserController.login(req, res));
@@ -44,6 +45,13 @@ router.route('/commandes/story/:storyId').post(auth, (req, res) => CommandeModel
 router.route('/commandes/post/:postId').get(auth, (req, res) => CommandeModelController.getCommandes(req, res));
 router.route('/commandes/story/:storyId').get(auth, (req, res) => CommandeModelController.getCommandes(req, res));
 router.route('/commandes/:commandeId').get(auth, (req, res) => CommandeModelController.getCommandeById(req, res));
+
+router.route('/user/discussions/create').post(auth, (req, res) => MessagesDiscussionController.createDiscussion(req, res));
+router.route('/user/discussions').get(auth, (req, res) => MessagesDiscussionController.getDiscussions(req, res));
+router.route('/user/discussions/:userId').get(auth, (req, res) => MessagesDiscussionController.getDiscussionsByUser(req, res));
+router.route('/user/discussions/:discussionUser/messages').post(auth, (req, res) => MessagesDiscussionController.sendMessageToDiscussion(req, res));
+router.route('/user/discussions/:discussionId/messages/:messageId').delete(auth, (req, res) => MessagesDiscussionController.deleteMessage(req, res));
+router.route('/user/discussions/:discussionId/messages/:messageId').put(auth, (req, res) => MessagesDiscussionController.modifierMessages(req, res));
 
 
 export default router;
