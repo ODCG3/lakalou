@@ -6,6 +6,7 @@ import ModelController from "../dist/ModelController.js";
 import PostController from "../dist/PostController.js";
 import CommandeModelController from "../dist/CommandeModelController.js"
 import MessagesDiscussionController from "../dist/MessagesDiscussionController.js"
+import ListeSouhaitsController from "../dist/ListeSouhaitsController.js"
 
 router.route("/register").post((req, res) => PrismaUserController.create(req, res));
 router.route("/login").post((req, res) => PrismaUserController.login(req, res));
@@ -55,6 +56,8 @@ router.route('/user/discussions/:discussionUser/messages').post(auth, (req, res)
 router.route('/user/discussions/:discussionId/messages/:messageId').delete(auth, (req, res) => MessagesDiscussionController.deleteMessage(req, res));
 router.route('/user/discussions/:discussionId/messages/:messageId').put(auth, (req, res) => MessagesDiscussionController.modifierMessages(req, res));
 router.route('/user/chargeCredit').post(auth, (req, res) => PrismaUserController.chargeCredit(req, res));
+router.route('/user/listeSouhaits/:id').post(auth, (req, res) => ListeSouhaitsController.listeSouhaits(req, res));
+router.route('/user/listeSouhaits').get(auth, (req, res) => ListeSouhaitsController.voirListeSouhaits(req, res));
 
 
 
