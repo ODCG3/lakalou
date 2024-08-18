@@ -206,4 +206,56 @@ export default class PrismaUserController {
     }
   }
 
+  static async updateNote(req: Request, res: Response) {
+    const { id, noteId } = req.params;
+    const { rate } = req.body;
+
+    // Validate rate
+    if (typeof rate !== 'number' || rate < 1 || rate > 5) {
+        return res.status(400).json({ error: 'La note doit être un nombre entre 1 et 5' });
+    }
+
+    try {
+        const userToRate = await prisma.users.findUnique({
+            where: { id: parseInt(id, 10) },
+            include: { UsersNotes_UsersNotes_raterIDToUsers: true },
+        });
+
+        if (!userToRate) {
+            return res.status(403).json({ error: 'Utilisateur non trouvé' });
+        }
+
+        if (userToRate.role !== 'tailleur') {
+            return res.status(402).json({ error: 'Vous ne pouvez pas noter un visiteur' });
+        }
+
+        const raterId = req.user?.userID;
+
+        if (!raterId) {
+            return res.status(403).json({ error: "Connectez-vous d'abord pour modifier une note" });
+        }
+
+        if (userToRate.id === raterId) {
+            return res.status(400).json({ error: 'Vous ne pouvez pas vous noter vous-même' });
+        }
+
+        const existingNote = await prisma.usersNotes.findUnique({
+            where: { id: parseInt(noteId, 10), raterID: raterId, userId: userToRate.id },
+        });
+
+        if (!existingNote) {
+            return res.status(404).json({ error: "Note non trouvée ou vous n'avez pas la permission de la modifier" });
+        }
+
+        const updatedNote = await prisma.usersNotes.update({
+            where: { id: existingNote.id },
+            data: { rate },
+        });
+
+        res.status(200).json({ message: 'Note mise à jour avec succès', updatedNote });
+    } catch (error) {
+        res.status(500).json({ error: 'Erreur interne du serveur' });
+    }
+  }
+
 }

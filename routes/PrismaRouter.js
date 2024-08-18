@@ -11,6 +11,8 @@ router.route("/register").post((req, res) => PrismaUserController.create(req, re
 router.route("/login").post((req, res) => PrismaUserController.login(req, res));
 router.route("/logout").post(auth,(req, res) => PrismaUserController.logout(req, res));
  router.route("/Notes/:id").post(auth,(req, res) => PrismaUserController.addNotes(req, res));
+router.route("/Notes/:id/:noteId").put(auth, (req, res) => PrismaUserController.updateNote(req, res));
+
 
 router
   .route("/model/create")
