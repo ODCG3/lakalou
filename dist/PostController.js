@@ -219,6 +219,36 @@ export default class PostController {
     //         res.status(500).json({ error: 'Erreur interne du serveur' });
     //     }
     // }
+    static getAllFavoris(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                // Vérifier si l'utilisateur est connecté
+                const connectedUser = yield prisma.users.findUnique({
+                    where: { id: req.user.userID },
+                });
+                if (!connectedUser) {
+                    return res.status(400).json({ message: "Vous n'êtes pas connecté" });
+                }
+                // Récupérer tous les favoris de l'utilisateur connecté
+                const favorisList = yield prisma.favoris.findMany({
+                    where: { userId: connectedUser.id },
+                    include: {
+                        Posts: true, // Inclure les détails des posts
+                    },
+                });
+                // Vérifier si des favoris existent
+                if (favorisList.length === 0) {
+                    return res.status(200).json({ message: "Votre liste de favoris est vide." });
+                }
+                // Retourner la liste des favoris
+                return res.status(200).json({ favoris: favorisList });
+            }
+            catch (error) {
+                console.log('Erreur lors de la récupération des favoris:', error);
+                return res.status(500).json({ message: 'Erreur interne du serveur' });
+            }
+        });
+    }
     static deleteFavoris(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             const { postId } = req.params;
@@ -245,6 +275,49 @@ export default class PostController {
             }
             catch (error) {
                 console.error('Erreur lors de la suppression du favori:', error); // Pour débogage
+                res.status(500).json({ error: 'Erreur interne du serveur' });
+            }
+        });
+    }
+    static partagerPost(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const { postId } = req.params;
+            const utilisateurId = req.user.userID;
+            const { utilisateurCible } = req.body;
+            try {
+                // Vérifier si le post existe
+                const postData = yield prisma.posts.findUnique({
+                    where: { id: parseInt(postId) }
+                });
+                if (!postData) {
+                    return res.status(404).json({ error: "Post non trouvé." });
+                }
+                // Vérifier si l'utilisateur cible existe
+                const utilisateurCibleData = yield prisma.users.findUnique({
+                    where: { id: utilisateurCible }
+                });
+                if (!utilisateurCibleData) {
+                    return res.status(404).json({ error: "Utilisateur cible non trouvé." });
+                }
+                // Créer un enregistrement de partage
+                const donneePartage = yield prisma.partages.create({
+                    data: {
+                        postId: parseInt(postId),
+                        receiverId: utilisateurCible,
+                        senderId: utilisateurId,
+                        sharedAt: new Date()
+                    }
+                });
+                if (!donneePartage) {
+                    return res.status(500).json({ error: "Échec du partage du post." });
+                }
+                res.status(200).json({
+                    message: "Post partagé avec succès.",
+                    partage: donneePartage
+                });
+            }
+            catch (error) {
+                console.error('Erreur lors du partage du post:', error); // Pour débogage
                 res.status(500).json({ error: 'Erreur interne du serveur' });
             }
         });

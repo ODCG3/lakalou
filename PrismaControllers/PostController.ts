@@ -271,8 +271,55 @@ export default class PostController {
         }
     }
     
+    static async partagerPost(req: Request, res: Response) {
+        const { postId } = req.params;
+        const utilisateurId = req.user!.userID;
+        const { utilisateurCible } = req.body;
 
-    
+        try {
+            // Vérifier si le post existe
+            const postData = await prisma.posts.findUnique({
+                where: { id: parseInt(postId) }
+            });
+
+            if (!postData) {
+                return res.status(404).json({ error: "Post non trouvé." });
+            }
+
+            // Vérifier si l'utilisateur cible existe
+            const utilisateurCibleData = await prisma.users.findUnique({
+                where: { id: utilisateurCible }
+            });
+
+            if (!utilisateurCibleData) {
+                return res.status(404).json({ error: "Utilisateur cible non trouvé." });
+            }
+
+            // Créer un enregistrement de partage
+            const donneePartage = await prisma.partages.create({
+                data: {
+                    postId: parseInt(postId),
+                    receiverId: utilisateurCible,
+                    senderId: utilisateurId,
+                    sharedAt: new Date()
+                }
+            });
+
+            if (!donneePartage) {
+                return res.status(500).json({ error: "Échec du partage du post." });
+            }
+
+            res.status(200).json({
+                message: "Post partagé avec succès.",
+                partage: donneePartage
+            });
+        } catch (error) {
+            console.error('Erreur lors du partage du post:', error); // Pour débogage
+            res.status(500).json({ error: 'Erreur interne du serveur' });
+        }
+    }
+
+
 
     
     
