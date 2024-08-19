@@ -16,4 +16,6 @@ export default class PrismaUserController {
     static getTailleurs(req: Request, res: Response): Promise<void>;
     static myPosition(req: Request, res: Response): Promise<void>;
     static getTailleurRanking(req: Request, res: Response): Promise<void>;
+    static updateMeasurements(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
+    static getStatistiques(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
 }

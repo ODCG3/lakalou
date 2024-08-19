@@ -102,76 +102,33 @@ router
   .route("/post/favorite/remove/:postId")
   .delete(auth, (req, res) => PostController.deleteFavoris(req, res));
 //router.route("/post/favorite").get(auth, (req, res) => PostController.getAllFavoris(req, res));
-router
-  .route("/post/:postId/share")
-  .post(auth, (req, res) => PostController.partagerPost(req, res));
-router
-  .route("/notifications")
-  .get(auth, (req, res) => PostController.getNotifications(req, res));
-router
-  .route("/notifications/:notificationId")
-  .delete(auth, (req, res) => PostController.deleteNotification(req, res));
 
-router
-  .route("/commandes/post/:postId")
-  .post(auth, (req, res) => CommandeModelController.createCommande(req, res));
-router
-  .route("/commandes/story/:storyId")
-  .post(auth, (req, res) => CommandeModelController.createCommande(req, res));
-router
-  .route("/commandes/post/:postId")
-  .get(auth, (req, res) => CommandeModelController.getCommandes(req, res));
-router
-  .route("/commandes/story/:storyId")
-  .get(auth, (req, res) => CommandeModelController.getCommandes(req, res));
-router
-  .route("/commandes/:commandeId")
-  .get(auth, (req, res) => CommandeModelController.getCommandeById(req, res));
+router.route("/post/:postId/share").post(auth, (req, res) => PostController.partagerPost(req, res));
+router.route("/notifications").get(auth, (req, res) => PostController.getNotifications(req, res));
+router.route("/notifications/:notificationId").delete(auth, (req, res) => PostController.deleteNotification(req, res));
 
-router
-  .route("/user/discussions/create")
-  .post(auth, (req, res) =>
-    MessagesDiscussionController.createDiscussion(req, res)
-  );
-router
-  .route("/user/discussions")
-  .get(auth, (req, res) =>
-    MessagesDiscussionController.getDiscussions(req, res)
-  );
-router
-  .route("/user/discussions/:userId")
-  .get(auth, (req, res) =>
-    MessagesDiscussionController.getDiscussionsByUser(req, res)
-  );
-router
-  .route("/user/discussions/:discussionUser/messages")
-  .post(auth, (req, res) =>
-    MessagesDiscussionController.sendMessageToDiscussion(req, res)
-  );
-router
-  .route("/user/discussions/:discussionId/messages/:messageId")
-  .delete(auth, (req, res) =>
-    MessagesDiscussionController.deleteMessage(req, res)
-  );
-router
-  .route("/user/discussions/:discussionId/messages/:messageId")
-  .put(auth, (req, res) =>
-    MessagesDiscussionController.modifierMessages(req, res)
-  );
-router
-  .route("/user/chargeCredit")
-  .post(auth, (req, res) => PrismaUserController.chargeCredit(req, res));
-router
-  .route("/user/listeSouhaits/:id")
-  .post(auth, (req, res) => ListeSouhaitsController.listeSouhaits(req, res));
-router
-  .route("/user/listeSouhaits")
-  .get(auth, (req, res) => ListeSouhaitsController.voirListeSouhaits(req, res));
+router.route('/commandes/post/:postId').post(auth, (req, res) => CommandeModelController.createCommande(req, res));
+router.route('/commandes/story/:storyId').post(auth, (req, res) => CommandeModelController.createCommande(req, res));
+router.route('/commandes/post/:postId').get(auth, (req, res) => CommandeModelController.getCommandes(req, res));
+router.route('/commandes/story/:storyId').get(auth, (req, res) => CommandeModelController.getCommandes(req, res));
+router.route('/commandes/:commandeId').get(auth, (req, res) => CommandeModelController.getCommandeById(req, res));
 
-router.get("/signale/:userId", auth, PrismaUserController.reportUser);
+router.route('/user/discussions/create').post(auth, (req, res) => MessagesDiscussionController.createDiscussion(req, res));
+router.route('/user/discussions').get(auth, (req, res) => MessagesDiscussionController.getDiscussions(req, res));
+router.route('/user/discussions/:userId').get(auth, (req, res) => MessagesDiscussionController.getDiscussionsByUser(req, res));
+router.route('/user/discussions/:discussionUser/messages').post(auth, (req, res) => MessagesDiscussionController.sendMessageToDiscussion(req, res));
+router.route('/user/discussions/:discussionId/messages/:messageId').delete(auth, (req, res) => MessagesDiscussionController.deleteMessage(req, res));
+router.route('/user/discussions/:discussionId/messages/:messageId').put(auth, (req, res) => MessagesDiscussionController.modifierMessages(req, res));
+router.route('/user/chargeCredit').post(auth, (req, res) => PrismaUserController.chargeCredit(req, res));
+router.route('/modifierMesure').put(auth, (req, res) => PrismaUserController.updateMeasurements(req, res));
+router.route('/user/listeSouhaits/:id').post(auth, (req, res) => ListeSouhaitsController.listeSouhaits(req, res));
+router.route('/user/listeSouhaits').get(auth, (req, res) => ListeSouhaitsController.voirListeSouhaits(req, res));
 
-router
-  .route("/followUser")
+
+  router.get('/signale/:userId', auth, PrismaUserController.reportUser);
+
+  router
+  .route('/followUser')
   .post(auth, (req, res) => PrismaUserController.followUser(req, res));
 
 router
