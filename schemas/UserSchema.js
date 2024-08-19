@@ -20,7 +20,7 @@ const UserSchema = new Schema({
     ],
     signals: [{
         reason: { type: String, required: true },
-        idReporter: { type: Schema.Types.ObjectId, ref: 'User' }
+        reporterId: { type: Schema.Types.ObjectId, ref: 'User' }
     }],
     mesures: {
         cou: Number,

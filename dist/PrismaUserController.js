@@ -7,12 +7,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import isEmail from 'validator/lib/isEmail.js';
 import { validateImageExtension, validateName } from '../utils/Validator.js';
 import * as validator from 'validator';
+
 const prisma = new PrismaClient();
 export default class PrismaUserController {
     static create(req, res) {
@@ -28,14 +30,14 @@ export default class PrismaUserController {
                 !role) {
                 return res
                     .status(400)
-                    .json({ error: 'Tous les champs sont obligatoires' });
+                    .json({ error: "Tous les champs sont obligatoires" });
             }
             if (password.length < 8) {
                 return res
                     .status(401)
-                    .json({ error: 'Le mot de passe doit contenir au moins 8 caractères' });
+                    .json({ error: "Le mot de passe doit contenir au moins 8 caractères" });
             }
-            if (role !== 'tailleur' && role !== 'visiteur') {
+            if (role !== "tailleur" && role !== "visiteur") {
                 return res
                     .status(402)
                     .json({ error: "Le rôle doit être 'tailleur' ou 'visiteur'" });
@@ -43,16 +45,16 @@ export default class PrismaUserController {
             if (password !== confirmationPassword) {
                 return res
                     .status(405)
-                    .json({ error: 'Les mots de passe ne correspondent pas' });
+                    .json({ error: "Les mots de passe ne correspondent pas" });
             }
             if (!isEmail(email)) {
                 return res.status(406).json({ error: "Cet email n'est pas valide" });
             }
             if (!validateName(nom)) {
-                return res.status(406).json({ error: 'Le nom n\'est pas valide' });
+                return res.status(406).json({ error: "Le nom n'est pas valide" });
             }
             if (!validateName(prenom)) {
-                return res.status(406).json({ error: 'Le prénom n\'est pas valide' });
+                return res.status(406).json({ error: "Le prénom n'est pas valide" });
             }
             if (!validateImageExtension(photoProfile)) {
                 return res
@@ -90,40 +92,40 @@ export default class PrismaUserController {
             if (!email || !password) {
                 return res
                     .status(400)
-                    .json({ error: 'Tous les champs sont obligatoires' });
+                    .json({ error: "Tous les champs sont obligatoires" });
             }
             try {
                 const user = yield prisma.users.findUnique({
                     where: { email },
                 });
                 if (!user) {
-                    return res.status(401).json({ error: 'Utilisateur inconnu' });
+                    return res.status(401).json({ error: "Utilisateur inconnu" });
                 }
                 const userPassword = user === null || user === void 0 ? void 0 : user.password;
                 const isValidPassword = yield bcrypt.compare(password, userPassword);
                 if (!isValidPassword) {
-                    return res.status(401).json({ error: 'Mot de passe incorrect' });
+                    return res.status(401).json({ error: "Mot de passe incorrect" });
                 }
                 const token = jwt.sign({ userID: user.id }, process.env.TokenKey);
-                res.cookie('token', token, {
+                res.cookie("token", token, {
                     httpOnly: true,
                     // secure: true, // Uncomment if using HTTPS
-                    path: '/',
+                    path: "/",
                 });
                 res.status(200).json({ token, user });
             }
             catch (error) {
-                res.status(500).json({ error: 'Erreur interne du serveur' });
+                res.status(500).json({ error: "Erreur interne du serveur" });
             }
         });
     }
     static logout(req, res) {
-        res.clearCookie('token', {
+        res.clearCookie("token", {
             // secure: true, // Uncomment if using HTTPS
             httpOnly: true,
-            path: '/',
+            path: "/",
         });
-        res.status(200).json('Déconnexion réussie');
+        res.status(200).json("Déconnexion réussie");
     }
     //addNote
     static addNotes(req, res) {
@@ -132,8 +134,10 @@ export default class PrismaUserController {
             const { id } = req.params;
             const { rate } = req.body;
             // Validate rate
-            if (typeof rate !== 'number' || rate < 1 || rate > 5) {
-                return res.status(400).json({ error: 'La note doit être un nombre entre 1 et 5' });
+            if (typeof rate !== "number" || rate < 1 || rate > 5) {
+                return res
+                    .status(400)
+                    .json({ error: "La note doit être un nombre entre 1 et 5" });
             }
             try {
                 const userToRate = yield prisma.users.findUnique({
@@ -141,21 +145,29 @@ export default class PrismaUserController {
                     include: { UsersNotes_UsersNotes_raterIDToUsers: true },
                 });
                 if (!userToRate) {
-                    return res.status(403).json({ error: 'Utilisateur non trouvé' });
+                    return res.status(403).json({ error: "Utilisateur non trouvé" });
                 }
-                if (userToRate.role !== 'tailleur') {
-                    return res.status(402).json({ error: 'Vous ne pouvez pas noter un visiteur' });
+                if (userToRate.role !== "tailleur") {
+                    return res
+                        .status(402)
+                        .json({ error: "Vous ne pouvez pas noter un visiteur" });
                 }
                 const raterId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
                 if (!raterId) {
-                    return res.status(403).json({ error: "Connectez-vous d'abord pour noter" });
+                    return res
+                        .status(403)
+                        .json({ error: "Connectez-vous d'abord pour noter" });
                 }
                 if (userToRate.id === raterId) {
-                    return res.status(400).json({ error: 'Vous ne pouvez pas vous noter vous-même' });
+                    return res
+                        .status(400)
+                        .json({ error: "Vous ne pouvez pas vous noter vous-même" });
                 }
                 const existingNote = userToRate.UsersNotes_UsersNotes_raterIDToUsers.find((note) => note.raterID === raterId);
                 if (existingNote) {
-                    return res.status(400).json({ error: 'Vous avez déjà noté cet utilisateur' });
+                    return res
+                        .status(400)
+                        .json({ error: "Vous avez déjà noté cet utilisateur" });
                 }
                 const note = yield prisma.usersNotes.create({
                     data: {
@@ -164,10 +176,382 @@ export default class PrismaUserController {
                         userId: userToRate.id,
                     },
                 });
-                res.status(200).json({ message: 'Note ajoutée avec succès', note });
+                res.status(200).json({ message: "Note ajoutée avec succès", note });
             }
             catch (error) {
-                res.status(500).json({ error: 'Erreur interne du serveur' });
+                res.status(500).json({ error: "Erreur interne du serveur" });
+            }
+        });
+    }
+    //reportUser
+    static reportUser(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            const userId = req.user.userID;
+            const { reason } = req.body;
+            if (!reason || typeof reason !== "string") {
+                return res
+                    .status(400)
+                    .json({ error: "La raison du signalement est requise" });
+            }
+            console.log(reason);
+            console.log(userId);
+            try {
+                const userToReport = yield prisma.users.findUnique({
+                    where: { id: userId },
+                    include: { UsersSignals_UsersSignals_reporterIdToUsers: true },
+                });
+                /* console.log(userToReport);  */
+                if (!userToReport) {
+                    return res.status(402).json({ error: "Utilisateur non trouvé" });
+                }
+                const reporterId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
+                if (!reporterId) {
+                    return res
+                        .status(403)
+                        .json({ error: "Connectez-vous d'abord pour signaler" });
+                }
+                if (!(userToReport.id === reporterId)) {
+                    return res
+                        .status(403)
+                        .json({ error: "Vous ne pouvez pas vous signaler vous-même" });
+                }
+                const alreadyReported = userToReport.UsersSignals_UsersSignals_reporterIdToUsers.some((signal) => signal.reporterId === reporterId);
+                if (alreadyReported) {
+                    return res
+                        .status(405)
+                        .json({ error: "Vous avez déjà signalé cet utilisateur" });
+                }
+                const signal = yield prisma.usersSignals.create({
+                    data: {
+                        reason,
+                        reporterId: reporterId,
+                        userId: userToReport.id,
+                    },
+                });
+                res
+                    .status(200)
+                    .json({ message: "Signalement ajouté avec succès", signal });
+            }
+            catch (error) {
+                res.status(500).json({ error: "Erreur interne du serveur" });
+            }
+        });
+    }
+    // Méthode unfollowUser
+    static unfollowUser(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const userId = req.user.userID;
+            const followerId = Number(req.body.followerId);
+            console.log(followerId);
+            console.log(userId);
+            if (!userId) {
+                return res
+                    .status(400)
+                    .json({ error: "L'id de l'utilisateur à désabonner est obligatoire" });
+            }
+            try {
+                if (!followerId) {
+                    return res.status(401).json({
+                        message: "Vous devez vous connecter pour effectuer cette action",
+                    });
+                }
+                const userToUnfollow = yield prisma.users.findFirst({
+                    where: { id: followerId },
+                });
+                if (!userToUnfollow) {
+                    return res.status(404).json({ message: "Utilisateur non trouvé" });
+                }
+                if (userToUnfollow.id === userId) {
+                    return res
+                        .status(400)
+                        .json({ message: "Vous ne pouvez pas vous désabonner de vous-même" });
+                }
+                // Retirer l'utilisateur connecté de la liste des followers de l'utilisateur ciblé
+                yield prisma.followers.delete({
+                    where: { followerId: followerId },
+                });
+                // Retirer l'utilisateur ciblé de la liste des followings de l'utilisateur connecté
+                return res
+                    .status(200)
+                    .json({ message: "Désabonnement effectué avec succès" });
+            }
+            catch (err) {
+                console.error(err);
+                return res
+                    .status(500)
+                    .json({ message: "Erreur lors du désabonnement", error: err });
+            }
+        });
+    }
+    // Méthode followUser
+    static followUser(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const userId = req.user.userID;
+            const followerId = Number(req.body.followerId);
+            console.log(typeof (userId));
+            console.log(typeof (followerId));
+            if (!followerId) {
+                return res
+                    .status(400)
+                    .json({ message: "L'id de l'utilisateur à suivre est obligatoire" });
+            }
+            if (!userId) {
+                return res
+                    .status(400)
+                    .json({ error: "L'id de l'utilisateur à suivre est obligatoire" });
+            }
+            try {
+                const followerExists = yield prisma.users.findUnique({
+                    where: { id: followerId },
+                });
+                const followingExists = yield prisma.users.findUnique({
+                    where: { id: userId },
+                });
+                if (!followerExists || !followingExists) {
+                    return res.status(404).json({ message: "Utilisateur non trouvé" });
+                }
+                if (Number(followerId) === userId) {
+                    return res
+                        .status(400)
+                        .json({ message: "Vous ne pouvez pas vous abonner de vous-même" });
+                }
+                // Connectez l'utilisateur à l'utilisateur que vous essayez de suivre
+                yield prisma.followers.create({
+                    data: {
+                        userId: userId,
+                        followerId: followerId,
+                    }
+                });
+                // Connectez l'utilisateur que vous essayez de suivre à l'utilisateur connecté
+                return res
+                    .status(200)
+                    .json({ message: "Abonnement effectué avec succès" });
+            }
+            catch (err) {
+                console.error(err);
+                return res
+                    .status(500)
+                    .json({ message: "Erreur lors de l'abonnement", error: err });
+            }
+        });
+    }
+    // Méthode profile
+    static profile(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
+            const utilisateurId = Number(req.body.utilisateurId);
+            if (!userId) {
+                return res.status(401).json({
+                    message: "Vous devez vous connecter pour accéder à ce contenu",
+                });
+            }
+            console.log(utilisateurId);
+            try {
+                if (!userId) {
+                    return res.status(401).json({
+                        message: "Vous devez vous connecter pour accéder à ce contenu",
+                    });
+                }
+                const user = yield prisma.users.findUnique({
+                    where: { id: utilisateurId },
+                    select: {
+                        id: true,
+                        nom: true,
+                        prenom: true,
+                        email: true,
+                        photoProfile: true,
+                        role: true,
+                        credits: true,
+                        Followers_Followers_userIdToUsers: true,
+                        Followers_Followers_followerIdToUsers: true,
+                        BlockedUsers: true,
+                        // Ajoutez d'autres champs que vous souhaitez renvoyer
+                    },
+                });
+                if (!utilisateurId) {
+                    return res.status(404).json({ message: "Utilisateur non trouvé" });
+                }
+                return res.status(200).json(user);
+            }
+            catch (err) {
+                console.error(err);
+                return res
+                    .status(500)
+                    .json({
+                    message: "Erreur lors de la récupération du profil",
+                    error: err,
+                });
+            }
+        });
+    }
+    // Méthode changeRole
+    static changeRole(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a, _b;
+            try {
+                const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
+                if (!userId) {
+                    return res.status(401).json({
+                        message: "Vous devez vous connecter pour effectuer cette action",
+                    });
+                }
+                const user = yield prisma.users.findUnique({
+                    where: { id: userId },
+                });
+                if (!user) {
+                    return res.status(404).json({ message: "Utilisateur non trouvé" });
+                }
+                if (((_b = user === null || user === void 0 ? void 0 : user.credits) !== null && _b !== void 0 ? _b : 0) <= 1) {
+                    return res.status(402).json({
+                        message: "Vous n'avez pas assez de crédits pour changer de rôle",
+                    });
+                }
+                const newRole = user.role === "visiteur" ? "tailleur" : "visiteur";
+                const updatedUser = yield prisma.users.update({
+                    where: { id: userId },
+                    data: {
+                        role: newRole,
+                        credits: { decrement: 1 },
+                    },
+                });
+                return res
+                    .status(200)
+                    .json({ message: "Rôle mis à jour avec succès", user: updatedUser });
+            }
+            catch (error) {
+                console.error(error);
+                return res
+                    .status(500)
+                    .json({ message: "Erreur lors du changement de rôle", error: error });
+            }
+        });
+    }
+    // Méthode bloquerUsers
+    static bloquerUsers(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            /* const { userID } = req.params; */
+            const utilisateurId = Number(req.body.utilisateurId);
+            const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
+            const storyId = req.body.storyId;
+            console.log(utilisateurId);
+            console.log(userId);
+            if (!userId) {
+                return res.status(401).json({
+                    message: "Vous devez vous connecter pour effectuer cette action",
+                });
+            }
+            if (!utilisateurId || isNaN(Number(utilisateurId))) {
+                return res.status(400).json({ error: "ID utilisateur invalide" });
+            }
+            if (!storyId) {
+                return res.status(400).json({ error: "ID de la story obligatoire" });
+            }
+            try {
+                const story = yield prisma.stories.findUnique({
+                    where: { id: Number(storyId) },
+                });
+                if (!story) {
+                    return res.status(404).json({ error: "Story non trouvée" });
+                }
+                if (Number(utilisateurId) === userId) {
+                    return res
+                        .status(400)
+                        .json({ error: "Vous ne pouvez pas vous bloquer vous-même" });
+                }
+                const userToBlock = yield prisma.users.findUnique({
+                    where: { id: Number(utilisateurId) },
+                });
+                if (!userToBlock) {
+                    return res
+                        .status(404)
+                        .json({ error: "Utilisateur à bloquer non trouvé" });
+                }
+                const currentUser = yield prisma.users.findUnique({
+                    where: { id: userId },
+                    include: { BlockedUsers: true },
+                });
+                if (!currentUser) {
+                    return res
+                        .status(404)
+                        .json({ error: "Utilisateur courant non trouvé" });
+                }
+                const alreadyBlocked = currentUser.BlockedUsers.some((BlockedUsers) => BlockedUsers.id === Number(utilisateurId));
+                if (alreadyBlocked) {
+                    return res
+                        .status(400)
+                        .json({ error: "Vous avez déjà bloqué cet utilisateur" });
+                }
+                yield prisma.blockedUsers.create({
+                    data: {
+                        storyId: Number(storyId),
+                        blockedUserId: Number(utilisateurId),
+                    },
+                });
+                return res
+                    .status(200)
+                    .json({ message: "Utilisateur bloqué avec succès" });
+            }
+            catch (error) {
+                console.error(error);
+                return res
+                    .status(500)
+                    .json({ error: "Erreur interne du serveur", details: error });
+            }
+        });
+    }
+    // Méthode debloquerUsers
+    static debloquerUsers(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            const { id, utilisateurId } = req.body;
+            const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
+            if (!userId) {
+                return res.status(401).json({
+                    message: "Vous devez vous connecter pour effectuer cette action",
+                });
+            }
+            if (!utilisateurId || isNaN(Number(utilisateurId))) {
+                return res.status(400).json({ error: "ID utilisateur invalide" });
+            }
+            try {
+                const userToUnblock = yield prisma.users.findUnique({
+                    where: { id: Number(utilisateurId) },
+                });
+                if (!userToUnblock) {
+                    return res
+                        .status(404)
+                        .json({ error: "Utilisateur à débloquer non trouvé" });
+                }
+                const currentUser = yield prisma.users.findUnique({
+                    where: { id: userId },
+                    include: { BlockedUsers: true },
+                });
+                if (!currentUser) {
+                    return res
+                        .status(404)
+                        .json({ error: "Utilisateur courant non trouvé" });
+                }
+                const blockedUserIndex = currentUser.BlockedUsers.findIndex((blockedUser) => blockedUser.id === Number(utilisateurId));
+                if (blockedUserIndex === -1) {
+                    return res
+                        .status(400)
+                        .json({ error: "Cet utilisateur n'est pas bloqué" });
+                }
+                yield prisma.blockedUsers.delete({
+                    where: { id: Number(id) },
+                });
+                return res
+                    .status(200)
+                    .json({ message: "Utilisateur débloqué avec succès" });
+            }
+            catch (error) {
+                console.error(error);
+                return res
+                    .status(500)
+                    .json({ error: "Erreur interne du serveur", details: error });
             }
         });
     }
@@ -177,8 +561,10 @@ export default class PrismaUserController {
             const { id, noteId } = req.params;
             const { rate } = req.body;
             // Validate rate
-            if (typeof rate !== 'number' || rate < 1 || rate > 5) {
-                return res.status(400).json({ error: 'La note doit être un nombre entre 1 et 5' });
+            if (typeof rate !== "number" || rate < 1 || rate > 5) {
+                return res
+                    .status(400)
+                    .json({ error: "La note doit être un nombre entre 1 et 5" });
             }
             try {
                 const userToRate = yield prisma.users.findUnique({
@@ -186,32 +572,48 @@ export default class PrismaUserController {
                     include: { UsersNotes_UsersNotes_raterIDToUsers: true },
                 });
                 if (!userToRate) {
-                    return res.status(403).json({ error: 'Utilisateur non trouvé' });
+                    return res.status(403).json({ error: "Utilisateur non trouvé" });
                 }
-                if (userToRate.role !== 'tailleur') {
-                    return res.status(402).json({ error: 'Vous ne pouvez pas noter un visiteur' });
+                if (userToRate.role !== "tailleur") {
+                    return res
+                        .status(402)
+                        .json({ error: "Vous ne pouvez pas noter un visiteur" });
                 }
                 const raterId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
                 if (!raterId) {
-                    return res.status(403).json({ error: "Connectez-vous d'abord pour modifier une note" });
+                    return res
+                        .status(403)
+                        .json({ error: "Connectez-vous d'abord pour modifier une note" });
                 }
                 if (userToRate.id === raterId) {
-                    return res.status(400).json({ error: 'Vous ne pouvez pas vous noter vous-même' });
+                    return res
+                        .status(400)
+                        .json({ error: "Vous ne pouvez pas vous noter vous-même" });
                 }
                 const existingNote = yield prisma.usersNotes.findUnique({
-                    where: { id: parseInt(noteId, 10), raterID: raterId, userId: userToRate.id },
+                    where: {
+                        id: parseInt(noteId, 10),
+                        raterID: raterId,
+                        userId: userToRate.id,
+                    },
                 });
                 if (!existingNote) {
-                    return res.status(404).json({ error: "Note non trouvée ou vous n'avez pas la permission de la modifier" });
+                    return res
+                        .status(404)
+                        .json({
+                        error: "Note non trouvée ou vous n'avez pas la permission de la modifier",
+                    });
                 }
                 const updatedNote = yield prisma.usersNotes.update({
                     where: { id: existingNote.id },
                     data: { rate },
                 });
-                res.status(200).json({ message: 'Note mise à jour avec succès', updatedNote });
+                res
+                    .status(200)
+                    .json({ message: "Note mise à jour avec succès", updatedNote });
             }
             catch (error) {
-                res.status(500).json({ error: 'Erreur interne du serveur' });
+                res.status(500).json({ error: "Erreur interne du serveur" });
             }
         });
     }
@@ -266,6 +668,7 @@ export default class PrismaUserController {
             }
         });
     }
+
     static updateMeasurements(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -302,6 +705,39 @@ export default class PrismaUserController {
             catch (error) {
                 console.error(error);
                 return res.status(500).json({ error: "Erreur interne du serveur." });
+            }
+        });
+    }
+
+    static getStatistiques(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            const connectedUser = yield prisma.users.findUnique({
+                where: { id: req.user.userID },
+                include: { UsersMesModels: true, CommandeModels: true },
+            });
+            if (!connectedUser || ((_a = connectedUser.status) === null || _a === void 0 ? void 0 : _a.toLowerCase()) !== 'premium') {
+                return res.status(401).json({ message: "Vous devez être premium pour effectuer cette action" });
+            }
+            try {
+                // Trouver le modèle le plus vendu
+                const mostSoldModel = connectedUser.UsersMesModels.sort((a, b) => { var _a, _b; return ((_a = a.nombreDeCommande) !== null && _a !== void 0 ? _a : 0) - ((_b = b.nombreDeCommande) !== null && _b !== void 0 ? _b : 0); });
+                // Trouver les posts les plus vus
+                const mostViewedPosts = yield prisma.posts.findMany({
+                    where: { utilisateurId: connectedUser.id },
+                    orderBy: { vues: 'desc' },
+                });
+                // Calculer le ratio des ventes par rapport aux posts
+                const userSalesCount = connectedUser.CommandeModels.length;
+                const userPostsCount = yield prisma.posts.count({
+                    where: { utilisateurId: connectedUser.id },
+                });
+                const salesToPostsRatio = userSalesCount / userPostsCount;
+                res.status(200).json({ mostSoldModel, mostViewedPosts, salesToPostsRatio: salesToPostsRatio * 100 + "%" });
+            }
+            catch (err) {
+                res.status(500).json({ message: err.message });
+
             }
         });
     }
