@@ -13,5 +13,7 @@ export default class PrismaUserController {
     static debloquerUsers(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
     static updateNote(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static chargeCredit(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
-    static getStatistiques(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+    static getTailleurs(req: Request, res: Response): Promise<void>;
+    static myPosition(req: Request, res: Response): Promise<void>;
+    static getTailleurRanking(req: Request, res: Response): Promise<void>;
 }
