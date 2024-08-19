@@ -532,7 +532,7 @@ export default class PrismaUserController {
         return res.status(500).json({ error: "Erreur interne du serveur." });
       }
     }
-  }
+  
 
 
   // Méthode bloquerUsers
