@@ -6,4 +6,5 @@ export default class PrismaUserController {
     static addNotes(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static updateNote(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static chargeCredit(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
+    static getStatistiques(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
 }
