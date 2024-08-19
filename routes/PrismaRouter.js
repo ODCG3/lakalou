@@ -60,6 +60,8 @@ router.route("/post/favorite/create/:postId").post(auth, (req, res) => PostContr
 router.route("/post/favorite/remove/:postId").delete(auth,(req, res) => PostController.deleteFavoris(req, res));
 //router.route("/post/favorite").get(auth, (req, res) => PostController.getAllFavoris(req, res));
 router.route("/post/:postId/share").post(auth, (req, res) => PostController.partagerPost(req, res));
+router.route("/notifications").get(auth, (req, res) => PostController.getNotifications(req, res));
+router.route("/notifications/:notificationId").delete(auth, (req, res) => PostController.deleteNotification(req, res));
 
 router.route('/commandes/post/:postId').post(auth, (req, res) => CommandeModelController.createCommande(req, res));
 router.route('/commandes/story/:storyId').post(auth, (req, res) => CommandeModelController.createCommande(req, res));
