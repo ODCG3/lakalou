@@ -487,6 +487,12 @@ export default class PrismaUserController {
                         blockedUserId: Number(utilisateurId),
                     },
                 });
+                currentUser.BlockedUsers.push({
+                    id: utilisateurId,
+                    storyId: Number(storyId),
+                    blockedUserId: Number(utilisateurId)
+                });
+                console.log(currentUser.BlockedUsers);
                 return res
                     .status(200)
                     .json({ message: "Utilisateur bloqué avec succès" });
@@ -503,8 +509,12 @@ export default class PrismaUserController {
     static debloquerUsers(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a;
-            const { id, utilisateurId } = req.body;
+            const utilisateurId = Number(req.body.utilisateurId);
             const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
+            const storyId = req.body.storyId;
+            //console.log(userId);
+            //console.log(utilisateurId);
+            //console.log(storyId);
             if (!userId) {
                 return res.status(401).json({
                     message: "Vous devez vous connecter pour effectuer cette action",
@@ -513,7 +523,21 @@ export default class PrismaUserController {
             if (!utilisateurId || isNaN(Number(utilisateurId))) {
                 return res.status(400).json({ error: "ID utilisateur invalide" });
             }
+            if (!storyId) {
+                return res.status(400).json({ error: "ID de la story obligatoire" });
+            }
             try {
+                const story = yield prisma.stories.findUnique({
+                    where: { id: Number(storyId) },
+                });
+                if (!story) {
+                    return res.status(404).json({ error: "Story non trouvée" });
+                }
+                if (Number(utilisateurId) === userId) {
+                    return res
+                        .status(400)
+                        .json({ error: "Vous ne pouvez pas vous débloquer vous-même" });
+                }
                 const userToUnblock = yield prisma.users.findUnique({
                     where: { id: Number(utilisateurId) },
                 });
@@ -531,14 +555,29 @@ export default class PrismaUserController {
                         .status(404)
                         .json({ error: "Utilisateur courant non trouvé" });
                 }
-                const blockedUserIndex = currentUser.BlockedUsers.findIndex((blockedUser) => blockedUser.id === Number(utilisateurId));
-                if (blockedUserIndex === -1) {
+                console.log(currentUser.BlockedUsers);
+                /* const isBlocked = currentUser.BlockedUsers.some(
+                  (blockedUser) => blockedUser.id === Number(utilisateurId)
+                ); */
+                //on n'a pas accée a  currentUser.BlockedUsers donc on va directent verifier si l'utilisateur est bloqué dans la base de données dans la table BlockedUsers
+                const isBlocked = yield prisma.blockedUsers.findMany({
+                    where: {
+                        AND: [
+                            { storyId: Number(storyId) },
+                            { blockedUserId: Number(utilisateurId) },
+                        ],
+                    },
+                });
+                if (!isBlocked) {
                     return res
                         .status(400)
                         .json({ error: "Cet utilisateur n'est pas bloqué" });
                 }
-                yield prisma.blockedUsers.delete({
-                    where: { id: Number(id) },
+                yield prisma.blockedUsers.deleteMany({
+                    where: {
+                        storyId: Number(storyId),
+                        blockedUserId: Number(utilisateurId),
+                    },
                 });
                 return res
                     .status(200)
