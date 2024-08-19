@@ -6,4 +6,8 @@ export default class PostController {
     static deletePost(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static addView(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static getVues(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+    static addFavoris(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+    static getAllFavoris(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
+    static deleteFavoris(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+    static partagerPost(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
 }
