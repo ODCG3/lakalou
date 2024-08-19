@@ -109,5 +109,9 @@ router
 .route('/getUserBloquer')
 .get(auth, (req, res) => PrismaUserController.getUserBloquer(req, res));
 
+router
+ .route('/myFollowers')
+ .get(auth, (req, res) => PrismaUserController.myFollowers(req, res));
+
 
 export default router;

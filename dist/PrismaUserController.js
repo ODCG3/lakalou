@@ -333,6 +333,40 @@ export default class PrismaUserController {
             }
         });
     }
+    // Méthode myFollowers
+    static myFollowers(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a, _b;
+            const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
+            if (!userId) {
+                return res.status(401).json({
+                    message: "Vous devez vous connecter pour accéder à ce contenu",
+                });
+            }
+            try {
+                const followers = yield prisma.followers.findMany({
+                    where: { followerId: (_b = req.user) === null || _b === void 0 ? void 0 : _b.userID },
+                    select: {
+                        id: true,
+                        // afichier les informations du user 
+                        Users_Followers_followerIdToUsers: {
+                            select: {
+                                id: true,
+                                nom: true,
+                                prenom: true,
+                                photoProfile: true,
+                            },
+                        },
+                    },
+                });
+                return res.status(200).json({ followers });
+            }
+            catch (error) {
+                console.error(error);
+                return res.status(500).json({ message: "Erreur lors de la récupération des followers", error: error });
+            }
+        });
+    }
     // Méthode profile
     static profile(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
