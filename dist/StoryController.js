@@ -7,7 +7,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 const createStory = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const currentTime = new Date();
@@ -15,52 +15,61 @@ const createStory = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     const userID = req.user.userID;
     try {
         const connectedUser = yield prisma.users.findUnique({
-            where: { id: userID }
+            where: { id: userID },
         });
         if (!connectedUser) {
-            return res.status(401).json({ error: 'Utilisateur non connecté' });
+            return res.status(401).json({ error: "Utilisateur non connecté" });
         }
         if (connectedUser.role !== "tailleur") {
-            return res.status(403).json({ error: 'Vous n\'êtes pas un tailleur, seul les tailleurs peuvent poster des statuts' });
+            return res
+                .status(403)
+                .json({
+                error: "Vous n'êtes pas un tailleur, seul les tailleurs peuvent poster des statuts",
+            });
         }
         // Find the model to associate with the story (e.g., based on ID in req.body)
         const modelID = req.body.model; // Ensure the model ID is provided in the request
-        const model = yield prisma.models.findUnique({
-            where: { id: modelID }
+        const model = yield prisma.models.findFirst({
+            where: { id: parseInt(modelID) },
         });
         if (!model) {
-            return res.status(400).json({ error: 'Modèle non trouvé' });
+            return res.status(400).json({ error: "Modèle non trouvé" });
         }
         const credit = connectedUser === null || connectedUser === void 0 ? void 0 : connectedUser.credits;
         if (credit > 0) {
+            const blockedUserIds = req.body.blockedUsers || []; // Get the list of blocked users from the request
             const story = yield prisma.stories.create({
                 data: {
                     userId: userID,
                     modelId: model.id,
                     expiresAt: expirationTime,
-                    BlockedUsers: req.body.BlockedUsers || [] // Get the list of blocked users from the request
-                }
+                    BlockedUsers: {
+                        connect: blockedUserIds.map((userId) => ({ id: userId })),
+                    },
+                },
             });
             yield prisma.users.update({
                 where: { id: userID },
                 data: {
                     credits: credit - 1,
                     Stories: {
-                        connect: { id: story.id }
-                    }
-                }
+                        connect: { id: story.id },
+                    },
+                },
             });
             res.status(201).json({
-                message: 'Story créée avec succès!'
+                message: "Story créée avec succès!",
             });
         }
         else {
-            res.status(402).json({ error: 'Crédits insuffisants pour créer une story' });
+            res
+                .status(402)
+                .json({ error: "Crédits insuffisants pour créer une story" });
         }
     }
     catch (error) {
         res.status(500).json({
-            error: error.message
+            error: error.message,
         });
     }
 });
@@ -73,8 +82,8 @@ const getStories = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             where: {
                 userId: parseInt(ownerId),
                 expiresAt: { gt: new Date() },
-                BlockedUsers: { none: { id: viewerId } } // Exclude stories where viewerId is in the blocked users list
-            }
+                BlockedUsers: { none: { id: viewerId } }, // Exclude stories where viewerId is in the blocked users list
+            },
         });
         res.status(200).json(stories);
     }
@@ -83,20 +92,23 @@ const getStories = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     }
 });
 const deleteStory = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const storyId = req.params.id;
+    const storyId = parseInt(req.params.id);
     const userID = req.user.userID;
     try {
+        // First, delete the story if it exists and belongs to the user
         const result = yield prisma.stories.deleteMany({
             where: {
-                id: parseInt(storyId),
-                userId: userID
-            }
+                id: storyId,
+                userId: userID,
+            },
         });
         if (result.count > 0) {
-            res.status(200).json({ message: 'Story supprimée avec succès' });
+            res.status(200).json({ message: "Story supprimée avec succès" });
         }
         else {
-            res.status(404).json({ message: 'Story non trouvée ou vous n\'êtes pas autorisé à la supprimer' });
+            res.status(404).json({
+                message: "Story non trouvée ou vous n'êtes pas autorisé à la supprimer",
+            });
         }
     }
     catch (error) {
@@ -108,24 +120,28 @@ const viewStory = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const story = yield prisma.stories.update({
             where: { id: parseInt(storyId) },
-            data: { Views: { increment: 1 } }
+            data: { Views: { increment: 1 } },
         });
         if (story) {
             res.status(200).json({ views: story.Views });
         }
         else {
-            res.status(400).json({ message: 'Story non trouvée' });
+            res.status(400).json({ message: "Story non trouvée" });
         }
     }
     catch (error) {
-        res.status(500).json({ error: 'Une erreur interne est survenue. Veuillez réessayer plus tard.' });
+        res
+            .status(500)
+            .json({
+            error: "Une erreur interne est survenue. Veuillez réessayer plus tard.",
+        });
     }
 });
 const getStoryViews = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const storyId = req.params.id;
     try {
         const story = yield prisma.stories.findUnique({
-            where: { id: parseInt(storyId) }
+            where: { id: parseInt(storyId) },
         });
         if (!story) {
             res.status(404).json({ message: "La story n'a pas été trouvée." });
@@ -136,7 +152,11 @@ const getStoryViews = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     }
     catch (error) {
         console.error(error);
-        res.status(500).json({ error: "Une erreur interne est survenue. Veuillez réessayer plus tard." });
+        res
+            .status(500)
+            .json({
+            error: "Une erreur interne est survenue. Veuillez réessayer plus tard.",
+        });
     }
 });
 export default {
