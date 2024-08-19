@@ -65,7 +65,7 @@ model Favoris {
 model Followers {
   id                                Int   @id @default(autoincrement())
   userId                            Int
-  followerId                        Int
+  followerId                        Int   @unique
   Users_Followers_userIdToUsers     Users @relation("Followers_userIdToUsers", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Followers_ibfk_1")
   Users_Followers_followerIdToUsers Users @relation("Followers_followerIdToUsers", fields: [followerId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Followers_ibfk_2")
 
