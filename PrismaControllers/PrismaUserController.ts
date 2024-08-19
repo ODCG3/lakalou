@@ -314,4 +314,40 @@ export default class PrismaUserController {
   }
 
 
+  
+  static async getStatistiques(req: Request, res: Response) {
+    const connectedUser = await prisma.users.findUnique({
+      where: { id: req.user!.userID },
+      include: { UsersMesModels: true, CommandeModels: true },
+    });
+
+    if (!connectedUser || connectedUser.status?.toLowerCase() !== 'premium') {
+      return res.status(401).json({ message: "Vous devez être premium pour effectuer cette action" });
+    }
+
+    try {
+      // Trouver le modèle le plus vendu
+      const mostSoldModel = connectedUser.UsersMesModels.sort((a, b) => (a.nombreDeCommande ?? 0) - (b.nombreDeCommande ?? 0));
+
+      // Trouver les posts les plus vus
+      const mostViewedPosts = await prisma.posts.findMany({
+        where: { utilisateurId: connectedUser.id },
+        orderBy: { vues: 'desc' },
+      });
+
+      // Calculer le ratio des ventes par rapport aux posts
+      const userSalesCount = connectedUser.CommandeModels.length;
+      const userPostsCount = await prisma.posts.count({
+        where: { utilisateurId: connectedUser.id },
+      });
+
+      const salesToPostsRatio = userSalesCount / userPostsCount;
+
+      res.status(200).json({ mostSoldModel, mostViewedPosts, salesToPostsRatio: salesToPostsRatio * 100 + "%" });
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  }
+
+
 }

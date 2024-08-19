@@ -265,4 +265,35 @@ export default class PrismaUserController {
             }
         });
     }
+    static getStatistiques(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            const connectedUser = yield prisma.users.findUnique({
+                where: { id: req.user.userID },
+                include: { UsersMesModels: true, CommandeModels: true },
+            });
+            if (!connectedUser || ((_a = connectedUser.status) === null || _a === void 0 ? void 0 : _a.toLowerCase()) !== 'premium') {
+                return res.status(401).json({ message: "Vous devez être premium pour effectuer cette action" });
+            }
+            try {
+                // Trouver le modèle le plus vendu
+                const mostSoldModel = connectedUser.UsersMesModels.sort((a, b) => { var _a, _b; return ((_a = a.nombreDeCommande) !== null && _a !== void 0 ? _a : 0) - ((_b = b.nombreDeCommande) !== null && _b !== void 0 ? _b : 0); });
+                // Trouver les posts les plus vus
+                const mostViewedPosts = yield prisma.posts.findMany({
+                    where: { utilisateurId: connectedUser.id },
+                    orderBy: { vues: 'desc' },
+                });
+                // Calculer le ratio des ventes par rapport aux posts
+                const userSalesCount = connectedUser.CommandeModels.length;
+                const userPostsCount = yield prisma.posts.count({
+                    where: { utilisateurId: connectedUser.id },
+                });
+                const salesToPostsRatio = userSalesCount / userPostsCount;
+                res.status(200).json({ mostSoldModel, mostViewedPosts, salesToPostsRatio: salesToPostsRatio * 100 + "%" });
+            }
+            catch (err) {
+                res.status(500).json({ message: err.message });
+            }
+        });
+    }
 }

@@ -7,7 +7,8 @@ import PostController from "../dist/PostController.js";
 import CommandeModelController from "../dist/CommandeModelController.js"
 import MessagesDiscussionController from "../dist/MessagesDiscussionController.js"
 import StoryController from "../dist/StoryController.js";
-
+import {addComment, deleteComment,getPostComments} from '../dist/CommentController.js';
+ 
 router.route("/register").post((req, res) => PrismaUserController.create(req, res));
 router.route("/login").post((req, res) => PrismaUserController.login(req, res));
 
@@ -65,6 +66,13 @@ router.route('/user/discussions/:discussionUser/messages').post(auth, (req, res)
 router.route('/user/discussions/:discussionId/messages/:messageId').delete(auth, (req, res) => MessagesDiscussionController.deleteMessage(req, res));
 router.route('/user/discussions/:discussionId/messages/:messageId').put(auth, (req, res) => MessagesDiscussionController.modifierMessages(req, res));
 router.route('/user/chargeCredit').post(auth, (req, res) => PrismaUserController.chargeCredit(req, res));
+router.post('/post/:postId/comment', auth, addComment);
+router.delete('/comment/:commentId', auth, deleteComment);
+router.get('/post/:postId/comments', auth, getPostComments);
+router.get('/tailleurs/statistique', auth, PrismaUserController.getStatistiques);
+
+
+
 
 
 
