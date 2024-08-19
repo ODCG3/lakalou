@@ -11,6 +11,7 @@ export default class PrismaUserController {
     static changeRole(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
     static bloquerUsers(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
     static debloquerUsers(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
+    static getUserBloquer(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
     static updateNote(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static chargeCredit(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
 }

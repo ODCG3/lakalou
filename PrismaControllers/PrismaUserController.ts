@@ -675,6 +675,55 @@ export default class PrismaUserController {
         .json({ error: "Erreur interne du serveur", details: error });
     }
   }
+  // Méthode getUserBloquer
+  static async getUserBloquer(req: Request, res: Response) {
+    const utilisateurId = Number(req.body.utilisateurId);
+    const userId = req.user?.userID;
+    console.log(utilisateurId);
+    if (!userId) {
+      return res.status(401).json({
+        message: "Vous devez vous connecter pour effectuer cette action",
+      });
+    }
+  
+  
+  
+    try {
+      const currentUser = await prisma.users.findUnique({
+        where: { id: userId },
+        include: { BlockedUsers: true },
+      });
+  
+      if (!currentUser) {
+        return res
+         .status(404)
+         .json({ error: "Utilisateur courant non trouvé" });
+      }
+  
+      const userToBlock = await prisma.users.findUnique({
+        where: { id: Number(userId) },
+        include: { BlockedUsers: true },
+      })
+      if (!userToBlock) {
+        return res
+         .status(404)
+         .json({ error: "Utilisateur à bloquer non trouvé" });
+      }
+      const isBlocked = await prisma.blockedUsers.findMany({
+        where: {
+          AND: [
+            { blockedUserId: Number(utilisateurId) },
+          ],
+        },
+      });
+      return res.status(200).json({ isBlocked });
+    } catch (error) {
+      console.error(error);
+      return res
+        .status(500)
+        .json({ error: "Erreur interne du serveur", details: error });
+    }
+  }
   
 
   static async updateNote(req: Request, res: Response) {

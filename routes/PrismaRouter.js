@@ -104,5 +104,10 @@ router.route('/user/listeSouhaits').get(auth, (req, res) => ListeSouhaitsControl
   router
   .route('/debloquerUsers')
   .post(auth, (req, res) => PrismaUserController.debloquerUsers(req, res));
+  // routes pour afficher les utilisateurs bloquer
+router
+.route('/getUserBloquer')
+.get(auth, (req, res) => PrismaUserController.getUserBloquer(req, res));
+
 
 export default router;

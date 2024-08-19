@@ -591,6 +591,54 @@ export default class PrismaUserController {
             }
         });
     }
+    // Méthode getUserBloquer
+    static getUserBloquer(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            const utilisateurId = Number(req.body.utilisateurId);
+            const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
+            console.log(utilisateurId);
+            if (!userId) {
+                return res.status(401).json({
+                    message: "Vous devez vous connecter pour effectuer cette action",
+                });
+            }
+            try {
+                const currentUser = yield prisma.users.findUnique({
+                    where: { id: userId },
+                    include: { BlockedUsers: true },
+                });
+                if (!currentUser) {
+                    return res
+                        .status(404)
+                        .json({ error: "Utilisateur courant non trouvé" });
+                }
+                const userToBlock = yield prisma.users.findUnique({
+                    where: { id: Number(userId) },
+                    include: { BlockedUsers: true },
+                });
+                if (!userToBlock) {
+                    return res
+                        .status(404)
+                        .json({ error: "Utilisateur à bloquer non trouvé" });
+                }
+                const isBlocked = yield prisma.blockedUsers.findMany({
+                    where: {
+                        AND: [
+                            { blockedUserId: Number(utilisateurId) },
+                        ],
+                    },
+                });
+                return res.status(200).json({ isBlocked });
+            }
+            catch (error) {
+                console.error(error);
+                return res
+                    .status(500)
+                    .json({ error: "Erreur interne du serveur", details: error });
+            }
+        });
+    }
     static updateNote(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a;
