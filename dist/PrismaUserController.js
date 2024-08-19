@@ -180,6 +180,34 @@ export default class PrismaUserController {
             }
         });
     }
+    // filterByNotes
+    static filterByNotes(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const { id } = req.params;
+            //const userId = req.user!.userID;
+            const { rate } = req.body;
+            console.log(id, rate);
+            try {
+                const userToRate = yield prisma.users.findUnique({
+                    where: { id: parseInt(id, 10) },
+                    include: { UsersNotes_UsersNotes_raterIDToUsers: true },
+                });
+                if (!userToRate) {
+                    return res.status(403).json({ error: "Utilisateur non trouvé" });
+                }
+                if (userToRate.role !== "tailleur") {
+                    return res
+                        .status(402)
+                        .json({ error: "Vous ne pouvez pas filtrer par notes pour un tailleur" });
+                }
+                const filteredNotes = userToRate.UsersNotes_UsersNotes_raterIDToUsers.filter((note) => { var _a; return ((_a = note.rate) !== null && _a !== void 0 ? _a : 0) >= rate; });
+                res.status(200).json(filteredNotes);
+            }
+            catch (error) {
+                res.status(500).json({ error: "Erreur interne du serveur" });
+            }
+        });
+    }
     //reportUser
     static reportUser(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -355,6 +383,9 @@ export default class PrismaUserController {
                                 nom: true,
                                 prenom: true,
                                 photoProfile: true,
+                                role: true,
+                                badges: true,
+                                credits: true,
                             },
                         },
                     },
