@@ -71,7 +71,7 @@ export async function createCommande(req, res) {
                 user_id: userId,
                 post_id: postId || null,
                 story_id: storyId || null,
-                model_libelle: model,
+                modelID: model,
                 adresseLivraison
             });
 
