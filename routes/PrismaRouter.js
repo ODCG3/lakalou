@@ -35,8 +35,9 @@ router
   .route("/model/:modelId")
   .get(auth, (req, res) => ModelController.getModelById(req, res));
 
-route("/model/:modelId/delete")
+router("/model/:modelId/delete")
     .delete(auth, (req, res) => ModelController.deleteModel(req, res));
+    
 router
     .route("/model/:modelId")
     .get(auth, (req, res) => ModelController.getModelById(req, res));
