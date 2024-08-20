@@ -48,6 +48,8 @@ export default class PostController {
                         where: { id: utilisateurId },
                         data: { credits: { decrement: 1 } }
                     });
+                    // Envoyer des notifications aux abonnés du tailleur
+                    yield this.notifyFollowers(utilisateurId, createdPost.id);
                     res.status(201).json({ message: "Post créé avec succès", post: createdPost });
                 }
                 else {
@@ -288,6 +290,87 @@ export default class PostController {
             }
             catch (error) {
                 console.error('Erreur lors du partage du post:', error); // Pour débogage
+                res.status(500).json({ error: 'Erreur interne du serveur' });
+            }
+        });
+    }
+    static notifyFollowers(userId, postId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                // Récupérer les détails de l'utilisateur et ses abonnés
+                const userData = yield prisma.users.findUnique({
+                    where: { id: userId },
+                    include: {
+                        Followers_Followers_userIdToUsers: {
+                            include: {
+                                Users_Followers_followerIdToUsers: true
+                            }
+                        }
+                    }
+                });
+                if (!userData || !userData.Followers_Followers_userIdToUsers) {
+                    console.error('Utilisateur ou abonnés non trouvés pour la notification');
+                    return;
+                }
+                // Créer des notifications pour chaque abonné
+                const notifications = userData.Followers_Followers_userIdToUsers.map(followerRelation => ({
+                    userId: followerRelation.followerId,
+                    message: `L'utilisateur ${userData.nom} a créé un nouveau post.`,
+                    postId: postId
+                }));
+                // Enregistrer les notifications dans la base de données
+                yield prisma.usersNotifications.createMany({
+                    data: notifications
+                });
+            }
+            catch (error) {
+                console.error('Erreur lors de la notification des abonnés:', error);
+            }
+        });
+    }
+    static deleteNotification(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const { notificationId } = req.params;
+            const utilisateurId = req.user.userID;
+            try {
+                // Vérifier si la notification existe et appartient à l'utilisateur connecté
+                const notification = yield prisma.usersNotifications.findUnique({
+                    where: { id: parseInt(notificationId) }
+                });
+                if (!notification) {
+                    return res.status(404).json({ error: "Notification non trouvée." });
+                }
+                if (notification.userId !== utilisateurId) {
+                    return res.status(403).json({ error: "Vous n'avez pas la permission de supprimer cette notification." });
+                }
+                // Supprimer la notification
+                yield prisma.usersNotifications.delete({
+                    where: { id: parseInt(notificationId) }
+                });
+                res.status(200).json({ message: "Notification supprimée avec succès." });
+            }
+            catch (error) {
+                console.error('Erreur lors de la suppression de la notification:', error);
+                res.status(500).json({ error: 'Erreur interne du serveur' });
+            }
+        });
+    }
+    static getNotifications(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const utilisateurId = req.user.userID;
+            try {
+                // Récupérer toutes les notifications de l'utilisateur
+                const notifications = yield prisma.usersNotifications.findMany({
+                    where: { userId: utilisateurId },
+                    orderBy: { createdAt: 'desc' } // Ordre décroissant par date de création
+                });
+                if (notifications.length === 0) {
+                    return res.status(404).json({ message: "Aucune notification trouvée pour cet utilisateur." });
+                }
+                res.status(200).json({ notifications });
+            }
+            catch (error) {
+                console.error('Erreur lors de la récupération des notifications:', error);
                 res.status(500).json({ error: 'Erreur interne du serveur' });
             }
         });
