@@ -17,11 +17,6 @@ router.route("/Notes/:id").post(auth,(req, res) => PrismaUserController.addNotes
 router.route("/Notes/:id/:noteId").put(auth, (req, res) => PrismaUserController.updateNote(req, res));
 router.route("/tailleur/:tailleurId").get(auth, (req, res) => PrismaUserController.filterTailleurById(req, res));
 router.route("/tailleur/name/:name").get(auth, (req, res) => PrismaUserController.filterByName(req, res));
-router.route("/tailleur/notes").get(auth, (req, res) => PrismaUserController.filterByNotes(req, res));
-router.route("/tailleur/certificat").get(auth, (req, res) => PrismaUserController.filterTailleurByCertificat(req, res));
-
-
-
 
 router
     .route("/model/create")
