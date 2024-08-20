@@ -793,8 +793,7 @@ export default class UserController {
     });
   }
   
-  
-static async acheterBadge(req, res) {
+  static async acheterBadge(req, res) {
     const userId = req.user.userID;
     console.log(userId);
 
@@ -842,6 +841,7 @@ static async acheterBadge(req, res) {
         res.status(500).json({ error: 'Une erreur est survenue' });
     }
 }
+
 
 
   static async updateNote(req, res) {
@@ -1046,6 +1046,98 @@ static async acheterBadge(req, res) {
      res.status(500).json({ message: err.message });
     }
   }
+  
+  static async updateMeasurements(req, res) {
+    try {
+      const { id } = req.params;
+      const measurements = req.body;
+
+      // Liste des champs à vérifier
+      const fields = [
+        'cou', 'longueurPantallon', 'epaule', 'longueurManche',
+        'hanche', 'poitrine', 'cuisse', 'longueur', 'tourBras',
+        'tourPoignet', 'ceinture'
+      ];
+
+      // Vérification des champs
+      for (const field of fields) {
+        const value = measurements[field];
+
+        // Si le champ est vide, on continue sans vérifier
+        if (value === undefined || value === null || value === '') {
+          continue;
+        }
+
+        // Vérifier si la valeur est un nombre
+        if (!validator.isFloat(value.toString())) {
+          return res.status(400).json({ error: `La valeur pour ${field} doit être un nombre.` });
+        }
+      }
+
+      // Mettre à jour les mesures de l'utilisateur
+      const user = await UserModel.findByIdAndUpdate(
+        id,
+        { mesures: measurements },
+        { new: true, runValidators: true }
+      );
+
+      if (!user) {
+        return res.status(404).json({ error: "Utilisateur non trouvé." });
+      }
+
+      return res.status(200).json({ message: "Mesures mises à jour avec succès." });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: "Erreur interne du serveur." });
+    }
+  }
+  
+  static async acheterBadge(req, res) {
+    const userId = req.user.userID;
+    console.log(userId);
+
+    try {
+        // Vérifier si l'utilisateur existe
+        const userData = await UserModel.findById(userId).select('credits badges followers');
+        
+        if (!userData) {
+            return res.status(400).json({ error: 'User not found' });
+        }
+
+        const credits = userData.credits;
+        const followersCount = userData.followers.length; // Compter le nombre de followers
+        console.log(`Credits: ${credits}, Followers: ${followersCount}`);
+
+        // Vérifier si l'utilisateur a au moins 1 follower
+        if (followersCount < 100) {
+            return res.status(403).json({ message: 'Vous devez avoir au moins 100 follower pour acheter un badge' });
+        }
+
+        // Vérifier si le badge est déjà acquis
+        const badgeAcquis = userData.badges.some(badge => badge === true);
+
+        if (badgeAcquis) {
+            return res.status(405).json({ message: 'Badge déjà acquis' });
+        }
+
+        // Vérifier si l'utilisateur a suffisamment de crédits
+        if (credits < 5) {
+            return res.status(406).json({ message: 'Crédit insuffisant' });
+        }
+
+        // Mettre à jour le crédit et ajouter le badge
+        await UserModel.findByIdAndUpdate(userId, {
+            $inc: { credits: -5 }, // Décrémenter les crédits
+            $push: { badges: true } // Ajouter le badge
+        }, {
+            new: true
+        });
+
+        res.status(200).json({ message: 'Badge acquis avec succès' });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Une erreur est survenue' });
+    }
 }
-
-
+}
