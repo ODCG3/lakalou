@@ -825,6 +825,7 @@ export default class PrismaUserController {
       return res.status(500).json({ error: "Erreur interne du serveur." });
     }
   }
+  
   static async acheterBadge(req: Request, res: Response) {
     const userId = req.user?.userID;
 
