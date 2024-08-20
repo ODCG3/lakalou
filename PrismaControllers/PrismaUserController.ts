@@ -245,6 +245,24 @@ export default class PrismaUserController {
         res.status(500).json({ error: "Erreur interne du serveur" });
       }
     }
+    //filterTailleurByCertificat
+    static async filterTailleurByCertificat(req: Request, res: Response) {
+      
+      //je veut filtrer les users qui ont le role tailleur et qui ont le certificat
+      try {
+        const filteredUsers = await prisma.users.findMany({
+          where: {certificat:true },
+        });
+        if (!filteredUsers) {
+          return res.status(404).json({ error: "Aucun utilisateur trouvé" });
+        }
+
+        res.status(200).json(filteredUsers);
+      } catch (error) {
+        res.status(500).json({ error: "Erreur interne du serveur" });
+      }
+    }
+
   //reportUser
   static async reportUser(req: Request, res: Response) {
     const userId = req.user!.userID;

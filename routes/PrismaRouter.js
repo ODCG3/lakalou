@@ -16,6 +16,7 @@ router.route("/logout").post(auth,(req, res) => PrismaUserController.logout(req,
 router.route("/Notes/:id").post(auth,(req, res) => PrismaUserController.addNotes(req, res));
 router.route("/Notes/:id/:noteId").put(auth, (req, res) => PrismaUserController.updateNote(req, res));
 router.route("/filterByNotes/:id").get(auth, (req, res) => PrismaUserController.filterByNotes(req, res));
+router.route("/filterTailleurByCertificat").get(auth, (req, res) => PrismaUserController.filterTailleurByCertificat(req, res));
 
 
 

@@ -208,6 +208,24 @@ export default class PrismaUserController {
             }
         });
     }
+    //filterTailleurByCertificat
+    static filterTailleurByCertificat(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            //je veut filtrer les users qui ont le role tailleur et qui ont le certificat
+            try {
+                const filteredUsers = yield prisma.users.findMany({
+                    where: { certificat: true },
+                });
+                if (!filteredUsers) {
+                    return res.status(404).json({ error: "Aucun utilisateur trouvé" });
+                }
+                res.status(200).json(filteredUsers);
+            }
+            catch (error) {
+                res.status(500).json({ error: "Erreur interne du serveur" });
+            }
+        });
+    }
     //reportUser
     static reportUser(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
