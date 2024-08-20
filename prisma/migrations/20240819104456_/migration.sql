@@ -57,6 +57,7 @@ CREATE TABLE `Followers` (
     `userId` INTEGER NOT NULL,
     `followerId` INTEGER NOT NULL,
 
+    UNIQUE INDEX `Followers_followerId_key`(`followerId`),
     INDEX `followerId`(`followerId`),
     INDEX `userId`(`userId`),
     PRIMARY KEY (`id`)
@@ -71,6 +72,7 @@ CREATE TABLE `Likes` (
 
     INDEX `postId`(`postId`),
     INDEX `userId`(`userId`),
+    UNIQUE INDEX `Likes_userId_postId_key`(`userId`, `postId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -140,6 +142,7 @@ CREATE TABLE `Stories` (
     `expiresAt` DATETIME(0) NULL,
     `modelId` INTEGER NOT NULL,
     `userId` INTEGER NOT NULL,
+    `Views` INTEGER NOT NULL DEFAULT 0,
 
     INDEX `modelId`(`modelId`),
     INDEX `userId`(`userId`),
@@ -237,6 +240,16 @@ CREATE TABLE `UsersSignals` (
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
+-- CreateTable
+CREATE TABLE `BlockedUsers` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `storyId` INTEGER NOT NULL,
+    `blockedUserId` INTEGER NOT NULL,
+
+    INDEX `blockedUserId`(`blockedUserId`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 -- AddForeignKey
 ALTER TABLE `CommandeModels` ADD CONSTRAINT `CommandeModels_ibfk_1` FOREIGN KEY (`modelID`) REFERENCES `Models`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
@@ -313,7 +326,7 @@ ALTER TABLE `Posts` ADD CONSTRAINT `Posts_ibfk_2` FOREIGN KEY (`utilisateurId`) 
 ALTER TABLE `Stories` ADD CONSTRAINT `Stories_ibfk_1` FOREIGN KEY (`modelId`) REFERENCES `Models`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 -- AddForeignKey
-ALTER TABLE `Stories` ADD CONSTRAINT `Stories_ibfk_2` FOREIGN KEY (`userId`) REFERENCES `Users`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+ALTER TABLE `Stories` ADD CONSTRAINT `Stories_ibfk_2` FOREIGN KEY (`userId`) REFERENCES `Users`(`id`) ON DELETE CASCADE ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE `UsersDiscussions` ADD CONSTRAINT `UsersDiscussions_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `Users`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
@@ -350,3 +363,9 @@ ALTER TABLE `UsersSignals` ADD CONSTRAINT `UsersSignals_ibfk_1` FOREIGN KEY (`re
 
 -- AddForeignKey
 ALTER TABLE `UsersSignals` ADD CONSTRAINT `UsersSignals_ibfk_2` FOREIGN KEY (`userId`) REFERENCES `Users`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE `BlockedUsers` ADD CONSTRAINT `BlockedUsers_ibfk_1` FOREIGN KEY (`storyId`) REFERENCES `Stories`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE `BlockedUsers` ADD CONSTRAINT `BlockedUsers_ibfk_2` FOREIGN KEY (`blockedUserId`) REFERENCES `Users`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
