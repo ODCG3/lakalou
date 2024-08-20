@@ -793,7 +793,8 @@ export default class UserController {
     });
   }
   
-  static async acheterBadge(req, res) {
+  
+static async acheterBadge(req, res) {
     const userId = req.user.userID;
     console.log(userId);
 
@@ -841,7 +842,6 @@ export default class UserController {
         res.status(500).json({ error: 'Une erreur est survenue' });
     }
 }
-
 
 
   static async updateNote(req, res) {

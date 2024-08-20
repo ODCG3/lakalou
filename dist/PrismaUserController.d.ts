@@ -14,4 +14,5 @@ export default class PrismaUserController {
     static updateNote(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static chargeCredit(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
     static updateMeasurements(req: Request, res: Response): Promise<Response>;
+    static acheterBadge(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
 }

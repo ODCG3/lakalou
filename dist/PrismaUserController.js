@@ -706,4 +706,57 @@ export default class PrismaUserController {
             }
         });
     }
+    static acheterBadge(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
+            if (!userId) {
+                return res.status(401).json({ message: "Utilisateur non authentifié" });
+            }
+            try {
+                // Vérifier si l'utilisateur existe
+                const userData = yield prisma.users.findUnique({
+                    where: { id: userId },
+                    select: {
+                        credits: true,
+                        badges: true,
+                        Followers_Followers_userIdToUsers: true,
+                    },
+                });
+                if (!userData) {
+                    return res.status(404).json({ error: 'Utilisateur non trouvé' });
+                }
+                const { credits, badges, Followers_Followers_userIdToUsers } = userData;
+                const followersCount = Followers_Followers_userIdToUsers.length; // Compter le nombre de followers
+                // Vérifier si l'utilisateur a au moins 100 followers
+                if (followersCount < 100) {
+                    return res.status(403).json({ message: 'Vous devez avoir au moins 100 followers pour acheter un badge' });
+                }
+                // Vérifier si le badge est déjà acquis
+                if (badges) { // badges est un booléen, donc juste vérifiez s'il est vrai
+                    return res.status(405).json({ message: 'Badge déjà acquis' });
+                }
+                // Vérifier si l'utilisateur a suffisamment de crédits
+                if (credits === null || credits < 5) {
+                    return res.status(406).json({ message: 'Crédit insuffisant' });
+                }
+                // Ajouter le badge en utilisant une approche différente
+                yield prisma.users.update({
+                    where: { id: userId },
+                    data: {
+                        credits: { decrement: 5 }, // Décrémenter les crédits
+                        badges: true // Définir le badge comme acquis
+                    },
+                });
+                res.status(200).json({ message: 'Badge acquis avec succès' });
+            }
+            catch (err) {
+                console.error(err);
+                res.status(500).json({ error: 'Une erreur est survenue' });
+            }
+            finally {
+                yield prisma.$disconnect();
+            }
+        });
+    }
 }
