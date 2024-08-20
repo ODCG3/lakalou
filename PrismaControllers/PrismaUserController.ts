@@ -780,41 +780,45 @@ export default class PrismaUserController {
   }
   static async updateMeasurements(req: Request, res: Response): Promise<Response> {
     try {
-      const { id } = req.params;
-      const measurements: Measurements = req.body;
-  
-      const fields: (keyof Measurements)[] = [
+      const userId = req.user!.userID; // Utiliser l'ID de l'utilisateur connecté
+      const measurements = req.body;
+
+      if (!userId) {
+        return res.status(400).json({ error: "Utilisateur non authentifié." });
+      }
+
+      // Liste des champs à vérifier
+      const fields = [
         'cou', 'longueurPantallon', 'epaule', 'longueurManche',
         'hanche', 'poitrine', 'cuisse', 'longueur', 'tourBras',
-        'tourPoignet', 'ceinture'
+        'tourPoignet', 'ceintur'
       ];
-  
-      // Validation des valeurs
+
+      // Vérification des champs
       for (const field of fields) {
         const value = measurements[field];
-        
-        // Vérifier que la valeur n'est pas null ou undefined
-        if (value !== undefined && value !== null) {
-          if (!validator.isNumeric(value.toString())) {
-            return res.status(400).json({ error: `La valeur pour ${field} doit être un nombre valide.` });
-          }
+
+        // Si le champ est vide, on continue sans vérifier
+        if (value === undefined || value === null || value === '') {
+          continue;
+        }
+
+        // Vérifier si la valeur est un nombre
+        if (!validator.isFloat(value.toString())) {
+          return res.status(400).json({ error: `La valeur pour ${field} doit être un nombre.` });
         }
       }
-  
-      // Mise à jour des mesures
-      const updatedUser = await prisma.users.update({
-        where: { id: parseInt(id) },
-        data: {
-          Mesures: {
-            update: { ...measurements }  // Assumes `Mesures` is a related model in the Prisma schema
-          }
-        }
+
+      // Mettre à jour les mesures de l'utilisateur
+      const updatedUser = await prisma.mesures.update({
+        where: { UserID: userId },
+        data: measurements,
       });
-  
+
       if (!updatedUser) {
         return res.status(404).json({ error: "Utilisateur non trouvé." });
       }
-  
+
       return res.status(200).json({ message: "Mesures mises à jour avec succès." });
     } catch (error) {
       console.error(error);
@@ -879,6 +883,8 @@ export default class PrismaUserController {
       await prisma.$disconnect();
     }
   } 
+
+  
 }
 
 
