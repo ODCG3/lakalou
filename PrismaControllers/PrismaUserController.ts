@@ -1154,6 +1154,47 @@ export default class PrismaUserController {
       res.status(500).json({ message: (err as Error).message });
     }
   }
+
+
+  static async filterTailleurById(req: Request, res: Response) {
+    const { tailleurId } = req.params;
+    try {
+        const tailleur = await prisma.users.findUnique({
+            where: { id: parseInt(tailleurId, 10) },
+        });
+
+        if (!tailleur || tailleur.role !== 'tailleur') {
+            return res.status(404).json({ message: "Tailleur non trouvé" });
+        }
+
+        return res.status(200).json(tailleur);
+    } catch (error) {
+        return res.status(500).json({ message: "Erreur serveur : " + error });
+    }
+  }
+
+  static async filterByName(req: Request, res: Response) {
+    const { name } = req.params;
+    try {
+        const tailleurs = await prisma.users.findMany({
+            where: {
+                role: 'tailleur',
+                nom: {
+                    contains: name
+                }
+            }
+        });
+
+        if (tailleurs.length === 0) {
+          return res.status(404).json({ message: "Tailleur non trouvé" });
+        }
+
+        return res.status(200).json(tailleurs);
+    } catch (error) {
+        return res.status(500).json({ message: "Erreur serveur : " + error });
+    }
+  }
+}
   
   // filterByNotes
   static async filterByNotes(req: Request, res: Response) {

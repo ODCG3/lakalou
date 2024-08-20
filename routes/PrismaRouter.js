@@ -15,6 +15,12 @@ router
 router.route("/login").post((req, res) => PrismaUserController.login(req, res));
 
 
+router.route("/logout").post(auth,(req, res) => PrismaUserController.logout(req, res));
+router.route("/Notes/:id").post(auth,(req, res) => PrismaUserController.addNotes(req, res));
+router.route("/Notes/:id/:noteId").put(auth, (req, res) => PrismaUserController.updateNote(req, res));
+router.route("/tailleur/:tailleurId").get(auth, (req, res) => PrismaUserController.filterTailleurById(req, res));
+router.route("/tailleur/name/:name").get(auth, (req, res) => PrismaUserController.filterByName(req, res));
+
 router.route("/filterByNotes/:id").get(auth, (req, res) => PrismaUserController.filterByNotes(req, res));
 router
   .route("/logout")
@@ -30,7 +36,6 @@ router
 router
   .route("/listeTailleurs")
   .get(auth, (req, res) => PrismaUserController.getTailleurs(req, res));
-
 
 router
   .route("/myPosition")
