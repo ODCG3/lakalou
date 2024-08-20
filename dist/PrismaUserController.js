@@ -183,6 +183,34 @@ export default class PrismaUserController {
             }
         });
     }
+    // filterByNotes
+    static filterByNotes(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const { id } = req.params;
+            //const userId = req.user!.userID;
+            const { rate } = req.body;
+            console.log(id, rate);
+            try {
+                const userToRate = yield prisma.users.findUnique({
+                    where: { id: parseInt(id, 10) },
+                    include: { UsersNotes_UsersNotes_raterIDToUsers: true },
+                });
+                if (!userToRate) {
+                    return res.status(403).json({ error: "Utilisateur non trouvé" });
+                }
+                if (userToRate.role !== "tailleur") {
+                    return res
+                        .status(402)
+                        .json({ error: "Vous ne pouvez pas filtrer par notes pour un tailleur" });
+                }
+                const filteredNotes = userToRate.UsersNotes_UsersNotes_raterIDToUsers.filter((note) => { var _a; return ((_a = note.rate) !== null && _a !== void 0 ? _a : 0) >= rate; });
+                res.status(200).json(filteredNotes);
+            }
+            catch (error) {
+                res.status(500).json({ error: "Erreur interne du serveur" });
+            }
+        });
+    }
     //reportUser
     static reportUser(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -333,6 +361,43 @@ export default class PrismaUserController {
                 return res
                     .status(500)
                     .json({ message: "Erreur lors de l'abonnement", error: err });
+            }
+        });
+    }
+    // Méthode myFollowers
+    static myFollowers(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a, _b;
+            const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
+            if (!userId) {
+                return res.status(401).json({
+                    message: "Vous devez vous connecter pour accéder à ce contenu",
+                });
+            }
+            try {
+                const followers = yield prisma.followers.findMany({
+                    where: { followerId: (_b = req.user) === null || _b === void 0 ? void 0 : _b.userID },
+                    select: {
+                        id: true,
+                        // afichier les informations du user 
+                        Users_Followers_followerIdToUsers: {
+                            select: {
+                                id: true,
+                                nom: true,
+                                prenom: true,
+                                photoProfile: true,
+                                role: true,
+                                badges: true,
+                                credits: true,
+                            },
+                        },
+                    },
+                });
+                return res.status(200).json({ followers });
+            }
+            catch (error) {
+                console.error(error);
+                return res.status(500).json({ message: "Erreur lors de la récupération des followers", error: error });
             }
         });
     }

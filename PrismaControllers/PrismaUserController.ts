@@ -218,6 +218,34 @@ export default class PrismaUserController {
       res.status(500).json({ error: "Erreur interne du serveur" });
     }
   }
+  // filterByNotes
+  static async filterByNotes(req: Request, res: Response) {
+    const { id } = req.params;
+    //const userId = req.user!.userID;
+    const { rate } = req.body;
+
+    console.log(id, rate);
+    try {
+      const userToRate = await prisma.users.findUnique({
+        where: { id: parseInt(id, 10) },
+        include: { UsersNotes_UsersNotes_raterIDToUsers: true },
+      });
+      if (!userToRate) {
+        return res.status(403).json({ error: "Utilisateur non trouvé" });
+      }
+      if (userToRate.role!== "tailleur") {
+        return res
+         .status(402)
+         .json({ error: "Vous ne pouvez pas filtrer par notes pour un tailleur" });
+      }
+      const filteredNotes = userToRate.UsersNotes_UsersNotes_raterIDToUsers.filter(
+        (note) => (note.rate ?? 0) >= rate
+      );
+      res.status(200).json(filteredNotes);
+      } catch (error) {
+        res.status(500).json({ error: "Erreur interne du serveur" });
+      }
+    }
   //reportUser
   static async reportUser(req: Request, res: Response) {
     const userId = req.user!.userID;
@@ -391,6 +419,45 @@ export default class PrismaUserController {
         .json({ message: "Erreur lors de l'abonnement", error: err });
     }
   }
+  // Méthode myFollowers
+  static async myFollowers(req: Request, res: Response) {
+    const userId = req.user?.userID;
+
+    if (!userId) {
+      return res.status(401).json({
+        message: "Vous devez vous connecter pour accéder à ce contenu",
+      });
+    }
+
+    try {
+      const followers = await prisma.followers.findMany({
+        where: { followerId: req.user?.userID },
+        select: {
+          id: true,
+          // afichier les informations du user 
+          Users_Followers_followerIdToUsers: {
+            select: {
+              id: true,
+              nom: true,
+              prenom: true,
+              photoProfile: true,
+              role: true,
+              badges: true,
+              credits: true,
+
+            },
+          },
+        },
+      });
+
+      return res.status(200).json({ followers });
+
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: "Erreur lors de la récupération des followers", error: error });
+    }
+  }
+
   // Méthode profile
   static async profile(req: Request, res: Response) {
     const userId = req.user?.userID;

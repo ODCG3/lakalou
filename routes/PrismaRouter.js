@@ -14,6 +14,8 @@ router
   .post((req, res) => PrismaUserController.create(req, res));
 router.route("/login").post((req, res) => PrismaUserController.login(req, res));
 
+
+router.route("/filterByNotes/:id").get(auth, (req, res) => PrismaUserController.filterByNotes(req, res));
 router
   .route("/logout")
   .post(auth, (req, res) => PrismaUserController.logout(req, res));
@@ -28,6 +30,7 @@ router
 router
   .route("/listeTailleurs")
   .get(auth, (req, res) => PrismaUserController.getTailleurs(req, res));
+
 
 router
   .route("/myPosition")
@@ -154,6 +157,10 @@ router
 router
 .route('/getUserBloquer')
 .get(auth, (req, res) => PrismaUserController.getUserBloquer(req, res));
+
+router
+ .route('/myFollowers')
+ .get(auth, (req, res) => PrismaUserController.myFollowers(req, res));
 
 
 export default router;
