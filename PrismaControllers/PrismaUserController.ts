@@ -978,8 +978,11 @@ export default class PrismaUserController {
     // console.log(TEST");
     try {
       const connectedUser = await prisma.users.findUnique({
-        where: { id: req.user.userID }, // Assurez-vous que `req.user.userID` est correct
+        where: { id: req.user!.userID }, // Assurez-vous que `req.user.userID` est correct
       });
+
+      console.log(connectedUser);
+      
 
       if (!connectedUser || connectedUser.role !== "tailleur") {
         res
@@ -1009,7 +1012,7 @@ export default class PrismaUserController {
       const ranking = allUsers.map((user) => {
         const averageRate =
           user.UsersNotes_UsersNotes_userIdToUsers.reduce(
-            (acc, note) => acc + note.rate,
+            (acc, note) => acc + note.rate!,
             0
           ) / user.UsersNotes_UsersNotes_userIdToUsers.length || 0;
         return {
@@ -1029,19 +1032,19 @@ export default class PrismaUserController {
       let previousRate: number | null = null;
       let tiedUsersCount = 0;
 
-      for (let i = 0; i < ranking.length; i++) {
-        if (previousRate === ranking[i].averageRate) {
+      for (const element of ranking) {
+        if (previousRate === element.averageRate) {
           tiedUsersCount++;
         } else {
           rank += tiedUsersCount;
           tiedUsersCount = 1;
         }
 
-        ranking[i].rank = rank;
-        previousRate = ranking[i].averageRate;
+        // element.rank = rank;
+        previousRate = element.averageRate;
 
-        if (ranking[i].id === connectedUser.id) {
-          res.status(200).send(`Votre classement est ${ranking[i].rank}`);
+        if (element.id === connectedUser.id) {
+          res.status(200).send(`Votre classement est ${rank}`);
           return;
         }
       }
@@ -1050,7 +1053,7 @@ export default class PrismaUserController {
         .status(404)
         .json({ message: "Utilisateur non trouvé dans le classement" });
     } catch (err) {
-      res.status(500).json({ message: `Erreur: ${err.message}` });
+      res.status(500).json({ message: `Erreur: ${(err as Error).message}` });
     }
   }
   
@@ -1076,7 +1079,7 @@ export default class PrismaUserController {
       const ranking = tailleurs.map((tailleur) => {
         const averageRate =
           tailleur.UsersNotes_UsersNotes_userIdToUsers.reduce(
-            (acc, note) => acc + note.rate,
+            (acc, note) => acc + note.rate!,
             0
           ) / tailleur.UsersNotes_UsersNotes_userIdToUsers.length || 0;
         return {
@@ -1098,7 +1101,7 @@ export default class PrismaUserController {
       let previousRate: number | null = null;
       let tiedUsersCount = 0;
 
-      ranking.forEach((tailleur, index) => {
+      ranking.forEach((tailleur:any, index) => {
         if (previousRate === tailleur.averageRate) {
           tiedUsersCount++;
         } else {
@@ -1113,7 +1116,7 @@ export default class PrismaUserController {
       res.status(200).json(ranking);
     } catch (error) {
       res.status(500).json({
-        message: `Erreur lors de la récupération du classement des tailleurs: ${error.message}`,
+        message: `Erreur lors de la récupération du classement des tailleurs: ${(error as Error).message}`,
       });
     }
   }

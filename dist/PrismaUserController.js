@@ -7,14 +7,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import isEmail from 'validator/lib/isEmail.js';
 import { validateImageExtension, validateName } from '../utils/Validator.js';
 import * as validator from 'validator';
-
 const prisma = new PrismaClient();
 export default class PrismaUserController {
     static create(req, res) {
@@ -491,6 +489,45 @@ export default class PrismaUserController {
             }
         });
     }
+    static updateMeasurements(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { id } = req.params;
+                const measurements = req.body;
+                // Liste des champs à vérifier
+                const fields = [
+                    'cou', 'longueurPantallon', 'epaule', 'longueurManche',
+                    'hanche', 'poitrine', 'cuisse', 'longueur', 'tourBras',
+                    'tourPoignet', 'ceinture'
+                ];
+                // Vérification des champs
+                for (const field of fields) {
+                    const value = measurements[field];
+                    // Si le champ est vide, on continue sans vérifier
+                    if (value === undefined || value === null || value === '') {
+                        continue;
+                    }
+                    // Vérifier si la valeur est un nombre
+                    if (!validator.isFloat(value.toString())) {
+                        return res.status(400).json({ error: `La valeur pour ${field} doit être un nombre.` });
+                    }
+                }
+                // Mettre à jour les mesures de l'utilisateur
+                const user = yield prisma.users.update({
+                    where: { id: parseInt(id) },
+                    data: { mesures: measurements },
+                });
+                if (!user) {
+                    return res.status(404).json({ error: "Utilisateur non trouvé." });
+                }
+                return res.status(200).json({ message: "Mesures mises à jour avec succès." });
+            }
+            catch (error) {
+                console.error(error);
+                return res.status(500).json({ error: "Erreur interne du serveur." });
+            }
+        });
+    }
     // Méthode bloquerUsers
     static bloquerUsers(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -816,49 +853,7 @@ export default class PrismaUserController {
             }
         });
     }
-
-
-    static updateMeasurements(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const { id } = req.params;
-                const measurements = req.body;
-                // Liste des champs à vérifier
-                const fields = [
-                    'cou', 'longueurPantallon', 'epaule', 'longueurManche',
-                    'hanche', 'poitrine', 'cuisse', 'longueur', 'tourBras',
-                    'tourPoignet', 'ceinture'
-                ];
-                // Vérification des champs
-                for (const field of fields) {
-                    const value = measurements[field];
-                    // Si le champ est vide, on continue sans vérifier
-                    if (value === undefined || value === null || value === '') {
-                        continue;
-                    }
-                    // Vérifier si la valeur est un nombre
-                    if (!validator.isFloat(value.toString())) {
-                        return res.status(400).json({ error: `La valeur pour ${field} doit être un nombre.` });
-                    }
-                }
-                // Mettre à jour les mesures de l'utilisateur
-                const user = yield prisma.users.update({
-                    where: { id: parseInt(id) },
-                    data: { mesures: measurements },
-                });
-                if (!user) {
-                    return res.status(404).json({ error: "Utilisateur non trouvé." });
-                }
-                return res.status(200).json({ message: "Mesures mises à jour avec succès." });
-            }
-            catch (error) {
-                console.error(error);
-                return res.status(500).json({ error: "Erreur interne du serveur." });
-            }
-        });
-    }
-
-      static getTailleurs(req, res) {
+    static getTailleurs(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const tailleurs = yield prisma.users.findMany({
@@ -878,6 +873,7 @@ export default class PrismaUserController {
                 const connectedUser = yield prisma.users.findUnique({
                     where: { id: req.user.userID }, // Assurez-vous que `req.user.userID` est correct
                 });
+                console.log(connectedUser);
                 if (!connectedUser || connectedUser.role !== "tailleur") {
                     res
                         .status(400)
@@ -917,18 +913,18 @@ export default class PrismaUserController {
                 let rank = 1;
                 let previousRate = null;
                 let tiedUsersCount = 0;
-                for (let i = 0; i < ranking.length; i++) {
-                    if (previousRate === ranking[i].averageRate) {
+                for (const element of ranking) {
+                    if (previousRate === element.averageRate) {
                         tiedUsersCount++;
                     }
                     else {
                         rank += tiedUsersCount;
                         tiedUsersCount = 1;
                     }
-                    ranking[i].rank = rank;
-                    previousRate = ranking[i].averageRate;
-                    if (ranking[i].id === connectedUser.id) {
-                        res.status(200).send(`Votre classement est ${ranking[i].rank}`);
+                    // element.rank = rank;
+                    previousRate = element.averageRate;
+                    if (element.id === connectedUser.id) {
+                        res.status(200).send(`Votre classement est ${rank}`);
                         return;
                     }
                 }
