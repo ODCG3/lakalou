@@ -130,9 +130,7 @@ export default class CommandeModelController {
                             where: { id: article.id },
                         });
                         if (!articleModel || articleModel.quantite <= 0) {
-                            return res
-                                .status(500)
-                                .json({
+                            return res.status(500).json({
                                 message: `L'article ${articleModel === null || articleModel === void 0 ? void 0 : articleModel.libelle} n'est plus disponible, commande annulee`,
                             });
                         }
@@ -161,20 +159,30 @@ export default class CommandeModelController {
                         },
                     },
                 });
-                const articlesPrices = yield Promise.all(articles.map((article) => __awaiter(this, void 0, void 0, function* () {
-                    const data = yield prisma.articles.findUnique({ where: { id: article.id } });
-                    const prixTotal = data.prix * article.quantite;
-                    return prixTotal;
-                })));
-                console.log(articlesPrices);
-                const montant = parseFloat(articlesPrices.reduce((acc, curr) => acc + curr, 0));
+                let montant = 0;
+                if (articles.length > 0) {
+                    const articlesPrices = yield Promise.all(articles.map((article) => __awaiter(this, void 0, void 0, function* () {
+                        const data = yield prisma.articles.findUnique({
+                            where: { id: article.id },
+                        });
+                        const prixTotal = data.prix * article.quantite;
+                        return prixTotal;
+                    })));
+                    montant = parseFloat(articlesPrices.reduce((acc, curr) => acc + curr, 0));
+                }
+                else {
+                    const model = yield prisma.models.findUnique({
+                        where: { id: modelId },
+                    });
+                    montant = model.prix;
+                }
                 console.log(montant);
                 yield prisma.payment.create({
                     data: {
                         libelle: `payement de la commande ${commande.id}`,
                         montant: montant / 2,
                         commandeIdid: commande.id,
-                    }
+                    },
                 });
                 // Réponse
                 res.status(201).json(commande);

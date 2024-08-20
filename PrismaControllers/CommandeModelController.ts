@@ -135,15 +135,13 @@ export default class CommandeModelController {
           });
 
           if (!articleModel || articleModel.quantite! <= 0) {
-            return res
-              .status(500)
-              .json({
-                message: `L'article ${articleModel?.libelle} n'est plus disponible, commande annulee`,
-              });
+            return res.status(500).json({
+              message: `L'article ${articleModel?.libelle} n'est plus disponible, commande annulee`,
+            });
           }
         });
 
-        articles.forEach(async (article:any) => {
+        articles.forEach(async (article: any) => {
           // Mettre à jour la quantité de l'article
           await prisma.articles.update({
             where: { id: article.id! },
@@ -163,34 +161,42 @@ export default class CommandeModelController {
           dateLivraison: new Date(dateLivraison),
           articles: {
             connect: articles.map((article: any) => ({
-                id: parseInt(article.id), // Ensure that the ID is parsed as an integer
+              id: parseInt(article.id), // Ensure that the ID is parsed as an integer
             })),
           },
         },
       });
-      
-      const articlesPrices = await Promise.all(
-        articles.map(async (article: any) => {
-          const data = await prisma.articles.findUnique({ where: { id: article.id } });
-          const prixTotal = data!.prix * article.quantite;
-          return prixTotal;
-        })
-      );
 
-      console.log(articlesPrices);
-      
-      
-      const montant = parseFloat(articlesPrices.reduce((acc:any, curr:any) => acc + curr, 0)) 
+
+      let montant = 0;
+      if (articles.length > 0) {
+        const articlesPrices = await Promise.all(
+          articles.map(async (article: any) => {
+            const data = await prisma.articles.findUnique({
+              where: { id: article.id },
+            });
+            const prixTotal = data!.prix * article.quantite;
+            return prixTotal;
+          })
+        );
+         montant = parseFloat(
+          articlesPrices.reduce((acc: any, curr: any) => acc + curr, 0)
+        );
+      } else {
+        const model = await prisma.models.findUnique({
+          where: { id: modelId! },
+        });
+         montant = model!.prix!;
+      }
       console.log(montant);
-      
 
       await prisma.payment.create({
         data: {
           libelle: `payement de la commande ${commande.id}`,
-          montant: montant/2,
+          montant: montant / 2,
           commandeIdid: commande.id,
-        }
-      })
+        },
+      });
 
       // Réponse
       res.status(201).json(commande);
