@@ -12,7 +12,9 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import isEmail from 'validator/lib/isEmail.js';
 import { validateImageExtension, validateName } from '../utils/Validator.js';
-import * as validator from 'validator';
+import validator from 'validator';
+
+
 const prisma = new PrismaClient();
 export default class PrismaUserController {
     static create(req, res) {
@@ -853,6 +855,7 @@ export default class PrismaUserController {
             }
         });
     }
+
     static getTailleurs(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -928,6 +931,7 @@ export default class PrismaUserController {
                         return;
                     }
                 }
+
                 res
                     .status(404)
                     .json({ message: "Utilisateur non trouvé dans le classement" });
@@ -994,31 +998,50 @@ export default class PrismaUserController {
             }
         });
     }
+
     static getStatistiques(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a;
-            const connectedUser = yield prisma.users.findUnique({
-                where: { id: req.user.userID },
-                include: { UsersMesModels: true, CommandeModels: true },
-            });
-            if (!connectedUser || ((_a = connectedUser.status) === null || _a === void 0 ? void 0 : _a.toLowerCase()) !== 'premium') {
-                return res.status(401).json({ message: "Vous devez être premium pour effectuer cette action" });
+            const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
+            if (!userId) {
+                return res.status(401).json({ message: "Utilisateur non authentifié" });
             }
             try {
-                // Trouver le modèle le plus vendu
-                const mostSoldModel = connectedUser.UsersMesModels.sort((a, b) => { var _a, _b; return ((_a = a.nombreDeCommande) !== null && _a !== void 0 ? _a : 0) - ((_b = b.nombreDeCommande) !== null && _b !== void 0 ? _b : 0); });
-                // Trouver les posts les plus vus
-                const mostViewedPosts = yield prisma.posts.findMany({
-                    where: { utilisateurId: connectedUser.id },
-                    orderBy: { vues: 'desc' },
+                // Vérifier si l'utilisateur existe
+                const userData = yield prisma.users.findUnique({
+                    where: { id: userId },
+                    select: {
+                        credits: true,
+                        badges: true,
+                        Followers_Followers_userIdToUsers: true,
+                    },
                 });
-                // Calculer le ratio des ventes par rapport aux posts
-                const userSalesCount = connectedUser.CommandeModels.length;
-                const userPostsCount = yield prisma.posts.count({
-                    where: { utilisateurId: connectedUser.id },
+                if (!userData) {
+                    return res.status(404).json({ error: 'Utilisateur non trouvé' });
+                }
+                const { credits, badges, Followers_Followers_userIdToUsers } = userData;
+                const followersCount = Followers_Followers_userIdToUsers.length; // Compter le nombre de followers
+                // Vérifier si l'utilisateur a au moins 100 followers
+                if (followersCount < 100) {
+                    return res.status(403).json({ message: 'Vous devez avoir au moins 100 followers pour acheter un badge' });
+                }
+                // Vérifier si le badge est déjà acquis
+                if (badges) { // badges est un booléen, donc juste vérifiez s'il est vrai
+                    return res.status(405).json({ message: 'Badge déjà acquis' });
+                }
+                // Vérifier si l'utilisateur a suffisamment de crédits
+                if (credits === null || credits < 5) {
+                    return res.status(406).json({ message: 'Crédit insuffisant' });
+                }
+                // Ajouter le badge en utilisant une approche différente
+                yield prisma.users.update({
+                    where: { id: userId },
+                    data: {
+                        credits: { decrement: 5 }, // Décrémenter les crédits
+                        badges: true // Définir le badge comme acquis
+                    },
                 });
-                const salesToPostsRatio = userSalesCount / userPostsCount;
-                res.status(200).json({ mostSoldModel, mostViewedPosts, salesToPostsRatio: salesToPostsRatio * 100 + "%" });
+                res.status(200).json({ message: 'Badge acquis avec succès' });
             }
             catch (err) {
                 res.status(500).json({ message: err.message });
@@ -1079,6 +1102,102 @@ export default class PrismaUserController {
             }
             catch (error) {
                 res.status(500).json({ error: "Erreur interne du serveur" });
+            }
+        });
+    }
+  
+   static updateMeasurements(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const userId = req.user.userID; // Utiliser l'ID de l'utilisateur connecté
+                const measurements = req.body;
+                if (!userId) {
+                    return res.status(400).json({ error: "Utilisateur non authentifié." });
+                }
+                // Liste des champs à vérifier
+                const fields = [
+                    'cou', 'longueurPantallon', 'epaule', 'longueurManche',
+                    'hanche', 'poitrine', 'cuisse', 'longueur', 'tourBras',
+                    'tourPoignet', 'ceintur'
+                ];
+                // Vérification des champs
+                for (const field of fields) {
+                    const value = measurements[field];
+                    // Si le champ est vide, on continue sans vérifier
+                    if (value === undefined || value === null || value === '') {
+                        continue;
+                    }
+                    // Vérifier si la valeur est un nombre
+                    if (!validator.isFloat(value.toString())) {
+                        return res.status(400).json({ error: `La valeur pour ${field} doit être un nombre.` });
+                    }
+                }
+                // Mettre à jour les mesures de l'utilisateur
+                const updatedUser = yield prisma.mesures.update({
+                    where: { UserID: userId },
+                    data: measurements,
+                });
+                if (!updatedUser) {
+                    return res.status(404).json({ error: "Utilisateur non trouvé." });
+                }
+                return res.status(200).json({ message: "Mesures mises à jour avec succès." });
+            }
+            catch (error) {
+                console.error(error);
+                return res.status(500).json({ error: "Erreur interne du serveur." });
+            }
+        });
+    }
+    static acheterBadge(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
+            if (!userId) {
+                return res.status(401).json({ message: "Utilisateur non authentifié" });
+            }
+            try {
+                // Vérifier si l'utilisateur existe
+                const userData = yield prisma.users.findUnique({
+                    where: { id: userId },
+                    select: {
+                        credits: true,
+                        badges: true,
+                        Followers_Followers_userIdToUsers: true,
+                    },
+                });
+                if (!userData) {
+                    return res.status(404).json({ error: 'Utilisateur non trouvé' });
+                }
+                const { credits, badges, Followers_Followers_userIdToUsers } = userData;
+                const followersCount = Followers_Followers_userIdToUsers.length; // Compter le nombre de followers
+                // Vérifier si l'utilisateur a au moins 100 followers
+                if (followersCount < 100) {
+                    return res.status(403).json({ message: 'Vous devez avoir au moins 100 followers pour acheter un badge' });
+                }
+                // Vérifier si le badge est déjà acquis
+                if (badges) { // badges est un booléen, donc juste vérifiez s'il est vrai
+                    return res.status(405).json({ message: 'Badge déjà acquis' });
+                }
+                // Vérifier si l'utilisateur a suffisamment de crédits
+                if (credits === null || credits < 5) {
+                    return res.status(406).json({ message: 'Crédit insuffisant' });
+                }
+                // Ajouter le badge en utilisant une approche différente
+                yield prisma.users.update({
+                    where: { id: userId },
+                    data: {
+                        credits: { decrement: 5 }, // Décrémenter les crédits
+                        badges: true // Définir le badge comme acquis
+                    },
+                });
+                res.status(200).json({ message: 'Badge acquis avec succès' });
+            }
+            catch (err) {
+                console.error(err);
+                res.status(500).json({ error: 'Une erreur est survenue' });
+            }
+            finally {
+                yield prisma.$disconnect();
             }
         });
     }

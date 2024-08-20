@@ -5,9 +5,23 @@ import isEmail from 'validator/lib/isEmail.js';
 import { validateImageExtension, validateName } from '../utils/Validator.js';
 import { Request, Response } from 'express';
 import { Error } from 'mongoose';
-import * as validator from 'validator'
+import validator from 'validator';
+
 
 const prisma = new PrismaClient();
+interface Measurements {
+  cou?: number;
+  longueurPantallon?: number;
+  epaule?: number
+  longueurManche?: number;
+  hanche?: number;
+  poitrine?: number;
+  cuisse?: number;
+  longueur?: number;
+  tourBras?: number;
+  tourPoignet?: number;
+  ceinture?: number;
+}
 
 export default class PrismaUserController {
   static async create(req: Request, res: Response) {
@@ -554,49 +568,7 @@ export default class PrismaUserController {
   }
 
  
-    static async updateMeasurements(req: Request, res: Response) {
-      try {
-        const { id } = req.params;
-        const measurements = req.body;
-  
-        // Liste des champs à vérifier
-        const fields = [
-          'cou', 'longueurPantallon', 'epaule', 'longueurManche',
-          'hanche', 'poitrine', 'cuisse', 'longueur', 'tourBras',
-          'tourPoignet', 'ceinture'
-        ];
-  
-        // Vérification des champs
-        for (const field of fields) {
-          const value = measurements[field];
-  
-          // Si le champ est vide, on continue sans vérifier
-          if (value === undefined || value === null || value === '') {
-            continue;
-          }
-  
-          // Vérifier si la valeur est un nombre
-          if (!validator.isFloat(value.toString())) {
-            return res.status(400).json({ error: `La valeur pour ${field} doit être un nombre.` });
-          }
-        }
-  
-        // Mettre à jour les mesures de l'utilisateur
-        const user = await prisma.users.update({
-          where: { id: parseInt(id) },
-          data: { mesures: measurements } as any,
-        });
-  
-        if (!user) {
-          return res.status(404).json({ error: "Utilisateur non trouvé." });
-        }
-  
-        return res.status(200).json({ message: "Mesures mises à jour avec succès." });
-      } catch (error) {
-        console.error(error);
-        return res.status(500).json({ error: "Erreur interne du serveur." });
-      }
-    }
+   
   
 
 
@@ -962,6 +934,117 @@ export default class PrismaUserController {
       return res.status(500).json({ error: "Erreur interne du serveur" });
     }
   }
+
+  static async updateMeasurements(req: Request, res: Response): Promise<Response> {
+    try {
+      const userId = req.user!.userID; // Utiliser l'ID de l'utilisateur connecté
+      const measurements = req.body;
+
+      if (!userId) {
+        return res.status(400).json({ error: "Utilisateur non authentifié." });
+      }
+
+      // Liste des champs à vérifier
+      const fields = [
+        'cou', 'longueurPantallon', 'epaule', 'longueurManche',
+        'hanche', 'poitrine', 'cuisse', 'longueur', 'tourBras',
+        'tourPoignet', 'ceintur'
+      ];
+
+      // Vérification des champs
+      for (const field of fields) {
+        const value = measurements[field];
+
+        // Si le champ est vide, on continue sans vérifier
+        if (value === undefined || value === null || value === '') {
+          continue;
+        }
+
+        // Vérifier si la valeur est un nombre
+        if (!validator.isFloat(value.toString())) {
+          return res.status(400).json({ error: `La valeur pour ${field} doit être un nombre.` });
+        }
+      }
+
+      // Mettre à jour les mesures de l'utilisateur
+      const updatedUser = await prisma.mesures.update({
+        where: { UserID: userId },
+        data: measurements,
+      });
+
+      if (!updatedUser) {
+        return res.status(404).json({ error: "Utilisateur non trouvé." });
+      }
+
+      return res.status(200).json({ message: "Mesures mises à jour avec succès." });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: "Erreur interne du serveur." });
+    }
+  }
+  static async acheterBadge(req: Request, res: Response) {
+    const userId = req.user?.userID;
+
+    if (!userId) {
+      return res.status(401).json({ message: "Utilisateur non authentifié" });
+    }
+
+    try {
+      // Vérifier si l'utilisateur existe
+      const userData = await prisma.users.findUnique({
+        where: { id: userId },
+        select: {
+          credits: true,
+          badges: true,
+          Followers_Followers_userIdToUsers: true,
+        },
+      });
+
+      if (!userData) {
+        return res.status(404).json({ error: 'Utilisateur non trouvé' });
+      }
+
+      const { credits, badges, Followers_Followers_userIdToUsers } = userData;
+      const followersCount = Followers_Followers_userIdToUsers.length; // Compter le nombre de followers
+
+      // Vérifier si l'utilisateur a au moins 100 followers
+      if (followersCount < 100) {
+        return res.status(403).json({ message: 'Vous devez avoir au moins 100 followers pour acheter un badge' });
+      }
+
+      // Vérifier si le badge est déjà acquis
+      if (badges) { // badges est un booléen, donc juste vérifiez s'il est vrai
+        return res.status(405).json({ message: 'Badge déjà acquis' });
+      }
+
+      // Vérifier si l'utilisateur a suffisamment de crédits
+      if (credits === null || credits < 5) {
+        return res.status(406).json({ message: 'Crédit insuffisant' });
+      }
+
+      // Ajouter le badge en utilisant une approche différente
+      await prisma.users.update({
+        where: { id: userId },
+        data: {
+          credits: { decrement: 5 }, // Décrémenter les crédits
+          badges: true // Définir le badge comme acquis
+        },
+      });
+
+      res.status(200).json({ message: 'Badge acquis avec succès' });
+
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Une erreur est survenue' });
+    } finally {
+      await prisma.$disconnect();
+    }
+  } 
+
+  
+}
+
+
 
   static async getTailleurs(req: Request, res: Response) {
     try {

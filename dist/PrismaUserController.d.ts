@@ -11,12 +11,13 @@ export default class PrismaUserController {
     static myFollowers(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
     static profile(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
     static changeRole(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
-    static updateMeasurements(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
     static bloquerUsers(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
     static debloquerUsers(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
     static getUserBloquer(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
     static updateNote(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static chargeCredit(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
+    static updateMeasurements(req: Request, res: Response): Promise<Response>;
+    static acheterBadge(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static getTailleurs(req: Request, res: Response): Promise<void>;
     static myPosition(req: Request, res: Response): Promise<void>;
     static getTailleurRanking(req: Request, res: Response): Promise<void>;
