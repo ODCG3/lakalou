@@ -12,4 +12,8 @@ export default class PrismaUserController {
     static bloquerUsers(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
     static updateNote(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static chargeCredit(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
+    static filterTailleurById(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
+    static filterByName(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
+    static filterByNotes(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
+    static filterTailleurByCertificat(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
 }
