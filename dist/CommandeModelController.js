@@ -7,14 +7,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 export default class CommandeModelController {
     // Créer une commande d'un modèle dans un post ou une story
     static createCommande(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
+            var _a;
             try {
-                const { adresseLivraison, articles, dateLivraison, payements } = req.body;
+                const { adresseLivraison, articles, dateLivraison } = req.body;
                 const userId = req.user.userID; // Assurez-vous que req.user.userID est correctement défini
                 const { postId, storyId } = req.params;
                 let modelId = null;
@@ -25,50 +26,124 @@ export default class CommandeModelController {
                 if (postId && !storyId) {
                     // Gérer la commande à partir d'un post
                     post = yield prisma.posts.findUnique({
-                        where: { id: parseInt(postId) }
+                        where: { id: parseInt(postId) },
                     });
                     if (!post) {
-                        return res.status(400).json({ message: 'Post non trouvé' });
+                        return res.status(400).json({ message: "Post non trouvé" });
                     }
                     // Vérifier si le modèle existe dans le post
                     modelId = post.modelId;
                     if (!modelId) {
-                        return res.status(402).json({ message: 'Modèle non trouvé dans le post' });
+                        return res
+                            .status(402)
+                            .json({ message: "Modèle non trouvé dans le post" });
                     }
                     // Empêcher un utilisateur de commander sur son propre post
                     if (post.utilisateurId === userId) {
-                        return res.status(403).json({ message: 'Vous ne pouvez pas commander sur votre propre post' });
+                        return res.status(403).json({
+                            message: "Vous ne pouvez pas commander sur votre propre post",
+                        });
                     }
                     ownerId = post.utilisateurId;
                 }
                 else if (!postId && storyId) {
                     // Gérer la commande à partir d'une story
                     story = yield prisma.stories.findUnique({
-                        where: { id: parseInt(storyId) }
+                        where: { id: parseInt(storyId) },
                     });
                     if (!story) {
-                        return res.status(404).json({ message: 'Story non trouvée' });
+                        return res.status(404).json({ message: "Story non trouvée" });
                     }
                     // Vérifier si le modèle existe dans la story
                     modelId = story.modelId;
                     if (!modelId) {
-                        return res.status(404).json({ message: 'Modèle non trouvé dans la story' });
+                        return res
+                            .status(404)
+                            .json({ message: "Modèle non trouvé dans la story" });
                     }
                     // Empêcher un utilisateur de commander sur sa propre story
                     if (story.userId === userId) {
-                        return res.status(403).json({ message: 'Vous ne pouvez pas commander sur votre propre story' });
+                        return res.status(403).json({
+                            message: "Vous ne pouvez pas commander sur votre propre story",
+                        });
                     }
                     ownerId = story.userId;
                 }
                 else {
-                    return res.status(400).json({ message: 'Veuillez spécifier soit un postId, soit un storyId, mais pas les deux ou aucun.' });
+                    if (articles.length < 1) {
+                        return res.status(400).json({
+                            message: "Veuillez spécifier soit un postId, soit un storyId ou un tableau d'article mais pas les deux ou aucun.",
+                        });
+                    }
                 }
-                // Vérifier la disponibilité du modèle
-                const model = yield prisma.models.findUnique({
-                    where: { id: modelId }
-                });
-                if (!model || model.quantite <= 0) {
-                    return res.status(500).json({ message: 'Le modèle n\'est plus disponible' });
+                // Mettre à jour la quantité du modèle
+                if (modelId) {
+                    yield prisma.models.update({
+                        where: { id: modelId },
+                        data: { quantite: { decrement: 1 } },
+                    });
+                    // Vérifier la disponibilité du modèle
+                    const model = yield prisma.models.findUnique({
+                        where: { id: modelId },
+                    });
+                    if (!model || model.quantite <= 0) {
+                        return res
+                            .status(500)
+                            .json({ message: "Le modèle n'est plus disponible" });
+                    }
+                    // Mise à jour des modèles de l'utilisateur (MesModels)
+                    const existingMesModel = yield prisma.mesModels.findUnique({
+                        where: { userId_modelId: { userId, modelId } },
+                    });
+                    if (!existingMesModel) {
+                        yield prisma.mesModels.create({
+                            data: {
+                                userId,
+                                modelId,
+                            },
+                        });
+                    }
+                    // Mise à jour ou création dans UsersMesModels
+                    const existingUsersMesModel = yield prisma.usersMesModels.findFirst({
+                        where: { userId, modelId },
+                    });
+                    if (existingUsersMesModel) {
+                        yield prisma.usersMesModels.update({
+                            where: { id: existingUsersMesModel.id },
+                            data: { nombreDeCommande: { increment: 1 } },
+                        });
+                    }
+                    else {
+                        yield prisma.usersMesModels.create({
+                            data: {
+                                userId,
+                                modelId,
+                                nombreDeCommande: 1,
+                            },
+                        });
+                    }
+                }
+                else {
+                    articles.forEach((article) => __awaiter(this, void 0, void 0, function* () {
+                        // Vérifier la disponibilité de l'article
+                        const articleModel = yield prisma.articles.findUnique({
+                            where: { id: article.id },
+                        });
+                        if (!articleModel || articleModel.quantite <= 0) {
+                            return res
+                                .status(500)
+                                .json({
+                                message: `L'article ${articleModel === null || articleModel === void 0 ? void 0 : articleModel.libelle} n'est plus disponible, commande annulee`,
+                            });
+                        }
+                    }));
+                    articles.forEach((article) => __awaiter(this, void 0, void 0, function* () {
+                        // Mettre à jour la quantité de l'article
+                        yield prisma.articles.update({
+                            where: { id: article.id },
+                            data: { quantite: { decrement: article.quantite } },
+                        });
+                    }));
                 }
                 // Créer la commande
                 const commande = yield prisma.commandeModels.create({
@@ -76,55 +151,37 @@ export default class CommandeModelController {
                         userId,
                         postId: postId ? parseInt(postId) : null,
                         storyId: storyId ? parseInt(storyId) : null,
-                        modelID: modelId,
+                        modelID: (_a = modelId) !== null && _a !== void 0 ? _a : null,
                         adresseLivraison: adresseLivraison,
-                        dateLivraison,
-                        payements,
-                        articles
+                        dateLivraison: new Date(dateLivraison),
+                        articles: {
+                            connect: articles.map((article) => ({
+                                id: parseInt(article.id), // Ensure that the ID is parsed as an integer
+                            })),
+                        },
+                    },
+                });
+                const articlesPrices = yield Promise.all(articles.map((article) => __awaiter(this, void 0, void 0, function* () {
+                    const data = yield prisma.articles.findUnique({ where: { id: article.id } });
+                    const prixTotal = data.prix * article.quantite;
+                    return prixTotal;
+                })));
+                console.log(articlesPrices);
+                const montant = parseFloat(articlesPrices.reduce((acc, curr) => acc + curr, 0));
+                console.log(montant);
+                yield prisma.payment.create({
+                    data: {
+                        libelle: `payement de la commande ${commande.id}`,
+                        montant: montant / 2,
+                        commandeIdid: commande.id,
                     }
                 });
-                // Mettre à jour la quantité du modèle
-                yield prisma.models.update({
-                    where: { id: modelId },
-                    data: { quantite: { decrement: 1 } }
-                });
-                // Mise à jour des modèles de l'utilisateur (MesModels)
-                const existingMesModel = yield prisma.mesModels.findUnique({
-                    where: { userId_modelId: { userId, modelId } }
-                });
-                if (!existingMesModel) {
-                    yield prisma.mesModels.create({
-                        data: {
-                            userId,
-                            modelId
-                        }
-                    });
-                }
-                // Mise à jour ou création dans UsersMesModels
-                const existingUsersMesModel = yield prisma.usersMesModels.findFirst({
-                    where: { userId, modelId }
-                });
-                if (existingUsersMesModel) {
-                    yield prisma.usersMesModels.update({
-                        where: { id: existingUsersMesModel.id },
-                        data: { nombreDeCommande: { increment: 1 } }
-                    });
-                }
-                else {
-                    yield prisma.usersMesModels.create({
-                        data: {
-                            userId,
-                            modelId,
-                            nombreDeCommande: 1
-                        }
-                    });
-                }
                 // Réponse
                 res.status(201).json(commande);
             }
             catch (error) {
                 console.error(error);
-                res.status(500).json({ message: 'Erreur serveur : ' + error });
+                res.status(500).json({ message: "Erreur serveur : " + error });
             }
         });
     }
@@ -135,29 +192,35 @@ export default class CommandeModelController {
                 const { postId, storyId } = req.params;
                 if (postId) {
                     const commandes = yield prisma.commandeModels.findMany({
-                        where: { postId: parseInt(postId) }
+                        where: { postId: parseInt(postId) },
                     });
                     if (commandes.length === 0) {
-                        return res.status(404).json({ message: 'Aucune commande trouvée pour ce post.' });
+                        return res
+                            .status(404)
+                            .json({ message: "Aucune commande trouvée pour ce post." });
                     }
                     return res.json(commandes);
                 }
                 else if (storyId) {
                     const commandes = yield prisma.commandeModels.findMany({
-                        where: { storyId: parseInt(storyId) }
+                        where: { storyId: parseInt(storyId) },
                     });
                     if (commandes.length === 0) {
-                        return res.status(404).json({ message: 'Aucune commande trouvée pour cette story.' });
+                        return res
+                            .status(404)
+                            .json({ message: "Aucune commande trouvée pour cette story." });
                     }
                     return res.json(commandes);
                 }
                 else {
-                    return res.status(400).json({ message: 'Veuillez spécifier soit un postId, soit un storyId.' });
+                    return res.status(400).json({
+                        message: "Veuillez spécifier soit un postId, soit un storyId.",
+                    });
                 }
             }
             catch (error) {
                 console.error(error);
-                res.status(500).json({ message: 'Erreur serveur : ' + error });
+                res.status(500).json({ message: "Erreur serveur : " + error });
             }
         });
     }
@@ -167,16 +230,16 @@ export default class CommandeModelController {
             try {
                 const commandeId = parseInt(req.params.commandeId);
                 const commande = yield prisma.commandeModels.findUnique({
-                    where: { id: commandeId }
+                    where: { id: commandeId },
                 });
                 if (!commande) {
-                    return res.status(404).json({ message: 'Commande non trouvée' });
+                    return res.status(404).json({ message: "Commande non trouvée" });
                 }
                 res.json(commande);
             }
             catch (error) {
                 console.error(error);
-                res.status(500).json({ message: 'Erreur serveur : ' + error });
+                res.status(500).json({ message: "Erreur serveur : " + error });
             }
         });
     }
