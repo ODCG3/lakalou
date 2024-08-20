@@ -19,7 +19,7 @@ model CommandeModels {
   dateDeCommand    DateTime? @default(now()) @db.DateTime(0)
   modelID          Int
   payements        Payment[]
-  status           Status
+  status           Status    @default(payerPartiellement)
   articles         Articles[]
   postId           Int?
   storyId          Int?

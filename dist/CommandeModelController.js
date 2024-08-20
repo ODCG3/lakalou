@@ -14,7 +14,7 @@ export default class CommandeModelController {
     static createCommande(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const { adresseLivraison } = req.body;
+                const { adresseLivraison, articles, dateLivraison, payements } = req.body;
                 const userId = req.user.userID; // Assurez-vous que req.user.userID est correctement défini
                 const { postId, storyId } = req.params;
                 let modelId = null;
@@ -77,7 +77,10 @@ export default class CommandeModelController {
                         postId: postId ? parseInt(postId) : null,
                         storyId: storyId ? parseInt(storyId) : null,
                         modelID: modelId,
-                        adresseLivraison
+                        adresseLivraison: adresseLivraison,
+                        dateLivraison,
+                        payements,
+                        articles
                     }
                 });
                 // Mettre à jour la quantité du modèle

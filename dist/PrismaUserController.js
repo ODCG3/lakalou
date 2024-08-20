@@ -35,7 +35,7 @@ export default class PrismaUserController {
                     .status(401)
                     .json({ error: "Le mot de passe doit contenir au moins 8 caractères" });
             }
-            if (role !== "tailleur" && role !== "visiteur") {
+            if (role !== "tailleur" && role !== "visiteur" && role !== "vendeur") {
                 return res
                     .status(402)
                     .json({ error: "Le rôle doit être 'tailleur' ou 'visiteur'" });

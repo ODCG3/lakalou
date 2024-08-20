@@ -7,7 +7,7 @@ export default class CommandeModelController {
     // Créer une commande d'un modèle dans un post ou une story
     static async createCommande(req: Request, res: Response) {
         try {
-            const { adresseLivraison } = req.body;
+            const { adresseLivraison,articles,dateLivraison,payements } = req.body;
             const userId = req.user!.userID; // Assurez-vous que req.user.userID est correctement défini
             const { postId, storyId } = req.params;
     
@@ -81,7 +81,10 @@ export default class CommandeModelController {
                     postId: postId ? parseInt(postId) : null,
                     storyId: storyId ? parseInt(storyId) : null,
                     modelID: modelId,
-                    adresseLivraison
+                    adresseLivraison: adresseLivraison,
+                    dateLivraison,
+                    payements,
+                    articles
                 }
             });
     

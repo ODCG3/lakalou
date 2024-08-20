@@ -32,7 +32,7 @@ export default class ListeSouhaitsController{
     
           // Vérifier si le modèle du post existe
           const wishedModel = await prisma.models.findUnique({
-              where: { id: post.modelId },
+              where: { id: post.modelId! },
           });
     
           if (!wishedModel) {
