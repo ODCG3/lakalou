@@ -7,11 +7,20 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Status {
+  payerPartiellement
+  payee
+}
+
 model CommandeModels {
   id               Int       @id @default(autoincrement())
   adresseLivraison String?   @db.VarChar(255)
+  dateLivraison    DateTime
   dateDeCommand    DateTime? @default(now()) @db.DateTime(0)
   modelID          Int
+  payements        Payment[]
+  status           Status
+  articles         Articles[]
   postId           Int?
   storyId          Int?
   userId           Int
@@ -112,6 +121,7 @@ model Models {
   libelle        String?          @db.VarChar(255)
   prix           Int?
   quantite       Int?
+  articles       Articles[]
   tailleurID     Int
   CommandeModels CommandeModels[]
   MesModels      MesModels[]
@@ -216,7 +226,7 @@ model Users {
 }
 
 model Mesures {
-  id                 Int                  @id @default(autoincrement())
+  id                Int   @id @default(autoincrement())
   cou               Float
   longueurPantallon Float
   epaule            Float
@@ -228,8 +238,8 @@ model Mesures {
   tourBras          Float
   tourPoignet       Float
   ceintur           Float
-  UserID            Int @unique
-  Users             Users                 @relation(fields: [UserID],references: [id])
+  UserID            Int   @unique
+  Users             Users @relation(fields: [UserID], references: [id])
 }
 
 model UsersDiscussions {
@@ -320,4 +330,27 @@ enum Users_role {
   tailleur
   visiteur
   vendeur
+}
+
+enum ArticlesType {
+  tissu
+  accessoire
+}
+
+model Articles {
+  id             Int              @id @default(autoincrement())
+  image          String
+  libelle        String
+  prix           Float
+  quantite       Float
+  type           ArticlesType
+  CommandeModels CommandeModels[]
+  Models Models[]
+}
+
+model Payment {
+  id      Int    @id @default(autoincrement())
+  libelle String
+  montant Float
+  CommandeModels CommandeModels[]
 }
