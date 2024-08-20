@@ -13,8 +13,6 @@ import jwt from 'jsonwebtoken';
 import isEmail from 'validator/lib/isEmail.js';
 import { validateImageExtension, validateName } from '../utils/Validator.js';
 import validator from 'validator';
-
-
 const prisma = new PrismaClient();
 export default class PrismaUserController {
     static create(req, res) {
@@ -491,45 +489,6 @@ export default class PrismaUserController {
             }
         });
     }
-    static updateMeasurements(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const { id } = req.params;
-                const measurements = req.body;
-                // Liste des champs à vérifier
-                const fields = [
-                    'cou', 'longueurPantallon', 'epaule', 'longueurManche',
-                    'hanche', 'poitrine', 'cuisse', 'longueur', 'tourBras',
-                    'tourPoignet', 'ceinture'
-                ];
-                // Vérification des champs
-                for (const field of fields) {
-                    const value = measurements[field];
-                    // Si le champ est vide, on continue sans vérifier
-                    if (value === undefined || value === null || value === '') {
-                        continue;
-                    }
-                    // Vérifier si la valeur est un nombre
-                    if (!validator.isFloat(value.toString())) {
-                        return res.status(400).json({ error: `La valeur pour ${field} doit être un nombre.` });
-                    }
-                }
-                // Mettre à jour les mesures de l'utilisateur
-                const user = yield prisma.users.update({
-                    where: { id: parseInt(id) },
-                    data: { mesures: measurements },
-                });
-                if (!user) {
-                    return res.status(404).json({ error: "Utilisateur non trouvé." });
-                }
-                return res.status(200).json({ message: "Mesures mises à jour avec succès." });
-            }
-            catch (error) {
-                console.error(error);
-                return res.status(500).json({ error: "Erreur interne du serveur." });
-            }
-        });
-    }
     // Méthode bloquerUsers
     static bloquerUsers(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -855,258 +814,7 @@ export default class PrismaUserController {
             }
         });
     }
-
-    static getTailleurs(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const tailleurs = yield prisma.users.findMany({
-                    where: { role: "tailleur" },
-                });
-                res.status(200).json(tailleurs);
-            }
-            catch (error) {
-                res.status(500).json({ message: "Erreur récupération liste tailleurs" });
-            }
-        });
-    }
-    static myPosition(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            // console.log(TEST");
-            try {
-                const connectedUser = yield prisma.users.findUnique({
-                    where: { id: req.user.userID }, // Assurez-vous que `req.user.userID` est correct
-                });
-                console.log(connectedUser);
-                if (!connectedUser || connectedUser.role !== "tailleur") {
-                    res
-                        .status(400)
-                        .json({ message: "Vous n'êtes pas connecté en tant que tailleur" });
-                    return;
-                }
-                const allUsers = yield prisma.users.findMany({
-                    where: { role: "tailleur" },
-                    select: {
-                        id: true,
-                        nom: true,
-                        prenom: true,
-                        email: true,
-                        photoProfile: true,
-                        role: true,
-                        UsersNotes_UsersNotes_userIdToUsers: {
-                            // Utilisation de la relation correcte
-                            select: {
-                                rate: true,
-                            },
-                        },
-                    },
-                });
-                const ranking = allUsers.map((user) => {
-                    const averageRate = user.UsersNotes_UsersNotes_userIdToUsers.reduce((acc, note) => acc + note.rate, 0) / user.UsersNotes_UsersNotes_userIdToUsers.length || 0;
-                    return {
-                        id: user.id,
-                        nom: user.nom,
-                        prenom: user.prenom,
-                        email: user.email,
-                        photoProfile: user.photoProfile,
-                        role: user.role,
-                        averageRate,
-                    };
-                });
-                ranking.sort((a, b) => b.averageRate - a.averageRate);
-                let rank = 1;
-                let previousRate = null;
-                let tiedUsersCount = 0;
-                for (const element of ranking) {
-                    if (previousRate === element.averageRate) {
-                        tiedUsersCount++;
-                    }
-                    else {
-                        rank += tiedUsersCount;
-                        tiedUsersCount = 1;
-                    }
-                    // element.rank = rank;
-                    previousRate = element.averageRate;
-                    if (element.id === connectedUser.id) {
-                        res.status(200).send(`Votre classement est ${rank}`);
-                        return;
-                    }
-                }
-
-                res
-                    .status(404)
-                    .json({ message: "Utilisateur non trouvé dans le classement" });
-            }
-            catch (err) {
-                res.status(500).json({ message: `Erreur: ${err.message}` });
-            }
-        });
-    }
-    static getTailleurRanking(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const tailleurs = yield prisma.users.findMany({
-                    where: { role: "tailleur" },
-                    select: {
-                        id: true,
-                        nom: true,
-                        prenom: true,
-                        email: true,
-                        photoProfile: true,
-                        role: true,
-                        UsersNotes_UsersNotes_userIdToUsers: {
-                            select: {
-                                rate: true,
-                            },
-                        },
-                    },
-                });
-                const ranking = tailleurs.map((tailleur) => {
-                    const averageRate = tailleur.UsersNotes_UsersNotes_userIdToUsers.reduce((acc, note) => acc + note.rate, 0) / tailleur.UsersNotes_UsersNotes_userIdToUsers.length || 0;
-                    return {
-                        id: tailleur.id,
-                        nom: tailleur.nom,
-                        prenom: tailleur.prenom,
-                        email: tailleur.email,
-                        photoProfile: tailleur.photoProfile,
-                        role: tailleur.role,
-                        averageRate,
-                    };
-                });
-                // Trier les tailleurs par note moyenne décroissante
-                ranking.sort((a, b) => b.averageRate - a.averageRate);
-                // Attribuer les rangs
-                let rank = 1;
-                let previousRate = null;
-                let tiedUsersCount = 0;
-                ranking.forEach((tailleur, index) => {
-                    if (previousRate === tailleur.averageRate) {
-                        tiedUsersCount++;
-                    }
-                    else {
-                        rank += tiedUsersCount;
-                        tiedUsersCount = 1;
-                    }
-                    tailleur["rank"] = rank;
-                    previousRate = tailleur.averageRate;
-                });
-                res.status(200).json(ranking);
-            }
-            catch (error) {
-                res.status(500).json({
-                    message: `Erreur lors de la récupération du classement des tailleurs: ${error.message}`,
-                });
-            }
-        });
-    }
-
-    static getStatistiques(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            var _a;
-            const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
-            if (!userId) {
-                return res.status(401).json({ message: "Utilisateur non authentifié" });
-            }
-            try {
-                // Vérifier si l'utilisateur existe
-                const userData = yield prisma.users.findUnique({
-                    where: { id: userId },
-                    select: {
-                        credits: true,
-                        badges: true,
-                        Followers_Followers_userIdToUsers: true,
-                    },
-                });
-                if (!userData) {
-                    return res.status(404).json({ error: 'Utilisateur non trouvé' });
-                }
-                const { credits, badges, Followers_Followers_userIdToUsers } = userData;
-                const followersCount = Followers_Followers_userIdToUsers.length; // Compter le nombre de followers
-                // Vérifier si l'utilisateur a au moins 100 followers
-                if (followersCount < 100) {
-                    return res.status(403).json({ message: 'Vous devez avoir au moins 100 followers pour acheter un badge' });
-                }
-                // Vérifier si le badge est déjà acquis
-                if (badges) { // badges est un booléen, donc juste vérifiez s'il est vrai
-                    return res.status(405).json({ message: 'Badge déjà acquis' });
-                }
-                // Vérifier si l'utilisateur a suffisamment de crédits
-                if (credits === null || credits < 5) {
-                    return res.status(406).json({ message: 'Crédit insuffisant' });
-                }
-                // Ajouter le badge en utilisant une approche différente
-                yield prisma.users.update({
-                    where: { id: userId },
-                    data: {
-                        credits: { decrement: 5 }, // Décrémenter les crédits
-                        badges: true // Définir le badge comme acquis
-                    },
-                });
-                res.status(200).json({ message: 'Badge acquis avec succès' });
-            }
-            catch (err) {
-                res.status(500).json({ message: err.message });
-            }
-        });
-    }
-    static filterTailleurById(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const { tailleurId } = req.params;
-            try {
-                const tailleur = yield prisma.users.findUnique({
-                    where: { id: parseInt(tailleurId, 10) },
-                });
-                if (!tailleur || tailleur.role !== 'tailleur') {
-                    return res.status(404).json({ message: "Tailleur non trouvé" });
-                }
-                return res.status(200).json(tailleur);
-            }
-            catch (error) {
-                return res.status(500).json({ message: "Erreur serveur : " + error });
-            }
-        });
-    }
-    static filterByName(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const { name } = req.params;
-            try {
-                const tailleurs = yield prisma.users.findMany({
-                    where: {
-                        role: 'tailleur',
-                        nom: {
-                            contains: name
-                        }
-                    }
-                });
-                if (tailleurs.length === 0) {
-                    return res.status(404).json({ message: "Tailleur non trouvé" });
-                }
-                return res.status(200).json(tailleurs);
-            }
-            catch (error) {
-                return res.status(500).json({ message: "Erreur serveur : " + error });
-            }
-        });
-    }
-    //filterTailleurByCertificat
-    static filterTailleurByCertificat(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            //je veut filtrer les users qui ont le role tailleur et qui ont le certificat
-            try {
-                const filteredUsers = yield prisma.users.findMany({
-                    where: { certificat: true },
-                });
-                if (!filteredUsers) {
-                    return res.status(404).json({ error: "Aucun utilisateur trouvé" });
-                }
-                res.status(200).json(filteredUsers);
-            }
-            catch (error) {
-                res.status(500).json({ error: "Erreur interne du serveur" });
-            }
-        });
-    }
-  
-   static updateMeasurements(req, res) {
+    static updateMeasurements(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const userId = req.user.userID; // Utiliser l'ID de l'utilisateur connecté
@@ -1198,6 +906,235 @@ export default class PrismaUserController {
             }
             finally {
                 yield prisma.$disconnect();
+            }
+        });
+    }
+    static getTailleurs(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const tailleurs = yield prisma.users.findMany({
+                    where: { role: "tailleur" },
+                });
+                res.status(200).json(tailleurs);
+            }
+            catch (error) {
+                res.status(500).json({ message: "Erreur récupération liste tailleurs" });
+            }
+        });
+    }
+    static myPosition(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // console.log(TEST");
+            try {
+                const connectedUser = yield prisma.users.findUnique({
+                    where: { id: req.user.userID }, // Assurez-vous que `req.user.userID` est correct
+                });
+                console.log(connectedUser);
+                if (!connectedUser || connectedUser.role !== "tailleur") {
+                    res
+                        .status(400)
+                        .json({ message: "Vous n'êtes pas connecté en tant que tailleur" });
+                    return;
+                }
+                const allUsers = yield prisma.users.findMany({
+                    where: { role: "tailleur" },
+                    select: {
+                        id: true,
+                        nom: true,
+                        prenom: true,
+                        email: true,
+                        photoProfile: true,
+                        role: true,
+                        UsersNotes_UsersNotes_userIdToUsers: {
+                            // Utilisation de la relation correcte
+                            select: {
+                                rate: true,
+                            },
+                        },
+                    },
+                });
+                const ranking = allUsers.map((user) => {
+                    const averageRate = user.UsersNotes_UsersNotes_userIdToUsers.reduce((acc, note) => acc + note.rate, 0) / user.UsersNotes_UsersNotes_userIdToUsers.length || 0;
+                    return {
+                        id: user.id,
+                        nom: user.nom,
+                        prenom: user.prenom,
+                        email: user.email,
+                        photoProfile: user.photoProfile,
+                        role: user.role,
+                        averageRate,
+                    };
+                });
+                ranking.sort((a, b) => b.averageRate - a.averageRate);
+                let rank = 1;
+                let previousRate = null;
+                let tiedUsersCount = 0;
+                for (const element of ranking) {
+                    if (previousRate === element.averageRate) {
+                        tiedUsersCount++;
+                    }
+                    else {
+                        rank += tiedUsersCount;
+                        tiedUsersCount = 1;
+                    }
+                    // element.rank = rank;
+                    previousRate = element.averageRate;
+                    if (element.id === connectedUser.id) {
+                        res.status(200).send(`Votre classement est ${rank}`);
+                        return;
+                    }
+                }
+                res
+                    .status(404)
+                    .json({ message: "Utilisateur non trouvé dans le classement" });
+            }
+            catch (err) {
+                res.status(500).json({ message: `Erreur: ${err.message}` });
+            }
+        });
+    }
+    static getTailleurRanking(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const tailleurs = yield prisma.users.findMany({
+                    where: { role: "tailleur" },
+                    select: {
+                        id: true,
+                        nom: true,
+                        prenom: true,
+                        email: true,
+                        photoProfile: true,
+                        role: true,
+                        UsersNotes_UsersNotes_userIdToUsers: {
+                            select: {
+                                rate: true,
+                            },
+                        },
+                    },
+                });
+                const ranking = tailleurs.map((tailleur) => {
+                    const averageRate = tailleur.UsersNotes_UsersNotes_userIdToUsers.reduce((acc, note) => acc + note.rate, 0) / tailleur.UsersNotes_UsersNotes_userIdToUsers.length || 0;
+                    return {
+                        id: tailleur.id,
+                        nom: tailleur.nom,
+                        prenom: tailleur.prenom,
+                        email: tailleur.email,
+                        photoProfile: tailleur.photoProfile,
+                        role: tailleur.role,
+                        averageRate,
+                    };
+                });
+                // Trier les tailleurs par note moyenne décroissante
+                ranking.sort((a, b) => b.averageRate - a.averageRate);
+                // Attribuer les rangs
+                let rank = 1;
+                let previousRate = null;
+                let tiedUsersCount = 0;
+                ranking.forEach((tailleur, index) => {
+                    if (previousRate === tailleur.averageRate) {
+                        tiedUsersCount++;
+                    }
+                    else {
+                        rank += tiedUsersCount;
+                        tiedUsersCount = 1;
+                    }
+                    tailleur["rank"] = rank;
+                    previousRate = tailleur.averageRate;
+                });
+                res.status(200).json(ranking);
+            }
+            catch (error) {
+                res.status(500).json({
+                    message: `Erreur lors de la récupération du classement des tailleurs: ${error.message}`,
+                });
+            }
+        });
+    }
+    static getStatistiques(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            const connectedUser = yield prisma.users.findUnique({
+                where: { id: req.user.userID },
+                include: { UsersMesModels: true, CommandeModels: true },
+            });
+            if (!connectedUser || ((_a = connectedUser.status) === null || _a === void 0 ? void 0 : _a.toLowerCase()) !== 'premium') {
+                return res.status(401).json({ message: "Vous devez être premium pour effectuer cette action" });
+            }
+            try {
+                // Trouver le modèle le plus vendu
+                const mostSoldModel = connectedUser.UsersMesModels.sort((a, b) => { var _a, _b; return ((_a = a.nombreDeCommande) !== null && _a !== void 0 ? _a : 0) - ((_b = b.nombreDeCommande) !== null && _b !== void 0 ? _b : 0); });
+                // Trouver les posts les plus vus
+                const mostViewedPosts = yield prisma.posts.findMany({
+                    where: { utilisateurId: connectedUser.id },
+                    orderBy: { vues: 'desc' },
+                });
+                // Calculer le ratio des ventes par rapport aux posts
+                const userSalesCount = connectedUser.CommandeModels.length;
+                const userPostsCount = yield prisma.posts.count({
+                    where: { utilisateurId: connectedUser.id },
+                });
+                const salesToPostsRatio = userSalesCount / userPostsCount;
+                res.status(200).json({ mostSoldModel, mostViewedPosts, salesToPostsRatio: salesToPostsRatio * 100 + "%" });
+            }
+            catch (err) {
+                res.status(500).json({ message: err.message });
+            }
+        });
+    }
+    static filterTailleurById(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const { tailleurId } = req.params;
+            try {
+                const tailleur = yield prisma.users.findUnique({
+                    where: { id: parseInt(tailleurId, 10) },
+                });
+                if (!tailleur || tailleur.role !== 'tailleur') {
+                    return res.status(404).json({ message: "Tailleur non trouvé" });
+                }
+                return res.status(200).json(tailleur);
+            }
+            catch (error) {
+                return res.status(500).json({ message: "Erreur serveur : " + error });
+            }
+        });
+    }
+    static filterByName(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const { name } = req.params;
+            try {
+                const tailleurs = yield prisma.users.findMany({
+                    where: {
+                        role: 'tailleur',
+                        nom: {
+                            contains: name
+                        }
+                    }
+                });
+                if (tailleurs.length === 0) {
+                    return res.status(404).json({ message: "Tailleur non trouvé" });
+                }
+                return res.status(200).json(tailleurs);
+            }
+            catch (error) {
+                return res.status(500).json({ message: "Erreur serveur : " + error });
+            }
+        });
+    }
+    //filterTailleurByCertificat
+    static filterTailleurByCertificat(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            //je veut filtrer les users qui ont le role tailleur et qui ont le certificat
+            try {
+                const filteredUsers = yield prisma.users.findMany({
+                    where: { certificat: true },
+                });
+                if (!filteredUsers) {
+                    return res.status(404).json({ error: "Aucun utilisateur trouvé" });
+                }
+                res.status(200).json(filteredUsers);
+            }
+            catch (error) {
+                res.status(500).json({ error: "Erreur interne du serveur" });
             }
         });
     }

@@ -1041,8 +1041,6 @@ export default class PrismaUserController {
     }
   } 
 
-  
-}
 
 
 
