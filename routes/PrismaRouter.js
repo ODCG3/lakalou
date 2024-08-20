@@ -162,5 +162,6 @@ router
  .route('/myFollowers')
  .get(auth, (req, res) => PrismaUserController.myFollowers(req, res));
 
+router.route('/tailleurs/statistique').get(auth, (req, res) => PrismaUserController.getStatistiques(req, res));
 
 export default router;
