@@ -1,10 +1,11 @@
-import { PrismaClient } from "@prisma/client";
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
-import isEmail from "validator/lib/isEmail.js";
-import { validateImageExtension, validateName } from "../utils/Validator.js";
-import { Request, Response } from "express";
-import { Error } from "mongoose";
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import isEmail from 'validator/lib/isEmail.js';
+import { validateImageExtension, validateName } from '../utils/Validator.js';
+import { Request, Response } from 'express';
+import { Error } from 'mongoose';
+import * as validator from 'validator'
 
 const prisma = new PrismaClient();
 
@@ -366,8 +367,8 @@ export default class PrismaUserController {
     const userId = req.user!.userID;
     const followerId = Number(req.body.followerId);
 
-    console.log(typeof(userId));
-    console.log(typeof(followerId));
+    console.log(typeof userId);
+    console.log(typeof followerId);
 
     if (!followerId) {
       return res
@@ -403,8 +404,8 @@ export default class PrismaUserController {
         data: {
           userId: userId,
           followerId: followerId,
-        }
-      })
+        },
+      });
 
       // Connectez l'utilisateur que vous essayez de suivre à l'utilisateur connecté
 
@@ -499,12 +500,10 @@ export default class PrismaUserController {
       return res.status(200).json(user);
     } catch (err) {
       console.error(err);
-      return res
-        .status(500)
-        .json({
-          message: "Erreur lors de la récupération du profil",
-          error: err,
-        });
+      return res.status(500).json({
+        message: "Erreur lors de la récupération du profil",
+        error: err,
+      });
     }
   }
 
@@ -553,6 +552,53 @@ export default class PrismaUserController {
         .json({ message: "Erreur lors du changement de rôle", error: error });
     }
   }
+
+ 
+    static async updateMeasurements(req: Request, res: Response) {
+      try {
+        const { id } = req.params;
+        const measurements = req.body;
+  
+        // Liste des champs à vérifier
+        const fields = [
+          'cou', 'longueurPantallon', 'epaule', 'longueurManche',
+          'hanche', 'poitrine', 'cuisse', 'longueur', 'tourBras',
+          'tourPoignet', 'ceinture'
+        ];
+  
+        // Vérification des champs
+        for (const field of fields) {
+          const value = measurements[field];
+  
+          // Si le champ est vide, on continue sans vérifier
+          if (value === undefined || value === null || value === '') {
+            continue;
+          }
+  
+          // Vérifier si la valeur est un nombre
+          if (!validator.isFloat(value.toString())) {
+            return res.status(400).json({ error: `La valeur pour ${field} doit être un nombre.` });
+          }
+        }
+  
+        // Mettre à jour les mesures de l'utilisateur
+        const user = await prisma.users.update({
+          where: { id: parseInt(id) },
+          data: { mesures: measurements } as any,
+        });
+  
+        if (!user) {
+          return res.status(404).json({ error: "Utilisateur non trouvé." });
+        }
+  
+        return res.status(200).json({ message: "Mesures mises à jour avec succès." });
+      } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Erreur interne du serveur." });
+      }
+    }
+  
+
 
   // Méthode bloquerUsers
   static async bloquerUsers(req: Request, res: Response) {
@@ -843,12 +889,10 @@ export default class PrismaUserController {
       });
 
       if (!existingNote) {
-        return res
-          .status(404)
-          .json({
-            error:
-              "Note non trouvée ou vous n'avez pas la permission de la modifier",
-          });
+        return res.status(404).json({
+          error:
+            "Note non trouvée ou vous n'avez pas la permission de la modifier",
+        });
       }
 
       const updatedNote = await prisma.usersNotes.update({
@@ -918,4 +962,160 @@ export default class PrismaUserController {
       return res.status(500).json({ error: "Erreur interne du serveur" });
     }
   }
+
+  static async getTailleurs(req: Request, res: Response) {
+    try {
+      const tailleurs = await prisma.users.findMany({
+        where: { role: "tailleur" },
+      });
+      res.status(200).json(tailleurs);
+    } catch (error) {
+      res.status(500).json({ message: "Erreur récupération liste tailleurs" });
+    }
+  }
+
+  static async myPosition(req: Request, res: Response): Promise<void> {
+    // console.log(TEST");
+    try {
+      const connectedUser = await prisma.users.findUnique({
+        where: { id: req.user.userID }, // Assurez-vous que `req.user.userID` est correct
+      });
+
+      if (!connectedUser || connectedUser.role !== "tailleur") {
+        res
+          .status(400)
+          .json({ message: "Vous n'êtes pas connecté en tant que tailleur" });
+        return;
+      }
+
+      const allUsers = await prisma.users.findMany({
+        where: { role: "tailleur" },
+        select: {
+          id: true,
+          nom: true,
+          prenom: true,
+          email: true,
+          photoProfile: true,
+          role: true,
+          UsersNotes_UsersNotes_userIdToUsers: {
+            // Utilisation de la relation correcte
+            select: {
+              rate: true,
+            },
+          },
+        },
+      });
+
+      const ranking = allUsers.map((user) => {
+        const averageRate =
+          user.UsersNotes_UsersNotes_userIdToUsers.reduce(
+            (acc, note) => acc + note.rate,
+            0
+          ) / user.UsersNotes_UsersNotes_userIdToUsers.length || 0;
+        return {
+          id: user.id,
+          nom: user.nom,
+          prenom: user.prenom,
+          email: user.email,
+          photoProfile: user.photoProfile,
+          role: user.role,
+          averageRate,
+        };
+      });
+
+      ranking.sort((a, b) => b.averageRate - a.averageRate);
+
+      let rank = 1;
+      let previousRate: number | null = null;
+      let tiedUsersCount = 0;
+
+      for (let i = 0; i < ranking.length; i++) {
+        if (previousRate === ranking[i].averageRate) {
+          tiedUsersCount++;
+        } else {
+          rank += tiedUsersCount;
+          tiedUsersCount = 1;
+        }
+
+        ranking[i].rank = rank;
+        previousRate = ranking[i].averageRate;
+
+        if (ranking[i].id === connectedUser.id) {
+          res.status(200).send(`Votre classement est ${ranking[i].rank}`);
+          return;
+        }
+      }
+
+      res
+        .status(404)
+        .json({ message: "Utilisateur non trouvé dans le classement" });
+    } catch (err) {
+      res.status(500).json({ message: `Erreur: ${err.message}` });
+    }
+  }
+  
+  static async getTailleurRanking(req: Request, res: Response): Promise<void> {
+    try {
+      const tailleurs = await prisma.users.findMany({
+        where: { role: "tailleur" },
+        select: {
+          id: true,
+          nom: true,
+          prenom: true,
+          email: true,
+          photoProfile: true,
+          role: true,
+          UsersNotes_UsersNotes_userIdToUsers: {
+            select: {
+              rate: true,
+            },
+          },
+        },
+      });
+
+      const ranking = tailleurs.map((tailleur) => {
+        const averageRate =
+          tailleur.UsersNotes_UsersNotes_userIdToUsers.reduce(
+            (acc, note) => acc + note.rate,
+            0
+          ) / tailleur.UsersNotes_UsersNotes_userIdToUsers.length || 0;
+        return {
+          id: tailleur.id,
+          nom: tailleur.nom,
+          prenom: tailleur.prenom,
+          email: tailleur.email,
+          photoProfile: tailleur.photoProfile,
+          role: tailleur.role,
+          averageRate,
+        };
+      });
+
+      // Trier les tailleurs par note moyenne décroissante
+      ranking.sort((a, b) => b.averageRate - a.averageRate);
+
+      // Attribuer les rangs
+      let rank = 1;
+      let previousRate: number | null = null;
+      let tiedUsersCount = 0;
+
+      ranking.forEach((tailleur, index) => {
+        if (previousRate === tailleur.averageRate) {
+          tiedUsersCount++;
+        } else {
+          rank += tiedUsersCount;
+          tiedUsersCount = 1;
+        }
+
+        tailleur["rank"] = rank;
+        previousRate = tailleur.averageRate;
+      });
+
+      res.status(200).json(ranking);
+    } catch (error) {
+      res.status(500).json({
+        message: `Erreur lors de la récupération du classement des tailleurs: ${error.message}`,
+      });
+    }
+  }
 }
+

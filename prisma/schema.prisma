@@ -81,9 +81,9 @@ model Likes {
   Posts     Posts     @relation(fields: [postId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Likes_ibfk_1")
   Users     Users     @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Likes_ibfk_2")
 
+  @@unique([userId, postId])
   @@index([postId], map: "postId")
   @@index([userId], map: "userId")
-  @@unique([userId, postId])
 }
 
 model ListeSouhaits {
@@ -199,6 +199,7 @@ model Users {
   ListeSouhaits                                       ListeSouhaits[]
   MesModels                                           MesModels[]
   Models                                              Models[]
+  Mesures                                             Mesures?
   Partages_Partages_receiverIdToUsers                 Partages[]                 @relation("Partages_receiverIdToUsers")
   Partages_Partages_senderIdToUsers                   Partages[]                 @relation("Partages_senderIdToUsers")
   Posts                                               Posts[]
@@ -212,6 +213,23 @@ model Users {
   UsersNotifications                                  UsersNotifications[]
   UsersSignals_UsersSignals_reporterIdToUsers         UsersSignals[]             @relation("UsersSignals_reporterIdToUsers")
   UsersSignals_UsersSignals_userIdToUsers             UsersSignals[]             @relation("UsersSignals_userIdToUsers")
+}
+
+model Mesures {
+  id                 Int                  @id @default(autoincrement())
+  cou               Float
+  longueurPantallon Float
+  epaule            Float
+  longueurManche    Float
+  hanche            Float
+  poitrine          Float
+  cuisse            Float
+  longueur          Float
+  tourBras          Float
+  tourPoignet       Float
+  ceintur           Float
+  UserID            Int @unique
+  Users             Users                 @relation(fields: [UserID],references: [id])
 }
 
 model UsersDiscussions {
@@ -289,7 +307,7 @@ model UsersSignals {
 }
 
 model BlockedUsers {
-  id            Int      @id @default(autoincrement())
+  id            Int     @id @default(autoincrement())
   storyId       Int
   blockedUserId Int
   Stories       Stories @relation(fields: [storyId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "BlockedUsers_ibfk_1")
