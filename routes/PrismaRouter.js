@@ -179,4 +179,6 @@ router.route("/CreateArticle").post(auth, (req, res) => ArticleController.create
 router.post('/postArticle/:articleId', auth, (req, res) => PostArticleController.createPostArticle(req, res));
 router.route("/getArticles").get(auth, (req, res) => ArticleController.getArticles(req, res));
 
+router.route("/acheterBadgeVandeur/:id").post(auth, (req, res) => PrismaUserController.acheterBadgeVandeur(req, res));
+
 export default router;
