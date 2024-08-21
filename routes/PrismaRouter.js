@@ -175,4 +175,6 @@ router.route("/filterTailleurByCertificat").get(auth, (req, res) => PrismaUserCo
 
 router.route("/CreateArticle").post(auth, (req, res) => ArticleController.createArticle(req, res));
 
+router.route("/acheterBadgeVandeur/:id").post(auth, (req, res) => PrismaUserController.acheterBadgeVandeur(req, res));
+
 export default router;

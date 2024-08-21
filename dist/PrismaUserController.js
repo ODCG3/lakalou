@@ -909,6 +909,76 @@ export default class PrismaUserController {
             }
         });
     }
+    //En tant que vendeur je peut acheter un badge
+    static acheterBadgeVandeur(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
+            const VandeurId = req.body.VandeurId;
+            console.log(userId);
+            console.log(VandeurId);
+            if (!userId || !VandeurId) {
+                return res.status(401).json({ message: "Utilisateur non authentifié" });
+            }
+            try {
+                // Vérifier si l'utilisateur a le droit d'acheter un badge
+                const userVendeurData = yield prisma.users.findUnique({
+                    where: { id: userId },
+                    select: {
+                        role: true,
+                        badges: true,
+                        Followers_Followers_userIdToUsers: true,
+                    },
+                });
+                if (!userVendeurData) {
+                    return res.status(404).json({ error: 'Utilisateur vendeur non trouvé' });
+                }
+                const { role, badges } = userVendeurData;
+                if (role !== 'vendeur') {
+                    return res.status(403).json({ message: 'Vous devez être un vendeur pour acheter un badge' });
+                }
+                if (badges) {
+                    return res.status(405).json({ message: 'Vous avez déjà acheté un badge' });
+                }
+                // Compter le nombre de follower du vandeur
+                const followersVendeurCount = userVendeurData.Followers_Followers_userIdToUsers.length;
+                // Vérifier si l'utilisateur a au moins 100 followers
+                if (followersVendeurCount < 0) {
+                    return res.status(403).json({ message: 'Vous devez avoir au moins 100 followers pour acheter un badge' });
+                }
+                // Vérifier si
+                // Vérifier si l'utilisateur vendeur a suffisamment de crédits
+                const userAcheteurData = yield prisma.users.findUnique({
+                    where: { id: Number(VandeurId) },
+                    select: {
+                        credits: true,
+                        Followers_Followers_userIdToUsers: true,
+                    },
+                });
+                if (!userAcheteurData || userAcheteurData.credits === null || userAcheteurData.credits < 10) {
+                    return res.status(406).json({ message: 'Acheteur sans crédits suffisants' });
+                }
+                // Ajouter le badge en utilisant une approche différente
+                yield prisma.users.update({
+                    where: { id: Number(VandeurId) },
+                    data: {
+                        credits: { decrement: 10 }, // Décrémenter les crédits
+                    },
+                });
+                yield prisma.users.update({
+                    where: { id: userId },
+                    data: {
+                        badges: true, // Définir le badge comme acquis
+                    },
+                });
+                res.status(200).json({ message: "Badge acheté avec succès" });
+            }
+            catch (err) {
+                console.error(err);
+                res.status(500).json({ message: "Erreur lors de l'achat du badge" });
+            }
+        });
+    }
     static getTailleurs(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
