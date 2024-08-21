@@ -68,4 +68,12 @@ export default class ArticleController{
             res.status(500).json({error: (error as Error).message});
         }
     }
+    static async getArticles(req: Request, res: Response) {
+        try {
+            const articles = await prisma.articles.findMany();
+            res.status(200).json(articles);
+        } catch (error) {
+            res.status(500).json({ error: (error as Error).message });
+        }
+    }
 }
