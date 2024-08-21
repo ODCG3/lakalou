@@ -174,5 +174,6 @@ router.route('/tailleurs/statistique').get(auth, (req, res) => PrismaUserControl
 router.route("/filterTailleurByCertificat").get(auth, (req, res) => PrismaUserController.filterTailleurByCertificat(req, res));
 
 router.route("/CreateArticle").post(auth, (req, res) => ArticleController.createArticle(req, res));
+router.route("/getArticles").get(auth, (req, res) => ArticleController.getArticles(req, res));
 
 export default router;
