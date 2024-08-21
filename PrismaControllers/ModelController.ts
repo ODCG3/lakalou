@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 
 export default class ModelController {
   static async create(req: Request, res: Response): Promise<void> {
-    const { libelle, prix, quantite, contenu } = req.body;
+    const { libelle, prix, quantite, contenu,articles } = req.body;
 
     const existingModel = await prisma.models.findFirst({
       where: { libelle: libelle },
@@ -47,6 +47,9 @@ export default class ModelController {
           quantite,
           contenu: parsedContenu,
           tailleurID: req.user!.userID, // Assuming `req.user.userID` is the tailleur ID
+          articles:{
+            connect: articles.map((article:any) => ({ id: article.id })),
+          }
         },
       });
 
@@ -81,6 +84,7 @@ export default class ModelController {
         },
         include: {
           Users: true,
+          articles: true
         },
       });
 
@@ -96,6 +100,9 @@ export default class ModelController {
     try {
       const foundModel = await prisma.models.findUnique({
         where: { id: parseInt(modelId, 10) },
+        include: {
+          articles: true, // Include the associated articles
+        },
       });
 
       if (!foundModel) {
