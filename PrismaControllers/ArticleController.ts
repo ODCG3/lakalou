@@ -5,7 +5,7 @@ import isEmail from 'validator/lib/isEmail.js';
 import { validateImageExtension, validateName } from '../utils/Validator.js';
 import { Request, Response } from 'express';
 import { Error } from 'mongoose';
-import validator from 'validator';
+//import validator from 'validator';
 const prisma = new PrismaClient();
 
 export default class ArticleController{

@@ -12,7 +12,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import isEmail from 'validator/lib/isEmail.js';
 import { validateImageExtension, validateName } from '../utils/Validator.js';
-import validator from 'validator';
+//import validator from 'validator';
 const prisma = new PrismaClient();
 export default class PrismaUserController {
     static create(req, res) {
@@ -836,9 +836,9 @@ export default class PrismaUserController {
                         continue;
                     }
                     // Vérifier si la valeur est un nombre
-                    if (!validator.isFloat(value.toString())) {
-                        return res.status(400).json({ error: `La valeur pour ${field} doit être un nombre.` });
-                    }
+                    //if (!validator.isFloat(value.toString())) {
+                    //return res.status(400).json({ error: `La valeur pour ${field} doit être un nombre.` });
+                    //}
                 }
                 // Mettre à jour les mesures de l'utilisateur
                 const updatedUser = yield prisma.mesures.update({

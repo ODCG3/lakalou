@@ -9,6 +9,8 @@ import MessagesDiscussionController from "../dist/MessagesDiscussionController.j
 import ListeSouhaitsController from "../dist/ListeSouhaitsController.js";
 import StoryController from "../dist/StoryController.js";
 import ArticleController from "../dist/ArticleController.js";
+import PostArticleController from "../dist/PostArticleController.js";
+
 router
   .route("/register")
   .post((req, res) => PrismaUserController.create(req, res));
@@ -174,6 +176,7 @@ router.route('/tailleurs/statistique').get(auth, (req, res) => PrismaUserControl
 router.route("/filterTailleurByCertificat").get(auth, (req, res) => PrismaUserController.filterTailleurByCertificat(req, res));
 
 router.route("/CreateArticle").post(auth, (req, res) => ArticleController.createArticle(req, res));
+router.post('/postArticle/:articleId', auth, (req, res) => PostArticleController.createPostArticle(req, res));
 router.route("/getArticles").get(auth, (req, res) => ArticleController.getArticles(req, res));
 
 export default router;
