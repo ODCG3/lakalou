@@ -9,6 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 import { PrismaClient } from '@prisma/client';
 import { validateImageExtension, validateName } from '../utils/Validator.js';
+//import validator from 'validator';
 const prisma = new PrismaClient();
 export default class ArticleController {
     static createArticle(req, res) {
