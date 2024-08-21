@@ -177,5 +177,6 @@ router.route("/filterTailleurByCertificat").get(auth, (req, res) => PrismaUserCo
 
 router.route("/CreateArticle").post(auth, (req, res) => ArticleController.createArticle(req, res));
 router.post('/postArticle/:articleId', auth, (req, res) => PostArticleController.createPostArticle(req, res));
+router.route("/getArticles").get(auth, (req, res) => ArticleController.getArticles(req, res));
 
 export default router;

@@ -12,7 +12,7 @@ const prisma = new PrismaClient();
 export default class ModelController {
     static create(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            const { libelle, prix, quantite, contenu } = req.body;
+            const { libelle, prix, quantite, contenu, articles } = req.body;
             const existingModel = yield prisma.models.findFirst({
                 where: { libelle: libelle },
             });
@@ -49,6 +49,9 @@ export default class ModelController {
                         quantite,
                         contenu: parsedContenu,
                         tailleurID: req.user.userID, // Assuming `req.user.userID` is the tailleur ID
+                        articles: {
+                            connect: articles.map((article) => ({ id: article.id })),
+                        }
                     },
                 });
                 yield prisma.mesModels.create({
@@ -81,6 +84,7 @@ export default class ModelController {
                     },
                     include: {
                         Users: true,
+                        articles: true
                     },
                 });
                 res.json(models);
@@ -96,6 +100,9 @@ export default class ModelController {
             try {
                 const foundModel = yield prisma.models.findUnique({
                     where: { id: parseInt(modelId, 10) },
+                    include: {
+                        articles: true, // Include the associated articles
+                    },
                 });
                 if (!foundModel) {
                     res.status(404).json({ error: "Model not found" });

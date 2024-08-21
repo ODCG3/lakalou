@@ -65,4 +65,15 @@ export default class ArticleController {
             }
         });
     }
+    static getArticles(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const articles = yield prisma.articles.findMany();
+                res.status(200).json(articles);
+            }
+            catch (error) {
+                res.status(500).json({ error: error.message });
+            }
+        });
+    }
 }
