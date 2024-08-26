@@ -20,6 +20,7 @@ router.route("/login").post((req, res) => PrismaUserController.login(req, res));
 router.route("/logout").post(auth,(req, res) => PrismaUserController.logout(req, res));
 router.route("/Notes/:id").post(auth,(req, res) => PrismaUserController.addNotes(req, res));
 router.route("/Notes/:id/:noteId").put(auth, (req, res) => PrismaUserController.updateNote(req, res));
+router.route("/GetNotes/").get(auth, (req, res) => PrismaUserController.getNotes(req, res));
 router.route("/tailleur/:tailleurId").get(auth, (req, res) => PrismaUserController.filterTailleurById(req, res));
 router.route("/tailleur/name/:name").get(auth, (req, res) => PrismaUserController.filterByName(req, res));
 

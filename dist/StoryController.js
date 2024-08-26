@@ -14,58 +14,70 @@ const createStory = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     const expirationTime = new Date(currentTime.getTime() + 24 * 60 * 60 * 1000); // 24 hours later
     const userID = req.user.userID;
     try {
+        // Vérifiez si l'utilisateur est connecté
         const connectedUser = yield prisma.users.findUnique({
             where: { id: userID },
         });
         if (!connectedUser) {
             return res.status(401).json({ error: "Utilisateur non connecté" });
         }
-        if (connectedUser.role !== "tailleur") {
-            return res
-                .status(403)
-                .json({
-                error: "Vous n'êtes pas un tailleur, seul les tailleurs peuvent poster des statuts",
+        // Vérifiez le rôle de l'utilisateur
+        if (connectedUser.role !== "tailleur" && connectedUser.role !== "vendeur") {
+            return res.status(403).json({
+                error: "Seuls les tailleurs ou vendeurs peuvent poster des stories",
             });
-        }
-        // Find the model to associate with the story (e.g., based on ID in req.body)
-        const modelID = req.body.model; // Ensure the model ID is provided in the request
-        const model = yield prisma.models.findFirst({
-            where: { id: parseInt(modelID) },
-        });
-        if (!model) {
-            return res.status(400).json({ error: "Modèle non trouvé" });
         }
         const credit = connectedUser === null || connectedUser === void 0 ? void 0 : connectedUser.credits;
-        if (credit > 0) {
-            const blockedUserIds = req.body.blockedUsers || []; // Get the list of blocked users from the request
-            const story = yield prisma.stories.create({
-                data: {
-                    userId: userID,
-                    modelId: model.id,
-                    expiresAt: expirationTime,
-                    BlockedUsers: {
-                        connect: blockedUserIds.map((userId) => ({ id: userId })),
-                    },
-                },
-            });
-            yield prisma.users.update({
-                where: { id: userID },
-                data: {
-                    credits: credit - 1,
-                    Stories: {
-                        connect: { id: story.id },
-                    },
-                },
-            });
-            res.status(201).json({
-                message: "Story créée avec succès!",
-            });
+        // Vérifiez si l'utilisateur a suffisamment de crédits
+        if (credit <= 0) {
+            return res.status(402).json({ error: "Crédits insuffisants pour créer une story" });
         }
-        else {
-            res
-                .status(402)
-                .json({ error: "Crédits insuffisants pour créer une story" });
+        const blockedUserIds = req.body.blockedUsers || []; // Liste des utilisateurs bloqués
+        let storyData = {
+            userId: userID,
+            expiresAt: expirationTime,
+            BlockedUsers: {
+                connect: blockedUserIds.map((userId) => ({ id: userId })),
+            },
+        };
+        // Selon le rôle de l'utilisateur, associez soit un modèle, soit un article
+        if (connectedUser.role === "tailleur") {
+            const modelID = req.body.model; // ID du modèle à associer
+            const model = yield prisma.models.findFirst({
+                where: { id: parseInt(modelID, 10) },
+            });
+            if (!model) {
+                return res.status(400).json({ error: "Modèle non trouvé" });
+            }
+            storyData.modelId = model.id; // Associez le modèle à la story
         }
+        else if (connectedUser.role === "vendeur") {
+            const articleID = req.body.article; // ID de l'article à associer
+            const article = yield prisma.articles.findFirst({
+                where: { id: parseInt(articleID, 10) },
+            });
+            if (!article) {
+                return res.status(400).json({ error: "Article non trouvé" });
+            }
+            storyData.articleId = article.id; // Associez l'article à la story
+        }
+        // Créez la story
+        const story = yield prisma.stories.create({
+            data: storyData,
+        });
+        // Déduisez un crédit de l'utilisateur
+        yield prisma.users.update({
+            where: { id: userID },
+            data: {
+                credits: credit - 1,
+                Stories: {
+                    connect: { id: story.id },
+                },
+            },
+        });
+        res.status(201).json({
+            message: "Story créée avec succès!",
+        });
     }
     catch (error) {
         res.status(500).json({

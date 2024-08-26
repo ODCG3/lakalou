@@ -260,6 +260,26 @@ export default class PrismaUserController {
         res.status(500).json({ error: "Erreur interne du serveur" });
       }
     }
+  //getNotes pour lister touts les notes du user connecter
+  static async getNotes(req: Request, res: Response) {
+    const userId = req.user!.userID;
+    try {
+      const user = await prisma.users.findUnique({
+        where: { id: userId },
+        include: { UsersNotes_UsersNotes_raterIDToUsers: true },
+      });
+
+      if (!user) {
+        return res.status(403).json({ error: "Utilisateur non trouvé" });
+      }
+
+      const notes = user.UsersNotes_UsersNotes_raterIDToUsers;
+      res.status(200).json(notes);
+    } catch (error) {
+      res.status(500).json({ error: "Erreur interne du serveur" });
+    }
+  }
+  
   //reportUser
   static async reportUser(req: Request, res: Response) {
     const userId = req.user!.userID;

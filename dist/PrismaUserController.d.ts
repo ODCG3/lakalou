@@ -5,6 +5,7 @@ export default class PrismaUserController {
     static logout(req: Request, res: Response): void;
     static addNotes(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static filterByNotes(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+    static getNotes(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static reportUser(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static unfollowUser(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
     static followUser(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
