@@ -16,7 +16,6 @@ export default class PostArticleController {
             try {
                 const utilisateurId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
                 const { description } = req.body;
-                console.log(utilisateurId);
                 const articleId = req.params.articleId; // Récupération de l'articleId depuis l'URL
                 if (!utilisateurId || !articleId || !description) {
                     return res.status(400).json({ error: "Tous les champs sont obligatoires." });

@@ -7,9 +7,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
-export class CommentController {
+export default class CommentController {
     static addComment(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -17,34 +17,34 @@ export class CommentController {
                 const postId = parseInt(req.params.postId);
                 const content = req.body.content;
                 if (!content) {
-                    res.status(400).json({ msg: 'Le contenu du commentaire est requis' });
+                    res.status(400).json({ msg: "Le contenu du commentaire est requis" });
                     return;
                 }
                 const user = yield prisma.users.findUnique({ where: { id: userId } });
                 const post = yield prisma.posts.findUnique({ where: { id: postId } });
                 if (!post) {
-                    res.status(404).json({ msg: 'Post non trouvé' });
+                    res.status(404).json({ msg: "Post non trouvé" });
                     return;
                 }
                 const newComment = yield prisma.comments.create({
                     data: {
                         userId: userId,
                         postId: postId,
-                        content: content
-                    }
+                        content: content,
+                    },
                 });
                 yield prisma.posts.update({
                     where: { id: postId },
                     data: {
                         Comments: {
-                            connect: { id: newComment.id }
-                        }
-                    }
+                            connect: { id: newComment.id },
+                        },
+                    },
                 });
                 res.status(201).json(newComment);
             }
             catch (err) {
-                res.status(500).send('Erreur serveur');
+                res.status(500).send("Erreur serveur");
             }
         });
     }
@@ -53,14 +53,20 @@ export class CommentController {
             try {
                 const commentId = parseInt(req.params.commentId);
                 const userId = req.user.userID;
-                const comment = yield prisma.comments.findUnique({ where: { id: commentId } });
+                const comment = yield prisma.comments.findUnique({
+                    where: { id: commentId },
+                });
                 if (!comment) {
-                    res.status(404).json({ msg: 'Commentaire non trouvé' });
+                    res.status(404).json({ msg: "Commentaire non trouvé" });
                     return;
                 }
-                const post = yield prisma.posts.findUnique({ where: { id: comment.postId } });
+                const post = yield prisma.posts.findUnique({
+                    where: { id: comment.postId },
+                });
                 if (!post || (comment.userId !== userId && post.id !== userId)) {
-                    res.status(401).json({ msg: 'Vous n\'êtes pas l\'auteur de ce commentaire' });
+                    res
+                        .status(401)
+                        .json({ msg: "Vous n'êtes pas l'auteur de ce commentaire" });
                     return;
                 }
                 yield prisma.comments.delete({ where: { id: commentId } });
@@ -68,14 +74,14 @@ export class CommentController {
                     where: { id: comment.postId },
                     data: {
                         Comments: {
-                            disconnect: { id: commentId }
-                        }
-                    }
+                            disconnect: { id: commentId },
+                        },
+                    },
                 });
-                res.json({ msg: 'Commentaire supprimé' });
+                res.json({ msg: "Commentaire supprimé" });
             }
             catch (err) {
-                res.status(500).send('Erreur serveur');
+                res.status(500).send("Erreur serveur");
             }
         });
     }
@@ -85,16 +91,16 @@ export class CommentController {
                 const postId = parseInt(req.params.postId);
                 const post = yield prisma.posts.findUnique({
                     where: { id: postId },
-                    include: { Comments: true }
+                    include: { Comments: true },
                 });
                 if (!post) {
-                    res.status(404).json({ msg: 'Post non trouvé' });
+                    res.status(404).json({ msg: "Post non trouvé" });
                     return;
                 }
                 res.json(post.Comments);
             }
             catch (err) {
-                res.status(500).send('Erreur serveur');
+                res.status(500).send("Erreur serveur");
             }
         });
     }

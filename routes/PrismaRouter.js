@@ -10,6 +10,7 @@ import ListeSouhaitsController from "../dist/ListeSouhaitsController.js";
 import StoryController from "../dist/StoryController.js";
 import ArticleController from "../dist/ArticleController.js";
 import PostArticleController from "../dist/PostArticleController.js";
+import CommentController from "../dist/CommentController.js";
 
 router
   .route("/register")
@@ -17,8 +18,8 @@ router
 router.route("/login").post((req, res) => PrismaUserController.login(req, res));
 
 
-router.route("/logout").post(auth,(req, res) => PrismaUserController.logout(req, res));
-router.route("/Notes/:id").post(auth,(req, res) => PrismaUserController.addNotes(req, res));
+router.route("/logout").post(auth, (req, res) => PrismaUserController.logout(req, res));
+router.route("/Notes/:id").post(auth, (req, res) => PrismaUserController.addNotes(req, res));
 router.route("/Notes/:id/:noteId").put(auth, (req, res) => PrismaUserController.updateNote(req, res));
 router.route("/tailleur/:tailleurId").get(auth, (req, res) => PrismaUserController.filterTailleurById(req, res));
 router.route("/tailleur/name/:name").get(auth, (req, res) => PrismaUserController.filterByName(req, res));
@@ -41,11 +42,11 @@ router
 
 router
   .route("/myPosition")
-  .get(auth,(req, res) => PrismaUserController.myPosition(req, res));
+  .get(auth, (req, res) => PrismaUserController.myPosition(req, res));
 
 router
-    .route("/rang")
-    .get(auth, (req, res) => PrismaUserController.getTailleurRanking(req, res));
+  .route("/rang")
+  .get(auth, (req, res) => PrismaUserController.getTailleurRanking(req, res));
 
 router
   .route("/model/create")
@@ -90,6 +91,11 @@ router
 router
   .route("/post/create")
   .post(auth, (req, res) => PostController.createPost(req, res));
+
+router.route("/post/:postId/comments/create").post(auth, (req, res) => CommentController.addComment(req, res));
+router.route("/comment/:commentId").delete(auth, (req, res) => CommentController.deleteComment(req, res));
+router.route("/post/:postId/comments").get(auth, (req, res) => CommentController.getPostComments(req, res));
+
 router
   .route("/post")
   .get(auth, (req, res) => PostController.getPosts(req, res));
@@ -117,7 +123,7 @@ router.route("/post/:postId/share").post(auth, (req, res) => PostController.part
 router.route("/notifications").get(auth, (req, res) => PostController.getNotifications(req, res));
 router.route("/notifications/:notificationId").delete(auth, (req, res) => PostController.deleteNotification(req, res));
 
-router.route("/commande").post(auth,(req, res) => CommandeModelController.createCommande(req, res));
+router.route("/commande").post(auth, (req, res) => CommandeModelController.createCommande(req, res));
 router.route('/commandes/post/:postId').post(auth, (req, res) => CommandeModelController.createCommande(req, res));
 router.route('/commandes/story/:storyId').post(auth, (req, res) => CommandeModelController.createCommande(req, res));
 router.route('/commandes/post/:postId').get(auth, (req, res) => CommandeModelController.getCommandes(req, res));
@@ -137,9 +143,9 @@ router.route('/user/listeSouhaits/:id').post(auth, (req, res) => ListeSouhaitsCo
 router.route('/user/listeSouhaits').get(auth, (req, res) => ListeSouhaitsController.voirListeSouhaits(req, res));
 
 
-  router.get('/signale/:userId', auth, PrismaUserController.reportUser);
+router.get('/signale/:userId', auth, PrismaUserController.reportUser);
 
-  router
+router
   .route('/followUser')
   .post(auth, (req, res) => PrismaUserController.followUser(req, res));
 
@@ -162,14 +168,14 @@ router
 router
   .route("/debloquerUsers")
   .post(auth, (req, res) => PrismaUserController.debloquerUsers(req, res));
-  // routes pour afficher les utilisateurs bloquer
+// routes pour afficher les utilisateurs bloquer
 router
-.route('/getUserBloquer')
-.get(auth, (req, res) => PrismaUserController.getUserBloquer(req, res));
+  .route('/getUserBloquer')
+  .get(auth, (req, res) => PrismaUserController.getUserBloquer(req, res));
 
 router
- .route('/myFollowers')
- .get(auth, (req, res) => PrismaUserController.myFollowers(req, res));
+  .route('/myFollowers')
+  .get(auth, (req, res) => PrismaUserController.myFollowers(req, res));
 
 router.route('/tailleurs/statistique').get(auth, (req, res) => PrismaUserController.getStatistiques(req, res));
 
