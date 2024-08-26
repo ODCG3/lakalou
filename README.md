@@ -61,90 +61,219 @@ DATABASE_URL=mysql://username:password@localhost:3306/safnabanoppy
   - open postman and test the endpoints
 
 # Available Routes
-  Here are all the routes defined in your Express router:
+  Here are all the routes defined in our Express router:
 
-### User Authentication and Management:
-1. **POST** `/register` - `PrismaUserController.create`
-2. **POST** `/login` - `PrismaUserController.login`
-3. **POST** `/logout` - `PrismaUserController.logout`
-4. **POST** `/Notes/:id` - `PrismaUserController.addNotes`
-5. **PUT** `/Notes/:id/:noteId` - `PrismaUserController.updateNote`
-6. **GET** `/tailleur/:tailleurId` - `PrismaUserController.filterTailleurById`
-7. **GET** `/tailleur/name/:name` - `PrismaUserController.filterByName`
-8. **GET** `/filterByNotes/:id` - `PrismaUserController.filterByNotes`
+# API Routes Documentation
 
-### Tailleur Management:
-1. **GET** `/listeTailleurs` - `PrismaUserController.getTailleurs`
-2. **GET** `/myPosition` - `PrismaUserController.myPosition`
-3. **GET** `/rang` - `PrismaUserController.getTailleurRanking`
-4. **GET** `/tailleurs/statistique` - `PrismaUserController.getStatistiques`
-5. **GET** `/filterTailleurByCertificat` - `PrismaUserController.filterTailleurByCertificat`
+## Authentication
 
-### Model Management:
-1. **POST** `/model/create` - `ModelController.create`
-2. **GET** `/model/:userId/getModels` - `ModelController.getModelsByUserId`
-3. **PUT** `/model/:modelId/update` - `ModelController.updateModel`
-4. **DELETE** `/model/:modelId/delete` - `ModelController.deleteModel`
-5. **GET** `/model/:modelId` - `ModelController.getModelById`
+- **POST** `/register`  
+  Registers a new user.
 
-### Story Management:
-1. **POST** `/story/create` - `StoryController.createStory`
-2. **GET** `/stories/:userId` - `StoryController.getStories`
-3. **DELETE** `/story/:id/delete` - `StoryController.deleteStory`
-4. **POST** `/story/:id/view` - `StoryController.viewStory`
-5. **GET** `/story/:id/views` - `StoryController.getStoryViews`
+- **POST** `/login`  
+  Logs in a user.
 
-### Post Management:
-1. **POST** `/post/create` - `PostController.createPost`
-2. **GET** `/post` - `PostController.getPosts`
-3. **GET** `/post/:postId` - `PostController.getPostById`
-4. **DELETE** `/post/:postId` - `PostController.deletePost`
-5. **POST** `/post/:postId` - `PostController.addView`
-6. **GET** `/post/:postId` - `PostController.getVues`
-7. **POST** `/post/favorite/create/:postId` - `PostController.addFavoris`
-8. **DELETE** `/post/favorite/remove/:postId` - `PostController.deleteFavoris`
-9. **POST** `/post/:postId/share` - `PostController.partagerPost`
-10. **GET** `/notifications` - `PostController.getNotifications`
-11. **DELETE** `/notifications/:notificationId` - `PostController.deleteNotification`
+- **POST** `/logout`  
+  Logs out a user. (Requires authentication)
 
-### Commande Management:
-1. **POST** `/commande` - `CommandeModelController.createCommande`
-2. **POST** `/commandes/post/:postId` - `CommandeModelController.createCommande`
-3. **POST** `/commandes/story/:storyId` - `CommandeModelController.createCommande`
-4. **GET** `/commandes/post/:postId` - `CommandeModelController.getCommandes`
-5. **GET** `/commandes/story/:storyId` - `CommandeModelController.getCommandes`
-6. **GET** `/commandes/:commandeId` - `CommandeModelController.getCommandeById`
+## User Management
 
-### Message and Discussion Management:
-1. **POST** `/user/discussions/create` - `MessagesDiscussionController.createDiscussion`
-2. **GET** `/user/discussions` - `MessagesDiscussionController.getDiscussions`
-3. **GET** `/user/discussions/:userId` - `MessagesDiscussionController.getDiscussionsByUser`
-4. **POST** `/user/discussions/:discussionUser/messages` - `MessagesDiscussionController.sendMessageToDiscussion`
-5. **DELETE** `/user/discussions/:discussionId/messages/:messageId` - `MessagesDiscussionController.deleteMessage`
-6. **PUT** `/user/discussions/:discussionId/messages/:messageId` - `MessagesDiscussionController.modifierMessages`
+- **POST** `/Notes/:id`  
+  Adds a note to a user. (Requires authentication)
 
-### User Profile and Interaction:
-1. **POST** `/user/chargeCredit` - `PrismaUserController.chargeCredit`
-2. **PUT** `/user/modifierMesure` - `PrismaUserController.updateMeasurements`
-3. **POST** `/user/acheterBadge` - `PrismaUserController.acheterBadgege`
-4. **POST** `/user/listeSouhaits/:id` - `ListeSouhaitsController.listeSouhaits`
-5. **GET** `/user/listeSouhaits` - `ListeSouhaitsController.voirListeSouhaits`
-6. **GET** `/signale/:userId` - `PrismaUserController.reportUser`
-7. **POST** `/followUser` - `PrismaUserController.followUser`
-8. **POST** `/unfollowUser` - `PrismaUserController.unfollowUser`
-9. **GET** `/profile/:userID` - `PrismaUserController.profile`
-10. **POST** `/changeRole` - `PrismaUserController.changeRole`
-11. **POST** `/bloquerUsers` - `PrismaUserController.bloquerUsers`
-12. **POST** `/debloquerUsers` - `PrismaUserController.debloquerUsers`
-13. **GET** `/getUserBloquer` - `PrismaUserController.getUserBloquer`
-14. **GET** `/myFollowers` - `PrismaUserController.myFollowers`
+- **PUT** `/Notes/:id/:noteId`  
+  Updates a specific note for a user. (Requires authentication)
 
-### Article Management:
-1. **POST** `/CreateArticle` - `ArticleController.createArticle`
-2. **POST** `/postArticle/:articleId` - `PostArticleController.createPostArticle`
-3. **GET** `/getArticles` - `ArticleController.getArticles`
+- **GET** `/GetNotes`  
+  Retrieves all notes for the authenticated user. (Requires authentication)
 
-### Badge Purchase:
-1. **POST** `/acheterBadgeVandeur/:id` - `PrismaUserController.acheterBadgeVandeur`
+- **GET** `/tailleur/:tailleurId`  
+  Retrieves a specific tailor by ID. (Requires authentication)
 
-This list covers all the routes you defined in your Express router, categorized by functionality.
+- **GET** `/tailleur/name/:name`  
+  Retrieves a tailor by name. (Requires authentication)
+
+- **GET** `/filterByNotes/:id`  
+  Filters tailors by notes. (Requires authentication)
+
+- **GET** `/listeTailleurs`  
+  Lists all tailors. (Requires authentication)
+
+- **GET** `/myPosition`  
+  Retrieves the user's current position. (Requires authentication)
+
+- **GET** `/rang`  
+  Retrieves the ranking of tailors. (Requires authentication)
+
+- **POST** `/followUser`  
+  Follows a user. (Requires authentication)
+
+- **POST** `/unfollowUser`  
+  Unfollows a user. (Requires authentication)
+
+- **GET** `/profile/:userID`  
+  Retrieves the profile of a user by ID. (Requires authentication)
+
+- **POST** `/changeRole`  
+  Changes the role of a user. (Requires authentication)
+
+- **POST** `/bloquerUsers`  
+  Blocks a user. (Requires authentication)
+
+- **POST** `/debloquerUsers`  
+  Unblocks a user. (Requires authentication)
+
+- **GET** `/getUserBloquer`  
+  Lists all blocked users. (Requires authentication)
+
+- **GET** `/myFollowers`  
+  Retrieves a list of followers for the authenticated user. (Requires authentication)
+
+- **GET** `/tailleurs/statistique`  
+  Retrieves statistics for tailors. (Requires authentication)
+
+- **GET** `/filterTailleurByCertificat`  
+  Filters tailors by certificate. (Requires authentication)
+
+- **POST** `/acheterBadgeVandeur/:id`  
+  Purchases a badge for a vendor. (Requires authentication)
+
+## Model Management
+
+- **POST** `/model/create`  
+  Creates a new model. (Requires authentication)
+
+- **GET** `/model/:userId/getModels`  
+  Retrieves models by user ID. (Requires authentication)
+
+- **PUT** `/model/:modelId/update`  
+  Updates a specific model by ID. (Requires authentication)
+
+- **DELETE** `/model/:modelId/delete`  
+  Deletes a specific model by ID. (Requires authentication)
+
+- **GET** `/model/:modelId`  
+  Retrieves a specific model by ID. (Requires authentication)
+
+## Story Management
+
+- **POST** `/story/create`  
+  Creates a new story. (Requires authentication)
+
+- **GET** `/stories/:userId`  
+  Retrieves all stories for a user by ID. (Requires authentication)
+
+- **DELETE** `/story/:id/delete`  
+  Deletes a specific story by ID. (Requires authentication)
+
+- **POST** `/story/:id/view`  
+  Increments the view count for a story. (Requires authentication)
+
+- **GET** `/story/:id/views`  
+  Retrieves the view count for a story. (Requires authentication)
+
+## Post Management
+
+- **POST** `/post/create`  
+  Creates a new post. (Requires authentication)
+
+- **GET** `/post`  
+  Retrieves all posts. (Requires authentication)
+
+- **GET** `/post/:postId`  
+  Retrieves a specific post by ID. (Requires authentication)
+
+- **DELETE** `/post/:postId`  
+  Deletes a specific post by ID. (Requires authentication)
+
+- **POST** `/post/:postId`  
+  Adds a view to a post. (Requires authentication)
+
+- **GET** `/post/:postId`  
+  Retrieves the number of views for a post. (Requires authentication)
+
+- **POST** `/post/favorite/create/:postId`  
+  Adds a post to favorites. (Requires authentication)
+
+- **DELETE** `/post/favorite/remove/:postId`  
+  Removes a post from favorites. (Requires authentication)
+
+- **POST** `/post/:postId/share`  
+  Shares a specific post. (Requires authentication)
+
+- **GET** `/notifications`  
+  Retrieves all notifications for the authenticated user. (Requires authentication)
+
+- **DELETE** `/notifications/:notificationId`  
+  Deletes a specific notification by ID. (Requires authentication)
+
+## Comment Management
+
+- **POST** `/post/:postId/comments/create`  
+  Adds a comment to a post. (Requires authentication)
+
+- **DELETE** `/comment/:commentId`  
+  Deletes a specific comment by ID. (Requires authentication)
+
+- **GET** `/post/:postId/comments`  
+  Retrieves all comments for a specific post. (Requires authentication)
+
+## Commande Management
+
+- **POST** `/commande`  
+  Creates a new command. (Requires authentication)
+
+- **POST** `/commandes/post/:postId`  
+  Creates a command for a post. (Requires authentication)
+
+- **POST** `/commandes/story/:storyId`  
+  Creates a command for a story. (Requires authentication)
+
+- **GET** `/commandes/post/:postId`  
+  Retrieves commands for a specific post. (Requires authentication)
+
+- **GET** `/commandes/story/:storyId`  
+  Retrieves commands for a specific story. (Requires authentication)
+
+- **GET** `/commandes/:commandeId`  
+  Retrieves a specific command by ID. (Requires authentication)
+
+## Messaging Management
+
+- **POST** `/user/discussions/create`  
+  Creates a new discussion. (Requires authentication)
+
+- **GET** `/user/discussions`  
+  Retrieves all discussions for the authenticated user. (Requires authentication)
+
+- **GET** `/user/discussions/:userId`  
+  Retrieves discussions by user ID. (Requires authentication)
+
+- **POST** `/user/discussions/:discussionUser/messages`  
+  Sends a message to a discussion. (Requires authentication)
+
+- **DELETE** `/user/discussions/:discussionId/messages/:messageId`  
+  Deletes a specific message by ID. (Requires authentication)
+
+- **PUT** `/user/discussions/:discussionId/messages/:messageId`  
+  Modifies a specific message by ID. (Requires authentication)
+
+## Additional User Features
+
+- **POST** `/user/chargeCredit`  
+  Charges credit to the user’s account. (Requires authentication)
+
+- **PUT** `/user/modifierMesure`  
+  Updates the user's measurements. (Requires authentication)
+
+- **POST** `/user/acheterBadge`  
+  Purchases a badge for the user. (Requires authentication)
+
+- **POST** `/user/listeSouhaits/:id`  
+  Adds to the user’s wishlist. (Requires authentication)
+
+- **GET** `/user/listeSouhaits`  
+  Retrieves the user's wishlist. (Requires authentication)
+
+- **GET** `/signale/:userId`  
+  Reports a user. (Requires authentication)
