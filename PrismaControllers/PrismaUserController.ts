@@ -35,7 +35,6 @@ export default class PrismaUserController {
       role,
     } = req.body;
 
-    console.log(req.body);
 
     if (
       !nom ||
@@ -117,6 +116,7 @@ export default class PrismaUserController {
 
   static async login(req: Request, res: Response) {
     const { email, password } = req.body;
+    console.log(email,password);
 
     if (!email || !password) {
       return res
@@ -125,9 +125,35 @@ export default class PrismaUserController {
     }
 
     try {
-      const user = await prisma.users.findUnique({
+      let user = await prisma.users.findUnique({
         where: { email },
       });
+
+      const message = await prisma.usersDiscussions.findMany(
+        {
+          where: { userId: user?.id },
+          include: {
+            Users_UsersDiscussions_receiverIdToUsers: true,
+            UsersDiscussionsMessages: true,
+          },
+        }
+      );
+
+      const posts = await prisma.posts.findMany({
+        where: { utilisateurId: user?.id },
+        include: {
+          Models: true,
+        },
+      })
+
+      const stories = await prisma.stories.findMany(
+        {
+          where: { userId: user?.id },
+          include: {
+            Models: true,
+          },
+        }
+      );
 
       if (!user) {
         return res.status(401).json({ error: "Utilisateur inconnu" });
@@ -152,9 +178,10 @@ export default class PrismaUserController {
         path: "/",
       });
 
-      res.status(200).json({ token, user });
+      res.status(200).json({ token, user , message , stories , posts});
+
     } catch (error) {
-      res.status(500).json({ error: "Erreur interne du serveur" });
+      res.status(500).json({ erreur: error  });
     }
   }
 
@@ -400,9 +427,6 @@ export default class PrismaUserController {
   static async followUser(req: Request, res: Response) {
     const userId = req.user!.userID;
     const followerId = Number(req.body.followerId);
-
-    console.log(typeof userId);
-    console.log(typeof followerId);
 
     if (!followerId) {
       return res

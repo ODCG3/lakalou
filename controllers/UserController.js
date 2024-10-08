@@ -99,6 +99,7 @@ export default class UserController {
 
   static async login(req, res) {
     const { email, password } = req.body;
+    console.log(email, password);
 
     if (!email || !password) {
       return res

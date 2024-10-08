@@ -18,7 +18,6 @@ export default class PrismaUserController {
     static create(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             const { nom, prenom, email, password, confirmationPassword, photoProfile, role, } = req.body;
-            console.log(req.body);
             if (!nom ||
                 !prenom ||
                 !email ||
@@ -87,14 +86,34 @@ export default class PrismaUserController {
     static login(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             const { email, password } = req.body;
+            console.log(email, password);
             if (!email || !password) {
                 return res
                     .status(400)
                     .json({ error: "Tous les champs sont obligatoires" });
             }
             try {
-                const user = yield prisma.users.findUnique({
+                let user = yield prisma.users.findUnique({
                     where: { email },
+                });
+                const message = yield prisma.usersDiscussions.findMany({
+                    where: { userId: user === null || user === void 0 ? void 0 : user.id },
+                    include: {
+                        Users_UsersDiscussions_receiverIdToUsers: true,
+                        UsersDiscussionsMessages: true,
+                    },
+                });
+                const posts = yield prisma.posts.findMany({
+                    where: { utilisateurId: user === null || user === void 0 ? void 0 : user.id },
+                    include: {
+                        Models: true,
+                    },
+                });
+                const stories = yield prisma.stories.findMany({
+                    where: { userId: user === null || user === void 0 ? void 0 : user.id },
+                    include: {
+                        Models: true,
+                    },
                 });
                 if (!user) {
                     return res.status(401).json({ error: "Utilisateur inconnu" });
@@ -110,10 +129,10 @@ export default class PrismaUserController {
                     // secure: true, // Uncomment if using HTTPS
                     path: "/",
                 });
-                res.status(200).json({ token, user });
+                res.status(200).json({ token, user, message, stories, posts });
             }
             catch (error) {
-                res.status(500).json({ error: "Erreur interne du serveur" });
+                res.status(500).json({ erreur: error });
             }
         });
     }
@@ -335,8 +354,6 @@ export default class PrismaUserController {
         return __awaiter(this, void 0, void 0, function* () {
             const userId = req.user.userID;
             const followerId = Number(req.body.followerId);
-            console.log(typeof userId);
-            console.log(typeof followerId);
             if (!followerId) {
                 return res
                     .status(400)
