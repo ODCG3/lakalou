@@ -5,6 +5,8 @@ const prisma = new PrismaClient();
 
 export default class ModelController {
   static async create(req: Request, res: Response): Promise<void> {
+    console.log(req.body);
+    
     const { libelle, prix, quantite, contenu,articles } = req.body;
 
     const existingModel = await prisma.models.findFirst({
@@ -20,6 +22,7 @@ export default class ModelController {
     try {
       if (typeof contenu === "string") {
         parsedContenu = JSON.parse(contenu);
+        
         if (
           !Array.isArray(parsedContenu) ||
           !parsedContenu.every((item) => typeof item === "string")
@@ -30,6 +33,7 @@ export default class ModelController {
         }
       } else if (Array.isArray(contenu)) {
         // Directly use `contenu` if it's already an array of strings
+        
         parsedContenu = contenu;
       } else {
         throw new Error("Contenu must be a string or an array of strings.");
@@ -47,9 +51,9 @@ export default class ModelController {
           quantite,
           contenu: parsedContenu,
           tailleurID: req.user!.userID, // Assuming `req.user.userID` is the tailleur ID
-          articles:{
-            connect: articles.map((article:any) => ({ id: article.id })),
-          }
+          // articles:{
+          //   connect: articles.map((article:any) => ({ id: article.id })),
+          // }
         },
       });
 

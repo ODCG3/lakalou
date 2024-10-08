@@ -12,6 +12,7 @@ const prisma = new PrismaClient();
 export default class ModelController {
     static create(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
+            console.log(req.body);
             const { libelle, prix, quantite, contenu, articles } = req.body;
             const existingModel = yield prisma.models.findFirst({
                 where: { libelle: libelle },
@@ -49,9 +50,9 @@ export default class ModelController {
                         quantite,
                         contenu: parsedContenu,
                         tailleurID: req.user.userID, // Assuming `req.user.userID` is the tailleur ID
-                        articles: {
-                            connect: articles.map((article) => ({ id: article.id })),
-                        }
+                        // articles:{
+                        //   connect: articles.map((article:any) => ({ id: article.id })),
+                        // }
                     },
                 });
                 yield prisma.mesModels.create({
