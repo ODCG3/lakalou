@@ -13,7 +13,7 @@ app.use(cors({
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     allowedHeaders: 'Content-Type, Authorization',
 }));
-Connexion.connect();
+// Connexion.connect();
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(PrismaRouter)
