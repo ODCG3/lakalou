@@ -143,6 +143,10 @@ router.route('/user/acheterBadge').post(auth, (req, res) => PrismaUserController
 router.route('/user/listeSouhaits/:id').post(auth, (req, res) => ListeSouhaitsController.listeSouhaits(req, res));
 router.route('/user/listeSouhaits').get(auth, (req, res) => ListeSouhaitsController.voirListeSouhaits(req, res));
 
+router.route('/souhaits/:id').delete(auth, (req, res) => ListeSouhaitsController.supprimerSouhait(req, res));
+
+
+
 
 router.get('/signale/:userId', auth, PrismaUserController.reportUser);
 
