@@ -7,12 +7,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import isEmail from 'validator/lib/isEmail.js';
-import { validateImageExtension, validateName } from '../utils/Validator.js';
-import validator from 'validator';
+import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import isEmail from "validator/lib/isEmail.js";
+import { validateImageExtension, validateName } from "../utils/Validator.js";
+import validator from "validator";
 const prisma = new PrismaClient();
 export default class PrismaUserController {
     static create(req, res) {
@@ -103,16 +103,47 @@ export default class PrismaUserController {
                         UsersDiscussionsMessages: true,
                     },
                 });
+                const models = yield prisma.models.findMany({
+                    where: {
+                        tailleurID: user === null || user === void 0 ? void 0 : user.id,
+                    },
+                });
                 const posts = yield prisma.posts.findMany({
-                    where: { utilisateurId: user === null || user === void 0 ? void 0 : user.id },
                     include: {
                         Models: true,
                     },
                 });
+                // const stories = await prisma.stories.findMany({
+                //   where: {
+                //     Users: {
+                //       Followers_Followers_followerIdToUsers: {
+                //         some: {
+                //           followerId: user?.id
+                //         }
+                //       },
+                //     },
+                //   },
+                //   include: {
+                //     Models: true,
+                //   },
+                // });
                 const stories = yield prisma.stories.findMany({
-                    where: { userId: user === null || user === void 0 ? void 0 : user.id },
+                    where: {
+                        userId: {
+                            in: yield prisma.followers
+                                .findMany({
+                                where: {
+                                    followerId: user === null || user === void 0 ? void 0 : user.id, // ID of the currently logged-in user
+                                },
+                                select: {
+                                    userId: true, // Get the user IDs of users being followed
+                                },
+                            })
+                                .then((follows) => follows.map((follow) => follow.userId)), // Extract the user IDs
+                        },
+                    },
                     include: {
-                        Models: true,
+                        Models: true, // Include any related models if needed
                     },
                 });
                 if (!user) {
@@ -129,7 +160,7 @@ export default class PrismaUserController {
                     // secure: true, // Uncomment if using HTTPS
                     path: "/",
                 });
-                res.status(200).json({ token, user, message, stories, posts });
+                res.status(200).json({ token, user, message, stories, posts, models });
             }
             catch (error) {
                 res.status(500).json({ erreur: error });
@@ -216,9 +247,9 @@ export default class PrismaUserController {
                     return res.status(403).json({ error: "Utilisateur non trouvé" });
                 }
                 if (userToRate.role !== "tailleur") {
-                    return res
-                        .status(402)
-                        .json({ error: "Vous ne pouvez pas filtrer par notes pour un tailleur" });
+                    return res.status(402).json({
+                        error: "Vous ne pouvez pas filtrer par notes pour un tailleur",
+                    });
                 }
                 const filteredNotes = userToRate.UsersNotes_UsersNotes_raterIDToUsers.filter((note) => { var _a; return ((_a = note.rate) !== null && _a !== void 0 ? _a : 0) >= rate; });
                 res.status(200).json(filteredNotes);
@@ -414,7 +445,7 @@ export default class PrismaUserController {
                     where: { followerId: (_b = req.user) === null || _b === void 0 ? void 0 : _b.userID },
                     select: {
                         id: true,
-                        // afichier les informations du user 
+                        // afichier les informations du user
                         Users_Followers_followerIdToUsers: {
                             select: {
                                 id: true,
@@ -432,7 +463,10 @@ export default class PrismaUserController {
             }
             catch (error) {
                 console.error(error);
-                return res.status(500).json({ message: "Erreur lors de la récupération des followers", error: error });
+                return res.status(500).json({
+                    message: "Erreur lors de la récupération des followers",
+                    error: error,
+                });
             }
         });
     }
@@ -591,7 +625,7 @@ export default class PrismaUserController {
                 currentUser.BlockedUsers.push({
                     id: utilisateurId,
                     storyId: Number(storyId),
-                    blockedUserId: Number(utilisateurId)
+                    blockedUserId: Number(utilisateurId),
                 });
                 console.log(currentUser.BlockedUsers);
                 return res
@@ -725,9 +759,7 @@ export default class PrismaUserController {
                 }
                 const isBlocked = yield prisma.blockedUsers.findMany({
                     where: {
-                        AND: [
-                            { blockedUserId: Number(utilisateurId) },
-                        ],
+                        AND: [{ blockedUserId: Number(utilisateurId) }],
                     },
                 });
                 return res.status(200).json({ isBlocked });
@@ -861,20 +893,30 @@ export default class PrismaUserController {
                 }
                 // Liste des champs à vérifier
                 const fields = [
-                    'cou', 'longueurPantallon', 'epaule', 'longueurManche',
-                    'hanche', 'poitrine', 'cuisse', 'longueur', 'tourBras',
-                    'tourPoignet', 'ceintur'
+                    "cou",
+                    "longueurPantallon",
+                    "epaule",
+                    "longueurManche",
+                    "hanche",
+                    "poitrine",
+                    "cuisse",
+                    "longueur",
+                    "tourBras",
+                    "tourPoignet",
+                    "ceintur",
                 ];
                 // Vérification des champs
                 for (const field of fields) {
                     const value = measurements[field];
                     // Si le champ est vide, on continue sans vérifier
-                    if (value === undefined || value === null || value === '') {
+                    if (value === undefined || value === null || value === "") {
                         continue;
                     }
                     // Vérifier si la valeur est un nombre
                     if (!validator.isFloat(value.toString())) {
-                        return res.status(400).json({ error: `La valeur pour ${field} doit être un nombre.` });
+                        return res
+                            .status(400)
+                            .json({ error: `La valeur pour ${field} doit être un nombre.` });
                     }
                 }
                 // Mettre à jour les mesures de l'utilisateur
@@ -885,7 +927,9 @@ export default class PrismaUserController {
                 if (!updatedUser) {
                     return res.status(404).json({ error: "Utilisateur non trouvé." });
                 }
-                return res.status(200).json({ message: "Mesures mises à jour avec succès." });
+                return res
+                    .status(200)
+                    .json({ message: "Mesures mises à jour avec succès." });
             }
             catch (error) {
                 console.error(error);
@@ -911,35 +955,38 @@ export default class PrismaUserController {
                     },
                 });
                 if (!userData) {
-                    return res.status(404).json({ error: 'Utilisateur non trouvé' });
+                    return res.status(404).json({ error: "Utilisateur non trouvé" });
                 }
                 const { credits, badges, Followers_Followers_userIdToUsers } = userData;
                 const followersCount = Followers_Followers_userIdToUsers.length; // Compter le nombre de followers
                 // Vérifier si l'utilisateur a au moins 100 followers
                 if (followersCount < 100) {
-                    return res.status(403).json({ message: 'Vous devez avoir au moins 100 followers pour acheter un badge' });
+                    return res.status(403).json({
+                        message: "Vous devez avoir au moins 100 followers pour acheter un badge",
+                    });
                 }
                 // Vérifier si le badge est déjà acquis
-                if (badges) { // badges est un booléen, donc juste vérifiez s'il est vrai
-                    return res.status(405).json({ message: 'Badge déjà acquis' });
+                if (badges) {
+                    // badges est un booléen, donc juste vérifiez s'il est vrai
+                    return res.status(405).json({ message: "Badge déjà acquis" });
                 }
                 // Vérifier si l'utilisateur a suffisamment de crédits
                 if (credits === null || credits < 5) {
-                    return res.status(406).json({ message: 'Crédit insuffisant' });
+                    return res.status(406).json({ message: "Crédit insuffisant" });
                 }
                 // Ajouter le badge en utilisant une approche différente
                 yield prisma.users.update({
                     where: { id: userId },
                     data: {
                         credits: { decrement: 5 }, // Décrémenter les crédits
-                        badges: true // Définir le badge comme acquis
+                        badges: true, // Définir le badge comme acquis
                     },
                 });
-                res.status(200).json({ message: 'Badge acquis avec succès' });
+                res.status(200).json({ message: "Badge acquis avec succès" });
             }
             catch (err) {
                 console.error(err);
-                res.status(500).json({ error: 'Une erreur est survenue' });
+                res.status(500).json({ error: "Une erreur est survenue" });
             }
             finally {
                 yield prisma.$disconnect();
@@ -968,20 +1015,28 @@ export default class PrismaUserController {
                     },
                 });
                 if (!userVendeurData) {
-                    return res.status(404).json({ error: 'Utilisateur vendeur non trouvé' });
+                    return res
+                        .status(404)
+                        .json({ error: "Utilisateur vendeur non trouvé" });
                 }
                 const { role, badges } = userVendeurData;
-                if (role !== 'vendeur') {
-                    return res.status(403).json({ message: 'Vous devez être un vendeur pour acheter un badge' });
+                if (role !== "vendeur") {
+                    return res.status(403).json({
+                        message: "Vous devez être un vendeur pour acheter un badge",
+                    });
                 }
                 if (badges) {
-                    return res.status(405).json({ message: 'Vous avez déjà acheté un badge' });
+                    return res
+                        .status(405)
+                        .json({ message: "Vous avez déjà acheté un badge" });
                 }
                 // Compter le nombre de follower du vandeur
                 const followersVendeurCount = userVendeurData.Followers_Followers_userIdToUsers.length;
                 // Vérifier si l'utilisateur a au moins 100 followers
                 if (followersVendeurCount < 10) {
-                    return res.status(403).json({ message: 'Vous devez avoir au moins 100 followers pour acheter un badge' });
+                    return res.status(403).json({
+                        message: "Vous devez avoir au moins 100 followers pour acheter un badge",
+                    });
                 }
                 // Vérifier si
                 // Vérifier si l'utilisateur vendeur a suffisamment de crédits
@@ -992,8 +1047,12 @@ export default class PrismaUserController {
                         Followers_Followers_userIdToUsers: true,
                     },
                 });
-                if (!userAcheteurData || userAcheteurData.credits === null || userAcheteurData.credits < 10) {
-                    return res.status(406).json({ message: 'Acheteur sans crédits suffisants' });
+                if (!userAcheteurData ||
+                    userAcheteurData.credits === null ||
+                    userAcheteurData.credits < 10) {
+                    return res
+                        .status(406)
+                        .json({ message: "Acheteur sans crédits suffisants" });
                 }
                 // Ajouter le badge en utilisant une approche différente
                 yield prisma.users.update({
@@ -1164,8 +1223,10 @@ export default class PrismaUserController {
                 where: { id: req.user.userID },
                 include: { UsersMesModels: true, CommandeModels: true },
             });
-            if (!connectedUser || ((_a = connectedUser.status) === null || _a === void 0 ? void 0 : _a.toLowerCase()) !== 'premium') {
-                return res.status(401).json({ message: "Vous devez être premium pour effectuer cette action" });
+            if (!connectedUser || ((_a = connectedUser.status) === null || _a === void 0 ? void 0 : _a.toLowerCase()) !== "premium") {
+                return res.status(401).json({
+                    message: "Vous devez être premium pour effectuer cette action",
+                });
             }
             try {
                 // Trouver le modèle le plus vendu
@@ -1173,7 +1234,7 @@ export default class PrismaUserController {
                 // Trouver les posts les plus vus
                 const mostViewedPosts = yield prisma.posts.findMany({
                     where: { utilisateurId: connectedUser.id },
-                    orderBy: { vues: 'desc' },
+                    orderBy: { vues: "desc" },
                 });
                 // Calculer le ratio des ventes par rapport aux posts
                 const userSalesCount = connectedUser.CommandeModels.length;
@@ -1181,7 +1242,11 @@ export default class PrismaUserController {
                     where: { utilisateurId: connectedUser.id },
                 });
                 const salesToPostsRatio = userSalesCount / userPostsCount;
-                res.status(200).json({ mostSoldModel, mostViewedPosts, salesToPostsRatio: salesToPostsRatio * 100 + "%" });
+                res.status(200).json({
+                    mostSoldModel,
+                    mostViewedPosts,
+                    salesToPostsRatio: salesToPostsRatio * 100 + "%",
+                });
             }
             catch (err) {
                 res.status(500).json({ message: err.message });
@@ -1195,7 +1260,7 @@ export default class PrismaUserController {
                 const tailleur = yield prisma.users.findUnique({
                     where: { id: parseInt(tailleurId, 10) },
                 });
-                if (!tailleur || tailleur.role !== 'tailleur') {
+                if (!tailleur || tailleur.role !== "tailleur") {
                     return res.status(404).json({ message: "Tailleur non trouvé" });
                 }
                 return res.status(200).json(tailleur);
@@ -1211,11 +1276,11 @@ export default class PrismaUserController {
             try {
                 const tailleurs = yield prisma.users.findMany({
                     where: {
-                        role: 'tailleur',
+                        role: "tailleur",
                         nom: {
-                            contains: name
-                        }
-                    }
+                            contains: name,
+                        },
+                    },
                 });
                 if (tailleurs.length === 0) {
                     return res.status(404).json({ message: "Tailleur non trouvé" });
