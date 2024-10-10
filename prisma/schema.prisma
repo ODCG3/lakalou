@@ -74,7 +74,7 @@ model Favoris {
 model Followers {
   id                                Int   @id @default(autoincrement())
   userId                            Int
-  followerId                        Int   @unique
+  followerId                        Int
   Users_Followers_userIdToUsers     Users @relation("Followers_userIdToUsers", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Followers_ibfk_1")
   Users_Followers_followerIdToUsers Users @relation("Followers_followerIdToUsers", fields: [followerId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Followers_ibfk_2")
 
@@ -96,14 +96,13 @@ model Likes {
 }
 
 model ListeSouhaits {
-  userId Int
-  postId Int
-  Users  Users @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ListeSouhaits_ibfk_1")
-  Posts  Posts @relation(fields: [postId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ListeSouhaits_ibfk_2")
-
-  @@id([userId, postId])
-  @@index([postId], map: "postId")
+  id      Int    @id @default(autoincrement())
+  userId  Int
+  postId  Int
+  Users   Users  @relation(fields: [userId], references: [id])
+  Posts   Posts  @relation(fields: [postId], references: [id])
 }
+
 
 model MesModels {
   userId  Int

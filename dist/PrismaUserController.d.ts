@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request, Response } from "express";
 export default class PrismaUserController {
     static create(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static login(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
