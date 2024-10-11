@@ -7,12 +7,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import isEmail from "validator/lib/isEmail.js";
-import { validateImageExtension, validateName } from "../utils/Validator.js";
 import validator from "validator";
 const prisma = new PrismaClient();
 export default class PrismaUserController {
@@ -49,7 +47,8 @@ export default class PrismaUserController {
                         email,
                         password: hashedPassword,
                         photoProfile, // URL de l'image envoyée depuis le frontend
-                        role
+                        role,
+                        credits: 10
                     }
                 });
                 res.status(201).json(user);
@@ -341,7 +340,7 @@ export default class PrismaUserController {
                 }
                 // Retirer l'utilisateur connecté de la liste des followers de l'utilisateur ciblé
                 yield prisma.followers.delete({
-                    where: { followerId: followerId },
+                    where: { id: followerId },
                 });
                 // Retirer l'utilisateur ciblé de la liste des followings de l'utilisateur connecté
                 return res
@@ -1283,6 +1282,23 @@ export default class PrismaUserController {
             }
             catch (error) {
                 res.status(500).json({ error: "Erreur interne du serveur" });
+            }
+        });
+    }
+    static getConnectedUser(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            try {
+                const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
+                if (!userId) {
+                    return res.status(401).json({
+                        message: "Vous devez vous connecter pour effectuer cette action",
+                    });
+                }
+                return res.status(200).json(userId);
+            }
+            catch (err) {
+                console.error(err);
             }
         });
     }

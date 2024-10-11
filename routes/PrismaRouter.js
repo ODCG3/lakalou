@@ -145,7 +145,7 @@ router.route('/user/listeSouhaits').get(auth, (req, res) => ListeSouhaitsControl
 
 router.route('/souhaits/:id').delete(auth, (req, res) => ListeSouhaitsController.supprimerSouhait(req, res));
 
-
+router.route('/getConnectedUser').get(auth, (req, res) => PrismaUserController.getConnectedUser());
 
 
 router.get('/signale/:userId', auth, PrismaUserController.reportUser);

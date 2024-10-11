@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request, Response } from "express";
 export default class MessagesDiscussionController {
     static createDiscussion(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static getDiscussions(req: Request, res: Response): Promise<void>;
