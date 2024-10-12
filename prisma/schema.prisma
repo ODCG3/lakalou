@@ -7,11 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Status {
-  payerPartiellement
-  payee
-}
-
 model CommandeModels {
   id               Int        @id @default(autoincrement())
   adresseLivraison String?    @db.VarChar(255)
@@ -19,7 +14,6 @@ model CommandeModels {
   dateDeCommand    DateTime?  @default(now()) @db.DateTime(0)
   modelID          Int?
   status           Status     @default(payerPartiellement)
-  articles         Articles[]
   postId           Int?
   storyId          Int?
   userId           Int
@@ -28,6 +22,7 @@ model CommandeModels {
   Stories          Stories?   @relation(fields: [storyId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "CommandeModels_ibfk_3")
   Users            Users      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "CommandeModels_ibfk_4")
   Payment          Payment[]
+  articles         Articles[] @relation("ArticlesToCommandeModels")
 
   @@index([modelID], map: "modelID")
   @@index([postId], map: "postId")
@@ -96,13 +91,15 @@ model Likes {
 }
 
 model ListeSouhaits {
-  id      Int    @id @default(autoincrement())
-  userId  Int
-  postId  Int
-  Users   Users  @relation(fields: [userId], references: [id])
-  Posts   Posts  @relation(fields: [postId], references: [id])
-}
+  id     Int   @id @default(autoincrement())
+  userId Int
+  postId Int
+  Posts  Posts @relation(fields: [postId], references: [id])
+  Users  Users @relation(fields: [userId], references: [id])
 
+  @@index([postId], map: "ListeSouhaits_postId_fkey")
+  @@index([userId], map: "ListeSouhaits_userId_fkey")
+}
 
 model MesModels {
   userId  Int
@@ -120,7 +117,6 @@ model Models {
   libelle        String?          @db.VarChar(255)
   prix           Int?
   quantite       Int?
-  articles       Articles[]
   tailleurID     Int
   CommandeModels CommandeModels[]
   MesModels      MesModels[]
@@ -128,6 +124,7 @@ model Models {
   Posts          Posts[]
   Stories        Stories[]
   UsersMesModels UsersMesModels[]
+  articles       Articles[]       @relation("ArticlesToModels")
 
   @@index([tailleurID], map: "tailleurID")
 }
@@ -155,6 +152,7 @@ model Posts {
   titre              String?              @db.VarChar(255)
   utilisateurId      Int
   vues               Int?                 @default(0)
+  articlesid         Int?
   CommandeModels     CommandeModels[]
   Comments           Comments[]
   Dislikes           Dislikes[]
@@ -162,7 +160,6 @@ model Posts {
   Likes              Likes[]
   ListeSouhaits      ListeSouhaits[]
   Partages           Partages[]
-  articlesid         Int?
   articles           Articles?            @relation(fields: [articlesid], references: [id])
   Models             Models?              @relation(fields: [modelId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Posts_ibfk_1")
   Users              Users                @relation(fields: [utilisateurId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Posts_ibfk_2")
@@ -170,6 +167,7 @@ model Posts {
 
   @@index([modelId], map: "modelId")
   @@index([utilisateurId], map: "utilisateurId")
+  @@index([articlesid], map: "Posts_articlesid_fkey")
 }
 
 model Stories {
@@ -187,6 +185,7 @@ model Stories {
 
   @@index([modelId], map: "modelId")
   @@index([userId], map: "userId")
+  @@index([articleId], map: "Stories_articleId_fkey")
 }
 
 model Users {
@@ -211,8 +210,8 @@ model Users {
   Likes                                               Likes[]
   ListeSouhaits                                       ListeSouhaits[]
   MesModels                                           MesModels[]
-  Models                                              Models[]
   Mesures                                             Mesures?
+  Models                                              Models[]
   Partages_Partages_receiverIdToUsers                 Partages[]                 @relation("Partages_receiverIdToUsers")
   Partages_Partages_senderIdToUsers                   Partages[]                 @relation("Partages_senderIdToUsers")
   Posts                                               Posts[]
@@ -231,19 +230,20 @@ model Users {
 model Mesures {
   id                Int   @id @default(autoincrement())
   cou               Float
-  longueurPantallon Float
+  longueurPantallon  Float
   epaule            Float
-  longueurManche    Float
+  longueurManche     Float
   hanche            Float
   poitrine          Float
   cuisse            Float
   longueur          Float
   tourBras          Float
   tourPoignet       Float
-  ceintur           Float
+  ceinture          Float
   UserID            Int   @unique
   Users             Users @relation(fields: [UserID], references: [id])
 }
+
 
 model UsersDiscussions {
   id                                       Int                        @id @default(autoincrement())
@@ -327,6 +327,35 @@ model BlockedUsers {
   Users         Users   @relation(fields: [blockedUserId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "BlockedUsers_ibfk_2")
 
   @@index([blockedUserId], map: "blockedUserId")
+  @@index([storyId], map: "BlockedUsers_ibfk_1")
+}
+
+model Articles {
+  id             Int              @id @default(autoincrement())
+  image          String
+  libelle        String
+  prix           Float
+  quantite       Float
+  type           ArticlesType
+  Posts          Posts[]
+  Stories        Stories[]
+  CommandeModels CommandeModels[] @relation("ArticlesToCommandeModels")
+  Models         Models[]         @relation("ArticlesToModels")
+}
+
+model Payment {
+  id           Int            @id @default(autoincrement())
+  libelle      String
+  montant      Float
+  commandeIdid Int
+  commandeId   CommandeModels @relation(fields: [commandeIdid], references: [id])
+
+  @@index([commandeIdid], map: "Payment_commandeIdid_fkey")
+}
+
+enum Status {
+  payerPartiellement
+  payee
 }
 
 enum Users_role {
@@ -338,27 +367,4 @@ enum Users_role {
 enum ArticlesType {
   tissu
   accessoire
-}
-
-model Articles {
-  id             Int              @id @default(autoincrement())
-  image          String
-  libelle        String
-  prix           Float
-  quantite       Float
-  type           ArticlesType
-  CommandeModels CommandeModels[]
-  Models         Models[]
-
-  Posts Posts[]
-
-  Stories Stories[]
-}
-
-model Payment {
-  id           Int            @id @default(autoincrement())
-  libelle      String
-  montant      Float
-  commandeIdid Int
-  commandeId   CommandeModels @relation(fields: [commandeIdid], references: [id])
 }
