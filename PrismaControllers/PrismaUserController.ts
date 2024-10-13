@@ -1173,7 +1173,7 @@ static async findByName(req: Request, res: Response) {
       const followersCount = Followers_Followers_userIdToUsers.length; // Compter le nombre de followers
 
       // Vérifier si l'utilisateur a au moins 100 followers
-      if (followersCount < 100) {
+      if (followersCount < 1) {
         return res.status(403).json({
           message:
             "Vous devez avoir au moins 100 followers pour acheter un badge",
@@ -1197,6 +1197,7 @@ static async findByName(req: Request, res: Response) {
         data: {
           credits: { decrement: 5 }, // Décrémenter les crédits
           badges: true, // Définir le badge comme acquis
+          certificat: true, // Définir le certificat comme acquis
         },
       });
 

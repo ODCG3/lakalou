@@ -1045,7 +1045,7 @@ export default class PrismaUserController {
                 const { credits, badges, Followers_Followers_userIdToUsers } = userData;
                 const followersCount = Followers_Followers_userIdToUsers.length; // Compter le nombre de followers
                 // Vérifier si l'utilisateur a au moins 100 followers
-                if (followersCount < 100) {
+                if (followersCount < 1) {
                     return res.status(403).json({
                         message: "Vous devez avoir au moins 100 followers pour acheter un badge",
                     });
@@ -1065,6 +1065,7 @@ export default class PrismaUserController {
                     data: {
                         credits: { decrement: 5 }, // Décrémenter les crédits
                         badges: true, // Définir le badge comme acquis
+                        certificat: true, // Définir le certificat comme acquis
                     },
                 });
                 res.status(200).json({ message: "Badge acquis avec succès" });
