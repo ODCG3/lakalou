@@ -8,6 +8,7 @@ import { Error } from "mongoose";
 import validator from "validator";
 
 const prisma = new PrismaClient();
+
 interface Measurements {
   cou?: number;
   longueurPantallon?: number;
@@ -24,35 +25,65 @@ interface Measurements {
 
 export default class PrismaUserController {
   static async create(req: Request, res: Response) {
-    const { nom, prenom, email, password, confirmationPassword, photoProfile, role } = req.body;
-  
+    const {
+      nom,
+      prenom,
+      email,
+      password,
+      confirmationPassword,
+      photoProfile,
+      role,
+    } = req.body;
+
     // Valider les données reçues
-    if (!nom || !prenom || !email || !password || !confirmationPassword || !photoProfile || !role) {
-      return res.status(400).json({ error: "Tous les champs sont obligatoires" });
+    if (
+      !nom ||
+      !prenom ||
+      !email ||
+      !password ||
+      !confirmationPassword ||
+      !photoProfile ||
+      !role
+    ) {
+      return res
+        .status(400)
+        .json({ error: "Tous les champs sont obligatoires" });
     }
-  
+
     if (password.length < 8) {
-      return res.status(401).json({ error: "Le mot de passe doit contenir au moins 8 caractères" });
+      return res
+        .status(401)
+        .json({ error: "Le mot de passe doit contenir au moins 8 caractères" });
     }
-  
+
     if (password !== confirmationPassword) {
-      return res.status(405).json({ error: "Les mots de passe ne correspondent pas" });
+      return res
+        .status(405)
+        .json({ error: "Les mots de passe ne correspondent pas" });
     }
-  
+
     if (!isEmail(email)) {
       return res.status(406).json({ error: "Cet email n'est pas valide" });
     }
-  console.log(nom,prenom,email,password,confirmationPassword,photoProfile,role);
+    console.log(
+      nom,
+      prenom,
+      email,
+      password,
+      confirmationPassword,
+      photoProfile,
+      role
+    );
     try {
       // Hacher le mot de passe
       const hashedPassword = await bcrypt.hash(password, 10);
-  
+
       // Vérifier si l'utilisateur existe déjà
       const existingUser = await prisma.users.findUnique({ where: { email } });
       if (existingUser) {
         return res.status(407).json({ error: "Cet email est déjà utilisé" });
       }
-  
+
       // Créer l'utilisateur avec l'URL de l'image déjà téléchargée sur Cloudinary
       const user = await prisma.users.create({
         data: {
@@ -60,18 +91,17 @@ export default class PrismaUserController {
           prenom,
           email,
           password: hashedPassword,
-          photoProfile,  // URL de l'image envoyée depuis le frontend
+          photoProfile, // URL de l'image envoyée depuis le frontend
           role,
-          credits: 10
-        }
+          credits: 10,
+        },
       });
-  
+
       res.status(201).json(user);
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });
     }
   }
-  
 
   static async login(req: Request, res: Response) {
     const { email, password } = req.body;
@@ -223,9 +253,13 @@ export default class PrismaUserController {
           .json({ error: "Vous ne pouvez pas vous noter vous-même" });
       }
 
-      const existingNote = userToRate.UsersNotes_UsersNotes_raterIDToUsers.find(
-        (note) => note.raterID === raterId
-      );
+      // Check if the user has already rated the same user
+      const existingNote = await prisma.usersNotes.findFirst({
+        where: {
+          raterID: raterId,
+          userId: userToRate.id,
+        },
+      });
 
       if (existingNote) {
         return res
@@ -294,6 +328,84 @@ export default class PrismaUserController {
       res.status(500).json({ error: "Erreur interne du serveur" });
     }
   }
+
+  static async getUserNotesFromPost(req: Request, res: Response) {
+    const { postId } = req.params; // On récupère le postId des paramètres
+
+    try {
+      // Étape 1: Récupérer le post par son ID
+      const post = await prisma.posts.findUnique({
+        where: { id: Number(postId) },
+        select: { utilisateurId: true }, // On ne récupère que l'utilisateur lié au post
+      });
+
+      if (!post) {
+        return res.status(404).json({ error: "Post non trouvé" });
+      }
+
+      const userId = post.utilisateurId;
+
+      // Étape 2: Récupérer les notes de cet utilisateur
+      const userNotes = await prisma.usersNotes.findMany({
+        where: { userId: userId }, // On utilise l'utilisateurId récupéré du post
+        select: { rate: true }, // On récupère seulement les notes (rate)
+      });
+
+      if (userNotes.length === 0) {
+        return res
+          .status(404)
+          .json({ message: "Aucune note trouvée pour cet utilisateur." });
+      }
+
+      // Calcul du total des notes
+      const totalNotes = userNotes.reduce(
+        (acc, note) => acc + (note.rate || 0),
+        0
+      );
+
+      // On retourne le total des notes
+      res.status(200).json({ totalNotes });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Erreur interne du serveur" });
+    }
+  }
+
+  //getTotalNotes pour retourner la somme des notes de l'utilisateur par ID
+  // static async getTotalNotesForPostUser(req: Request, res: Response) {
+  //   const postId = parseInt(req.params.postId, 10);
+  //   try {
+  //     // Récupérer le post et l'utilisateurId associé
+  //     const post = await prisma.posts.findUnique({
+  //       where: { id: postId },
+  //       select: { utilisateurId: true },
+  //     });
+
+  //     if (!post) {
+  //       return res.status(404).json({ error: "Post non trouvé" });
+  //     }
+
+  //     // Récupérer toutes les notes de l'utilisateur
+  //     const userNotes = await prisma.usersNotes.findMany({
+  //       where: { userId: post.utilisateurId },
+  //       select: { rate: true },
+  //     });
+
+  //     // Calculer le total des notes
+  //     const totalNotes = userNotes.reduce(
+  //       (sum, note) => sum + (note.rate || 0),
+  //       0
+  //     );
+
+  //     res.status(200).json({
+  //       utilisateurId: post.utilisateurId,
+  //       totalNotes: totalNotes,
+  //     });
+  //   } catch (error) {
+  //     console.error("Erreur lors de la récupération des notes:", error);
+  //     res.status(500).json({ error: "Erreur interne du serveur" });
+  //   }
+  // }
 
   //reportUser
   static async reportUser(req: Request, res: Response) {
@@ -1561,18 +1673,17 @@ static async findByName(req: Request, res: Response) {
   }
 
   static async getConnectedUser(req: Request, res: Response) {
-    try{
+    try {
       const userId = req.user?.userID;
       if (!userId) {
         return res.status(401).json({
           message: "Vous devez vous connecter pour effectuer cette action",
         });
       }
-  
-      return res.status(200).json(userId);
 
-    }catch(err){
-      console.error(err)
+      return res.status(200).json(userId);
+    } catch (err) {
+      console.error(err);
     }
   }
 }
