@@ -196,6 +196,13 @@ router
   .post(auth, (req, res) =>
     MessagesDiscussionController.createDiscussion(req, res)
   );
+
+router
+  .route("/user/discussion/:discussionId")
+  .get(auth, (req, res) =>
+    MessagesDiscussionController.getDiscussionById(req, res)
+  );
+
 router
   .route("/user/discussions")
   .get(auth, (req, res) =>

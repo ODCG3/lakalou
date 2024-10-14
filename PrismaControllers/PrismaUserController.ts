@@ -1674,14 +1674,17 @@ static async findByName(req: Request, res: Response) {
 
   static async getConnectedUser(req: Request, res: Response) {
     try {
-      const userId = req.user?.userID;
+      const userId = req.user!.userID;
+
+      console.log(userId);
+      
       if (!userId) {
         return res.status(401).json({
           message: "Vous devez vous connecter pour effectuer cette action",
         });
       }
 
-      return res.status(200).json(userId);
+      res.status(200).json(userId);
     } catch (err) {
       console.error(err);
     }

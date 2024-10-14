@@ -1482,15 +1482,15 @@ export default class PrismaUserController {
     }
     static getConnectedUser(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a;
             try {
-                const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
+                const userId = req.user.userID;
+                console.log(userId);
                 if (!userId) {
                     return res.status(401).json({
                         message: "Vous devez vous connecter pour effectuer cette action",
                     });
                 }
-                return res.status(200).json(userId);
+                res.status(200).json(userId);
             }
             catch (err) {
                 console.error(err);

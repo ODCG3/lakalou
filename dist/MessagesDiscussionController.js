@@ -67,7 +67,34 @@ export default class MessagesDiscussionController {
                         Users_UsersDiscussions_userIdToUsers: true,
                     },
                 });
+                console.log(discussions);
                 res.status(200).json(discussions);
+            }
+            catch (error) {
+                console.error(error);
+                res.status(500).json({ error: error });
+            }
+        });
+    }
+    static getDiscussionById(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const discussionId = parseInt(req.params.discussionId);
+                console.log(discussionId);
+                const discussion = yield prisma.usersDiscussions.findFirst({
+                    where: {
+                        id: discussionId,
+                    },
+                    include: {
+                        Users_UsersDiscussions_receiverIdToUsers: true,
+                        Users_UsersDiscussions_userIdToUsers: true,
+                        UsersDiscussionsMessages: true,
+                    },
+                });
+                if (!discussion) {
+                    return res.status(404).json({ message: "Discussion introuvable" });
+                }
+                res.status(200).json(discussion);
             }
             catch (error) {
                 console.error(error);
