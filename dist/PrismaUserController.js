@@ -340,53 +340,60 @@ export default class PrismaUserController {
     static reportUser(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a;
-            const userId = req.user.userID;
+            // Récupérer l'ID de l'utilisateur à signaler depuis les paramètres
+            const userIdToReport = Number(req.params.userId); // Assurez-vous que c'est un nombre
             const { reason } = req.body;
+            // Validation de la raison
             if (!reason || typeof reason !== "string") {
                 return res
                     .status(400)
                     .json({ error: "La raison du signalement est requise" });
             }
-            console.log(reason);
-            console.log(userId);
+            console.log("Raison du signalement:", reason);
+            console.log("ID de l'utilisateur à signaler:", userIdToReport);
             try {
+                // Vérifiez si l'utilisateur à signaler existe
                 const userToReport = yield prisma.users.findUnique({
-                    where: { id: userId },
+                    where: { id: userIdToReport }, // Utilisez l'ID passé en paramètre
                     include: { UsersSignals_UsersSignals_reporterIdToUsers: true },
                 });
-                /* console.log(userToReport);  */
                 if (!userToReport) {
-                    return res.status(402).json({ error: "Utilisateur non trouvé" });
+                    return res.status(404).json({ error: "Utilisateur non trouvé" });
                 }
-                const reporterId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
+                const reporterId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID; // L'ID de l'utilisateur connecté
                 if (!reporterId) {
                     return res
                         .status(403)
                         .json({ error: "Connectez-vous d'abord pour signaler" });
                 }
-                if (!(userToReport.id === reporterId)) {
+                // Vérifiez si l'utilisateur qui signale n'est pas le même que celui qui est signalé
+                if (userIdToReport === reporterId) {
                     return res
                         .status(403)
                         .json({ error: "Vous ne pouvez pas vous signaler vous-même" });
                 }
+                // Vérifiez si l'utilisateur a déjà été signalé
                 const alreadyReported = userToReport.UsersSignals_UsersSignals_reporterIdToUsers.some((signal) => signal.reporterId === reporterId);
                 if (alreadyReported) {
                     return res
-                        .status(405)
+                        .status(409) // Utilisez 409 pour conflit
                         .json({ error: "Vous avez déjà signalé cet utilisateur" });
                 }
+                // Créez le signalement avec les bons ID
                 const signal = yield prisma.usersSignals.create({
                     data: {
                         reason,
-                        reporterId: reporterId,
-                        userId: userToReport.id,
+                        reporterId: reporterId, // ID de l'utilisateur qui fait le signalement
+                        userId: userToReport.id, // ID de l'utilisateur à signaler
                     },
                 });
+                console.log("Signalement créé:", signal);
                 res
                     .status(200)
                     .json({ message: "Signalement ajouté avec succès", signal });
             }
             catch (error) {
+                console.error("Erreur lors du signalement:", error);
                 res.status(500).json({ error: "Erreur interne du serveur" });
             }
         });
