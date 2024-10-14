@@ -11,8 +11,6 @@ import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import isEmail from "validator/lib/isEmail.js";
-import validator from "validator";
-
 const prisma = new PrismaClient();
 export default class PrismaUserController {
     static create(req, res) {
@@ -292,7 +290,9 @@ export default class PrismaUserController {
                     select: { rate: true }, // On récupère seulement les notes (rate)
                 });
                 if (userNotes.length === 0) {
-                    return res.status(404).json({ message: "Aucune note trouvée pour cet utilisateur." });
+                    return res
+                        .status(404)
+                        .json({ message: "Aucune note trouvée pour cet utilisateur." });
                 }
                 // Calcul du total des notes
                 const totalNotes = userNotes.reduce((acc, note) => acc + (note.rate || 0), 0);
@@ -321,9 +321,9 @@ export default class PrismaUserController {
     //     const userNotes = await prisma.usersNotes.findMany({
     //       where: { userId: post.utilisateurId },
     //       select: { rate: true },
-    //     }); 
+    //     });
     //     // Calculer le total des notes
-    //     const totalNotes = userNotes.reduce( 
+    //     const totalNotes = userNotes.reduce(
     //       (sum, note) => sum + (note.rate || 0),
     //       0
     //     );
@@ -979,7 +979,7 @@ export default class PrismaUserController {
                     "longueur",
                     "tourBras",
                     "tourPoignet",
-                    "ceintur",
+                    "ceinture",
                 ];
                 for (const field of fieldsToFloat) {
                     if (measurements[field]) {

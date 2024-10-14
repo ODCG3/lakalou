@@ -157,7 +157,7 @@ router
 
 router
   .route("/commande")
-  .post(auth, (req, res) => CommandeModelController.createCommande(req, res));
+  .post(auth, (req, res) => CommandeModelController.createCommande(req, res));  
 router
   .route("/commandes/post/:postId")
   .post(auth, (req, res) => CommandeModelController.createCommande(req, res));

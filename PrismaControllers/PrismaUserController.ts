@@ -1114,7 +1114,7 @@ export default class PrismaUserController {
         "longueur",
         "tourBras",
         "tourPoignet",
-        "ceintur",
+        "ceinture",
       ];
   
       for (const field of fieldsToFloat) {
