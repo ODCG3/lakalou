@@ -254,7 +254,7 @@ router
   .route("/getConnectedUser")
   .get(auth, (req, res) => PrismaUserController.getConnectedUser());
 
-router.get("/signale/:userId", auth, PrismaUserController.reportUser);
+router.post("/signale/:userId", auth, PrismaUserController.reportUser);
 
 router
   .route("/followUser")

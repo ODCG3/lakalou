@@ -409,66 +409,74 @@ export default class PrismaUserController {
 
   //reportUser
   static async reportUser(req: Request, res: Response) {
-    const userId = req.user!.userID;
+    // Récupérer l'ID de l'utilisateur à signaler depuis les paramètres
+    const userIdToReport = Number(req.params.userId); // Assurez-vous que c'est un nombre
 
     const { reason } = req.body;
 
+    // Validation de la raison
     if (!reason || typeof reason !== "string") {
-      return res
-        .status(400)
-        .json({ error: "La raison du signalement est requise" });
+        return res
+            .status(400)
+            .json({ error: "La raison du signalement est requise" });
     }
 
-    console.log(reason);
-    console.log(userId);
+    console.log("Raison du signalement:", reason);
+    console.log("ID de l'utilisateur à signaler:", userIdToReport);
+
     try {
-      const userToReport = await prisma.users.findUnique({
-        where: { id: userId },
-        include: { UsersSignals_UsersSignals_reporterIdToUsers: true },
-      });
-      /* console.log(userToReport);  */
-      if (!userToReport) {
-        return res.status(402).json({ error: "Utilisateur non trouvé" });
-      }
+        // Vérifiez si l'utilisateur à signaler existe
+        const userToReport = await prisma.users.findUnique({
+            where: { id: userIdToReport }, // Utilisez l'ID passé en paramètre
+            include: { UsersSignals_UsersSignals_reporterIdToUsers: true },
+        });
 
-      const reporterId = req.user?.userID;
+        if (!userToReport) {
+            return res.status(404).json({ error: "Utilisateur non trouvé" });
+        }
 
-      if (!reporterId) {
-        return res
-          .status(403)
-          .json({ error: "Connectez-vous d'abord pour signaler" });
-      }
+        const reporterId = req.user?.userID; // L'ID de l'utilisateur connecté
 
-      if (!(userToReport.id === reporterId)) {
-        return res
-          .status(403)
-          .json({ error: "Vous ne pouvez pas vous signaler vous-même" });
-      }
+        if (!reporterId) {
+            return res
+                .status(403)
+                .json({ error: "Connectez-vous d'abord pour signaler" });
+        }
 
-      const alreadyReported =
-        userToReport.UsersSignals_UsersSignals_reporterIdToUsers.some(
-          (signal) => signal.reporterId === reporterId
+        // Vérifiez si l'utilisateur qui signale n'est pas le même que celui qui est signalé
+        if (userIdToReport === reporterId) {
+            return res
+                .status(403)
+                .json({ error: "Vous ne pouvez pas vous signaler vous-même" });
+        }
+
+        // Vérifiez si l'utilisateur a déjà été signalé
+        const alreadyReported = userToReport.UsersSignals_UsersSignals_reporterIdToUsers.some(
+            (signal: { reporterId: number }) => signal.reporterId === reporterId
         );
 
-      if (alreadyReported) {
-        return res
-          .status(405)
-          .json({ error: "Vous avez déjà signalé cet utilisateur" });
-      }
+        if (alreadyReported) {
+            return res
+                .status(409) // Utilisez 409 pour conflit
+                .json({ error: "Vous avez déjà signalé cet utilisateur" });
+        }
 
-      const signal = await prisma.usersSignals.create({
-        data: {
-          reason,
-          reporterId: reporterId,
-          userId: userToReport.id,
-        },
-      });
+        // Créez le signalement avec les bons ID
+        const signal = await prisma.usersSignals.create({
+            data: {
+                reason,
+                reporterId: reporterId,   // ID de l'utilisateur qui fait le signalement
+                userId: userToReport.id,   // ID de l'utilisateur à signaler
+            },
+        });
 
-      res
-        .status(200)
-        .json({ message: "Signalement ajouté avec succès", signal });
+        console.log("Signalement créé:", signal);
+        res
+            .status(200)
+            .json({ message: "Signalement ajouté avec succès", signal });
     } catch (error) {
-      res.status(500).json({ error: "Erreur interne du serveur" });
+        console.error("Erreur lors du signalement:", error);
+        res.status(500).json({ error: "Erreur interne du serveur" });
     }
   }
 
