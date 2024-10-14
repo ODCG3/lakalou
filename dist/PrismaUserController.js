@@ -12,6 +12,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import isEmail from "validator/lib/isEmail.js";
 import validator from "validator";
+
 const prisma = new PrismaClient();
 export default class PrismaUserController {
     static create(req, res) {
@@ -860,14 +861,33 @@ export default class PrismaUserController {
     }
     static updateMeasurements(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
+            var _a;
             try {
-                const userId = req.user.userID; // Utiliser l'ID de l'utilisateur connecté
-                const measurements = req.body;
-                if (!userId) {
-                    return res.status(400).json({ error: "Utilisateur non authentifié." });
+                const userId = req.params.userId; // ID de l'utilisateur cible dans l'URL
+                const connectedUserId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
+                if (!connectedUserId) {
+                    return res.status(401).json({
+                        error: "Vous devez être connecté pour effectuer cette action.",
+                    });
                 }
-                // Liste des champs à vérifier
-                const fields = [
+                // Vérifier que l'utilisateur connecté est un tailleur
+                const connectedUser = yield prisma.users.findUnique({
+                    where: { id: connectedUserId },
+                });
+                if (!connectedUser || connectedUser.role !== 'tailleur') {
+                    return res.status(403).json({
+                        error: "Vous n'êtes pas autorisé à effectuer cette action.",
+                    });
+                }
+                // Vérifier que l'utilisateur cible existe
+                const user = yield prisma.users.findUnique({
+                    where: { id: Number(userId) },
+                });
+                if (!user) {
+                    return res.status(404).json({ error: "Utilisateur non trouvé." });
+                }
+                const measurements = req.body;
+                const fieldsToFloat = [
                     "cou",
                     "longueurPantallon",
                     "epaule",
@@ -880,31 +900,124 @@ export default class PrismaUserController {
                     "tourPoignet",
                     "ceintur",
                 ];
-                // Vérification des champs
-                for (const field of fields) {
-                    const value = measurements[field];
-                    // Si le champ est vide, on continue sans vérifier
-                    if (value === undefined || value === null || value === "") {
-                        continue;
-                    }
-                    // Vérifier si la valeur est un nombre
-                    if (!validator.isFloat(value.toString())) {
-                        return res
-                            .status(400)
-                            .json({ error: `La valeur pour ${field} doit être un nombre.` });
+                for (const field of fieldsToFloat) {
+                    if (measurements[field]) {
+                        measurements[field] = parseFloat(measurements[field]);
                     }
                 }
                 // Mettre à jour les mesures de l'utilisateur
                 const updatedUser = yield prisma.mesures.update({
-                    where: { UserID: userId },
+                    where: { UserID: Number(userId) },
                     data: measurements,
                 });
-                if (!updatedUser) {
+                return res.status(200).json({
+                    message: "Mesures mises à jour avec succès.",
+                });
+            }
+            catch (error) {
+                console.error(error);
+                return res.status(500).json({ error: "Erreur interne du serveur." });
+            }
+        });
+    }
+    //addMesure
+    //addMesure
+    // Add or update measurements
+    static addMesure(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            try {
+                const userId = req.params.userId; // L'ID de l'utilisateur à partir de l'URL
+                const connectedUserId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID; // ID de l'utilisateur connecté
+                if (!connectedUserId) {
+                    return res.status(401).json({
+                        error: "Vous devez être connecté pour effectuer cette action.",
+                    });
+                }
+                // Vérifier que l'utilisateur connecté est un tailleur
+                const connectedUser = yield prisma.users.findUnique({
+                    where: { id: connectedUserId },
+                });
+                if (!connectedUser || connectedUser.role !== 'tailleur') {
+                    return res.status(403).json({
+                        error: "Vous n'êtes pas autorisé à effectuer cette action.",
+                    });
+                }
+                // Vérifier que l'utilisateur cible existe
+                const user = yield prisma.users.findUnique({
+                    where: { id: Number(userId) },
+                });
+                if (!user) {
                     return res.status(404).json({ error: "Utilisateur non trouvé." });
                 }
-                return res
-                    .status(200)
-                    .json({ message: "Mesures mises à jour avec succès." });
+                // Vérification des mesures envoyées
+                const measurements = req.body;
+                const fieldsToFloat = [
+                    "cou",
+                    "longueurPantallon",
+                    "epaule",
+                    "longueurManche",
+                    "hanche",
+                    "poitrine",
+                    "cuisse",
+                    "longueur",
+                    "tourBras",
+                    "tourPoignet",
+                    "ceinture",
+                ];
+                for (const field of fieldsToFloat) {
+                    if (measurements[field]) {
+                        measurements[field] = parseFloat(measurements[field]);
+                    }
+                }
+                // Check if measurements already exist for this user
+                const existingMeasurements = yield prisma.mesures.findUnique({
+                    where: { UserID: Number(userId) },
+                });
+                let result;
+                if (existingMeasurements) {
+                    // If measurements exist, update them
+                    result = yield prisma.mesures.update({
+                        where: { UserID: Number(userId) },
+                        data: measurements,
+                    });
+                    return res.status(200).json({
+                        message: "Mesures mises à jour avec succès.",
+                        data: result,
+                    });
+                }
+                else {
+                    // Otherwise, create new measurements
+                    result = yield prisma.mesures.create({
+                        data: Object.assign(Object.assign({}, measurements), { UserID: Number(userId) }),
+                    });
+                    return res.status(201).json({
+                        message: "Mesures ajoutées avec succès.",
+                        data: result,
+                    });
+                }
+            }
+            catch (error) {
+                console.error(error);
+                return res.status(500).json({ error: "Erreur interne du serveur." });
+            }
+        });
+    }
+    // Find user by name
+    static findByName(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const name = req.query.name;
+                if (!name) {
+                    return res.status(400).json({ error: "Nom d'utilisateur requis." });
+                }
+                const user = yield prisma.users.findFirst({
+                    where: { nom: String(name) },
+                });
+                if (!user) {
+                    return res.status(404).json({ error: "Utilisateur non trouvé." });
+                }
+                return res.status(200).json({ user });
             }
             catch (error) {
                 console.error(error);
@@ -935,7 +1048,7 @@ export default class PrismaUserController {
                 const { credits, badges, Followers_Followers_userIdToUsers } = userData;
                 const followersCount = Followers_Followers_userIdToUsers.length; // Compter le nombre de followers
                 // Vérifier si l'utilisateur a au moins 100 followers
-                if (followersCount < 100) {
+                if (followersCount < 1) {
                     return res.status(403).json({
                         message: "Vous devez avoir au moins 100 followers pour acheter un badge",
                     });
@@ -955,6 +1068,7 @@ export default class PrismaUserController {
                     data: {
                         credits: { decrement: 5 }, // Décrémenter les crédits
                         badges: true, // Définir le badge comme acquis
+                        certificat: true, // Définir le certificat comme acquis
                     },
                 });
                 res.status(200).json({ message: "Badge acquis avec succès" });

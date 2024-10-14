@@ -138,7 +138,12 @@ router.route('/user/discussions/:discussionUser/messages').post(auth, (req, res)
 router.route('/user/discussions/:discussionId/messages/:messageId').delete(auth, (req, res) => MessagesDiscussionController.deleteMessage(req, res));
 router.route('/user/discussions/:discussionId/messages/:messageId').put(auth, (req, res) => MessagesDiscussionController.modifierMessages(req, res));
 router.route('/user/chargeCredit').post(auth, (req, res) => PrismaUserController.chargeCredit(req, res));
-router.route('/user/modifierMesure').put(auth, (req, res) => PrismaUserController.updateMeasurements(req, res));
+
+router.route('/user/:userId/modifierMesure').put(auth, (req, res) => PrismaUserController.updateMeasurements(req, res));
+router.route('/user/:userId/addMesure').post(auth, (req, res) => PrismaUserController.addMesure(req, res));
+router.get('/user/findByName', auth, PrismaUserController.findByName);
+
+router.route('/user/getMesure/:userId').get(auth, (req, res) => PrismaUserController.getMesureByUserId(req, res));
 router.route('/user/acheterBadge').post(auth, (req, res) => PrismaUserController.acheterBadge(req, res));
 router.route('/user/listeSouhaits/:id').post(auth, (req, res) => ListeSouhaitsController.listeSouhaits(req, res));
 router.route('/user/listeSouhaits').get(auth, (req, res) => ListeSouhaitsController.voirListeSouhaits(req, res));
