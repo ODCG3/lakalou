@@ -11,6 +11,8 @@ import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import isEmail from "validator/lib/isEmail.js";
+import validator from "validator";
+
 const prisma = new PrismaClient();
 export default class PrismaUserController {
     static create(req, res) {
@@ -46,7 +48,8 @@ export default class PrismaUserController {
                         email,
                         password: hashedPassword,
                         photoProfile, // URL de l'image envoyée depuis le frontend
-                        role
+                        role,
+                        credits: 10
                     }
                 });
                 res.status(201).json(user);
@@ -1393,6 +1396,23 @@ export default class PrismaUserController {
             }
             catch (error) {
                 res.status(500).json({ error: "Erreur interne du serveur" });
+            }
+        });
+    }
+    static getConnectedUser(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            try {
+                const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
+                if (!userId) {
+                    return res.status(401).json({
+                        message: "Vous devez vous connecter pour effectuer cette action",
+                    });
+                }
+                return res.status(200).json(userId);
+            }
+            catch (err) {
+                console.error(err);
             }
         });
     }

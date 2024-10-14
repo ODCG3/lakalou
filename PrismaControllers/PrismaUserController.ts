@@ -61,7 +61,8 @@ export default class PrismaUserController {
           email,
           password: hashedPassword,
           photoProfile,  // URL de l'image envoyée depuis le frontend
-          role
+          role,
+          credits: 10
         }
       });
   
@@ -1556,6 +1557,22 @@ static async findByName(req: Request, res: Response) {
       res.status(200).json(filteredUsers);
     } catch (error) {
       res.status(500).json({ error: "Erreur interne du serveur" });
+    }
+  }
+
+  static async getConnectedUser(req: Request, res: Response) {
+    try{
+      const userId = req.user?.userID;
+      if (!userId) {
+        return res.status(401).json({
+          message: "Vous devez vous connecter pour effectuer cette action",
+        });
+      }
+  
+      return res.status(200).json(userId);
+
+    }catch(err){
+      console.error(err)
     }
   }
 }

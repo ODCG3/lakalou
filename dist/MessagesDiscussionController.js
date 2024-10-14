@@ -7,7 +7,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 export default class MessagesDiscussionController {
     static createDiscussion(req, res) {
@@ -16,7 +16,7 @@ export default class MessagesDiscussionController {
                 const { receiverId } = req.body;
                 const userId = req.user.userID; // Assurez-vous que req.user.userID est correctement défini
                 if (!receiverId) {
-                    return res.status(400).json({ message: 'L\'ID du receveur est requis' });
+                    return res.status(400).json({ message: "L'ID du receveur est requis" });
                 }
                 const receiverIdNumber = parseInt(receiverId);
                 if (receiverIdNumber === userId) {
@@ -43,7 +43,9 @@ export default class MessagesDiscussionController {
                         receiverId: receiverIdNumber,
                     },
                 });
-                res.status(201).json({ message: "Discussion créée avec succès", discussion });
+                res
+                    .status(201)
+                    .json({ message: "Discussion créée avec succès", discussion });
             }
             catch (error) {
                 console.error(error);
@@ -59,10 +61,11 @@ export default class MessagesDiscussionController {
                     where: {
                         OR: [{ userId }, { receiverId: userId }],
                     },
-                    // include: {
-                    //   Users_UsersDiscussions_receiverIdToUsers: true,
-                    //   Users_UsersDiscussions_userIdToUsers: true,
-                    // },
+                    include: {
+                        Users_UsersDiscussions_receiverIdToUsers: true,
+                        UsersDiscussionsMessages: true,
+                        Users_UsersDiscussions_userIdToUsers: true,
+                    },
                 });
                 res.status(200).json(discussions);
             }
@@ -105,7 +108,9 @@ export default class MessagesDiscussionController {
                 const { messageContent } = req.body;
                 // Vérifier si le message est vide ou ne contient que des espaces
                 if (!messageContent || messageContent.trim() === "") {
-                    return res.status(400).json({ message: "Le message ne peut pas être vide" });
+                    return res
+                        .status(400)
+                        .json({ message: "Le message ne peut pas être vide" });
                 }
                 const discussion = yield prisma.usersDiscussions.findFirst({
                     where: {
@@ -168,7 +173,9 @@ export default class MessagesDiscussionController {
                 const newContent = req.body.newContent;
                 // Vérifier si le nouveau contenu est vide ou ne contient que des espaces
                 if (!newContent || newContent.trim() === "") {
-                    return res.status(400).json({ message: "Aucune modification enregistrée" });
+                    return res
+                        .status(400)
+                        .json({ message: "Aucune modification enregistrée" });
                 }
                 const discussion = yield prisma.usersDiscussions.findFirst({
                     where: { id: discussionId, OR: [{ userId }, { receiverId: userId }] },

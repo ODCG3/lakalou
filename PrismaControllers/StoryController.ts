@@ -29,7 +29,9 @@ const createStory = async (req: Request, res: Response) => {
 
     // Vérifiez si l'utilisateur a suffisamment de crédits
     if (credit! <= 0) {
-      return res.status(402).json({ error: "Crédits insuffisants pour créer une story" });
+      return res
+        .status(402)
+        .json({ error: "Crédits insuffisants pour créer une story" });
     }
 
     const blockedUserIds = req.body.blockedUsers || []; // Liste des utilisateurs bloqués
@@ -54,7 +56,6 @@ const createStory = async (req: Request, res: Response) => {
       }
 
       storyData.modelId = model.id; // Associez le modèle à la story
-
     } else if (connectedUser.role === "vendeur") {
       const articleID = req.body.article; // ID de l'article à associer
       const article = await prisma.articles.findFirst({
@@ -108,6 +109,26 @@ const getStories = async (req: Request, res: Response) => {
       },
     });
 
+    const storys = await prisma.stories.findMany({
+      where: {
+        userId: {
+          in: await prisma.followers
+            .findMany({
+              where: {
+                followerId: viewerId,
+              },
+              select: {
+                userId: true, // Get the user IDs of users being followed
+              },
+            })
+            .then((follows) => follows.map((follow) => follow.userId)), // Extract the user IDs
+        },
+      },
+      include: {
+        Models: true, // Include any related models if needed
+      },
+    });
+
     res.status(200).json(stories);
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
@@ -139,7 +160,6 @@ const deleteStory = async (req: Request, res: Response) => {
   }
 };
 
-
 const viewStory = async (req: Request, res: Response) => {
   const storyId = req.params.id;
 
@@ -155,11 +175,9 @@ const viewStory = async (req: Request, res: Response) => {
       res.status(400).json({ message: "Story non trouvée" });
     }
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        error: "Une erreur interne est survenue. Veuillez réessayer plus tard.",
-      });
+    res.status(500).json({
+      error: "Une erreur interne est survenue. Veuillez réessayer plus tard.",
+    });
   }
 };
 
@@ -178,11 +196,9 @@ const getStoryViews = async (req: Request, res: Response) => {
     }
   } catch (error) {
     console.error(error);
-    res
-      .status(500)
-      .json({
-        error: "Une erreur interne est survenue. Veuillez réessayer plus tard.",
-      });
+    res.status(500).json({
+      error: "Une erreur interne est survenue. Veuillez réessayer plus tard.",
+    });
   }
 };
 

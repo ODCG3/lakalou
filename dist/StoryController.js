@@ -30,7 +30,9 @@ const createStory = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         const credit = connectedUser === null || connectedUser === void 0 ? void 0 : connectedUser.credits;
         // Vérifiez si l'utilisateur a suffisamment de crédits
         if (credit <= 0) {
-            return res.status(402).json({ error: "Crédits insuffisants pour créer une story" });
+            return res
+                .status(402)
+                .json({ error: "Crédits insuffisants pour créer une story" });
         }
         const blockedUserIds = req.body.blockedUsers || []; // Liste des utilisateurs bloqués
         let storyData = {
@@ -97,6 +99,25 @@ const getStories = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
                 BlockedUsers: { none: { id: viewerId } }, // Exclude stories where viewerId is in the blocked users list
             },
         });
+        const storys = yield prisma.stories.findMany({
+            where: {
+                userId: {
+                    in: yield prisma.followers
+                        .findMany({
+                        where: {
+                            followerId: viewerId,
+                        },
+                        select: {
+                            userId: true, // Get the user IDs of users being followed
+                        },
+                    })
+                        .then((follows) => follows.map((follow) => follow.userId)), // Extract the user IDs
+                },
+            },
+            include: {
+                Models: true, // Include any related models if needed
+            },
+        });
         res.status(200).json(stories);
     }
     catch (error) {
@@ -142,9 +163,7 @@ const viewStory = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         }
     }
     catch (error) {
-        res
-            .status(500)
-            .json({
+        res.status(500).json({
             error: "Une erreur interne est survenue. Veuillez réessayer plus tard.",
         });
     }
@@ -164,9 +183,7 @@ const getStoryViews = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     }
     catch (error) {
         console.error(error);
-        res
-            .status(500)
-            .json({
+        res.status(500).json({
             error: "Une erreur interne est survenue. Veuillez réessayer plus tard.",
         });
     }
