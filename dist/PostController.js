@@ -82,11 +82,20 @@ export default class PostController {
                     include: {
                         Models: true,
                         Users: true,
+                        Comments: true, // Inclure les commentaires pour chaque post
                     },
                 });
-                res.status(200).json(posts);
+                // Ajout du comptage des likes pour chaque post
+                const postsWithLikesAndComments = yield Promise.all(posts.map((post) => __awaiter(this, void 0, void 0, function* () {
+                    const likeCount = yield prisma.likes.count({
+                        where: { postId: post.id },
+                    });
+                    return Object.assign(Object.assign({}, post), { likeCount, comments: post.Comments });
+                })));
+                res.status(200).json(postsWithLikesAndComments);
             }
             catch (error) {
+                console.error("Erreur lors de la récupération des posts :", error);
                 res.status(500).json({ error: "Erreur interne du serveur" });
             }
         });
@@ -277,12 +286,12 @@ export default class PostController {
     static partagerPost(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             const { postId } = req.params;
-            const utilisateurId = req.user.userID;
-            const { utilisateurCible } = req.body;
+            const utilisateurId = req.user.userID; // L'utilisateur qui partage
+            const { utilisateurCible } = req.body; // L'utilisateur destinataire
             try {
                 // Vérifier si le post existe
                 const postData = yield prisma.posts.findUnique({
-                    where: { id: parseInt(postId) },
+                    where: { id: parseInt(postId, 10) },
                 });
                 if (!postData) {
                     return res.status(404).json({ error: "Post non trouvé." });
@@ -297,23 +306,20 @@ export default class PostController {
                 // Créer un enregistrement de partage
                 const donneePartage = yield prisma.partages.create({
                     data: {
-                        postId: parseInt(postId),
-                        receiverId: utilisateurCible,
-                        senderId: utilisateurId,
+                        postId: parseInt(postId, 10),
+                        receiverId: utilisateurCible, // L'utilisateur qui reçoit le partage
+                        senderId: utilisateurId, // L'utilisateur qui envoie le partage
                         sharedAt: new Date(),
                     },
                 });
-                if (!donneePartage) {
-                    return res.status(500).json({ error: "Échec du partage du post." });
-                }
-                res.status(200).json({
+                return res.status(200).json({
                     message: "Post partagé avec succès.",
                     partage: donneePartage,
                 });
             }
             catch (error) {
-                console.error("Erreur lors du partage du post:", error); // Pour débogage
-                res.status(500).json({ error: "Erreur interne du serveur" });
+                console.error("Erreur lors du partage du post:", error); // Log du serveur
+                return res.status(500).json({ error: "Erreur interne du serveur." });
             }
         });
     }

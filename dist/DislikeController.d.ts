@@ -1,4 +1,6 @@
-import { Request, Response } from 'express';
-export declare const dislikePost: (req: Request, res: Response) => Promise<void>;
-export declare const undislikePost: (req: Request, res: Response) => Promise<void>;
-export declare const getPostDislike: (req: Request, res: Response) => Promise<void>;
+import { Request, Response } from "express";
+export default class DislikeController {
+    static dislikePost(req: Request, res: Response): Promise<void>;
+    static undislikePost(req: Request, res: Response): Promise<void>;
+    static getPostDislike(req: Request, res: Response): Promise<void>;
+}
