@@ -10,70 +10,97 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 export default class CommentController {
-    // Ajouter un commentaire à un post
     static addComment(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const userId = req.user.userID;
-                const postId = parseInt(req.params.postId, 10);
-                const { content } = req.body;
+                const postId = parseInt(req.params.postId);
+                const content = req.body.content;
                 if (!content) {
-                    return res.status(400).json({ msg: "Le contenu du commentaire est requis" });
+                    res.status(400).json({ msg: "Le contenu du commentaire est requis" });
+                    return;
                 }
+                const user = yield prisma.users.findUnique({ where: { id: userId } });
                 const post = yield prisma.posts.findUnique({ where: { id: postId } });
                 if (!post) {
-                    return res.status(404).json({ msg: "Post non trouvé" });
+                    res.status(404).json({ msg: "Post non trouvé" });
+                    return;
                 }
                 const newComment = yield prisma.comments.create({
-                    data: { userId, postId, content },
+                    data: {
+                        userId: userId,
+                        postId: postId,
+                        content: content,
+                    },
                 });
-                return res.status(201).json({ msg: "Commentaire ajouté avec succès", newComment });
+                yield prisma.posts.update({
+                    where: { id: postId },
+                    data: {
+                        Comments: {
+                            connect: { id: newComment.id },
+                        },
+                    },
+                });
+                res.status(201).json(newComment);
             }
             catch (err) {
-                console.error("Erreur lors de l'ajout du commentaire :", err);
-                return res.status(500).json({ msg: "Erreur serveur", error: err });
+                res.status(500).send("Erreur serveur");
             }
         });
     }
-    // Supprimer un commentaire
     static deleteComment(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const commentId = parseInt(req.params.commentId, 10);
+                const commentId = parseInt(req.params.commentId);
                 const userId = req.user.userID;
-                const comment = yield prisma.comments.findUnique({ where: { id: commentId } });
+                const comment = yield prisma.comments.findUnique({
+                    where: { id: commentId },
+                });
                 if (!comment) {
-                    return res.status(404).json({ msg: "Commentaire non trouvé" });
+                    res.status(404).json({ msg: "Commentaire non trouvé" });
+                    return;
                 }
-                if (comment.userId !== userId) {
-                    return res.status(403).json({ msg: "Vous n'avez pas les droits pour supprimer ce commentaire" });
+                const post = yield prisma.posts.findUnique({
+                    where: { id: comment.postId },
+                });
+                if (!post || (comment.userId !== userId && post.id !== userId)) {
+                    res
+                        .status(401)
+                        .json({ msg: "Vous n'êtes pas l'auteur de ce commentaire" });
+                    return;
                 }
                 yield prisma.comments.delete({ where: { id: commentId } });
-                return res.json({ msg: "Commentaire supprimé avec succès" });
+                yield prisma.posts.update({
+                    where: { id: comment.postId },
+                    data: {
+                        Comments: {
+                            disconnect: { id: commentId },
+                        },
+                    },
+                });
+                res.json({ msg: "Commentaire supprimé" });
             }
             catch (err) {
-                console.error("Erreur lors de la suppression du commentaire :", err);
-                return res.status(500).json({ msg: "Erreur serveur", error: err });
+                res.status(500).send("Erreur serveur");
             }
         });
     }
-    // Récupérer les commentaires d'un post
     static getPostComments(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const postId = parseInt(req.params.postId, 10);
+                const postId = parseInt(req.params.postId);
                 const post = yield prisma.posts.findUnique({
                     where: { id: postId },
                     include: { Comments: true },
                 });
                 if (!post) {
-                    return res.status(404).json({ msg: "Post non trouvé" });
+                    res.status(404).json({ msg: "Post non trouvé" });
+                    return;
                 }
-                return res.json({ comments: post.Comments });
+                res.json(post.Comments);
             }
             catch (err) {
-                console.error("Erreur lors de la récupération des commentaires :", err);
-                return res.status(500).json({ msg: "Erreur serveur", error: err });
+                res.status(500).send("Erreur serveur");
             }
         });
     }

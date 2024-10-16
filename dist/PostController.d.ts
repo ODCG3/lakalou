@@ -8,7 +8,7 @@ export default class PostController {
     static getVues(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static addFavoris(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static deleteFavoris(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
-    static partagerPost(req: Request, res: Response): Promise<Response>;
+    static partagerPost(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static notifyFollowers(userId: number, postId: number): Promise<void>;
     static deleteNotification(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static getNotifications(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;

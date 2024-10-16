@@ -11,8 +11,6 @@ import StoryController from "../dist/StoryController.js";
 import ArticleController from "../dist/ArticleController.js";
 import PostArticleController from "../dist/PostArticleController.js";
 import CommentController from "../dist/CommentController.js";
-import LikeController from "../dist/LikeController.js";
-import DislikeController from "../dist/DislikeController.js";
 
 router
   .route("/register")
@@ -66,7 +64,9 @@ router
   .route("/myPosition")
   .get(auth, (req, res) => PrismaUserController.myPosition(req, res));
 
-router.route("/rang").get(auth, (req, res) => PrismaUserController.getTailleurRanking(req, res));
+router
+  .route("/rang")
+  .get(auth, (req, res) => PrismaUserController.getTailleurRanking(req, res));
 
 router
   .route("/model/create")
@@ -112,11 +112,19 @@ router
   .route("/post/create")
   .post(auth, (req, res) => PostController.createPost(req, res));
 
-router.route("/post/:postId/comments/create").post(auth, (req, res) => CommentController.addComment(req, res));
-router.route("/comment/:commentId").delete(auth, (req, res) => CommentController.deleteComment(req, res));
-router.route("/post/:postId/comments").get(auth, (req, res) => CommentController.getPostComments(req, res));
+router
+  .route("/post/:postId/comments/create")
+  .post(auth, (req, res) => CommentController.addComment(req, res));
+router
+  .route("/comment/:commentId")
+  .delete(auth, (req, res) => CommentController.deleteComment(req, res));
+router
+  .route("/post/:postId/comments")
+  .get(auth, (req, res) => CommentController.getPostComments(req, res));
 
-router.route("/post") .get(auth, (req, res) => PostController.getPosts(req, res));
+router
+  .route("/post")
+  .get(auth, (req, res) => PostController.getPosts(req, res));
 router
   .route("/post/:postId")
   .get(auth, (req, res) => PostController.getPostById(req, res));
@@ -137,20 +145,9 @@ router
   .delete(auth, (req, res) => PostController.deleteFavoris(req, res));
 //router.route("/post/favorite").get(auth, (req, res) => PostController.getAllFavoris(req, res));
 
-router.route("/post/:postId/share").post(auth, (req, res) => PostController.partagerPost(req, res));
-  // Routes pour les likes
- router.route("/post/:postId/like").post(auth,(rep, res)=> LikeController.likePost(rep,res));
-router.route("/post/:postId/like/:likeID/unlike").post(auth,(rep, res)=> LikeController.unlikePost(rep,res));
-router.route("/post/:postId/likes").get(auth,(rep, res)=> LikeController.getPostLikes(rep,res));
-router.route("/post/:postId/likes/count").get(auth, (req, res) => LikeController.countPostLikes(req, res));
-
-
-
-// Routes pour les dislikes
-router.route("/post/:postId/dislike").post(auth, (req, res) => DislikeController.dislikePost(req, res));
-router.route("/post/:postId/undislike").post(auth, (req, res) => DislikeController.undislikePost(req, res));
-router.route("/post/:postId/Dislike").get(auth, (req, res) => DislikeController.getPostDislike(req, res));
-
+router
+  .route("/post/:postId/share")
+  .post(auth, (req, res) => PostController.partagerPost(req, res));
 router
   .route("/notifications")
   .get(auth, (req, res) => PostController.getNotifications(req, res));
