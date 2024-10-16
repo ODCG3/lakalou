@@ -12,8 +12,10 @@ const prisma = new PrismaClient();
 export default class ModelController {
     static create(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log(req.body);
-            const { libelle, prix, quantite, contenu, articles } = req.body;
+            let { libelle, prix, quantite, contenu, articles } = req.body;
+            prix = parseFloat(prix);
+            quantite = parseInt(quantite, 10);
+            console.log(prix, quantite, contenu, articles);
             const existingModel = yield prisma.models.findFirst({
                 where: { libelle: libelle },
             });
@@ -119,7 +121,9 @@ export default class ModelController {
     static updateModel(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             const { modelId } = req.params;
-            const { libelle, prix, contenu } = req.body;
+            let { libelle, prix, quantite, contenu, articles } = req.body;
+            prix = parseFloat(prix);
+            quantite = parseInt(quantite, 10);
             try {
                 const updatedModel = yield prisma.models.update({
                     where: { id: parseInt(modelId, 10) },

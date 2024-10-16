@@ -5,9 +5,13 @@ const prisma = new PrismaClient();
 
 export default class ModelController {
   static async create(req: Request, res: Response): Promise<void> {
-    console.log(req.body);
     
-    const { libelle, prix, quantite, contenu,articles } = req.body;
+    let { libelle,prix , quantite, contenu,articles } = req.body;
+    prix  = parseFloat(prix);
+    quantite = parseInt(quantite, 10);
+
+    console.log(prix, quantite, contenu, articles);
+    
 
     const existingModel = await prisma.models.findFirst({
       where: { libelle: libelle },
@@ -42,6 +46,7 @@ export default class ModelController {
       res.status(400).json({ error: "Invalid JSON format for contenu" });
       return;
     }
+  
 
     try {
       const createdModel = await prisma.models.create({
@@ -122,7 +127,9 @@ export default class ModelController {
 
   static async updateModel(req: Request, res: Response): Promise<void> {
     const { modelId } = req.params;
-    const { libelle, prix, contenu } = req.body;
+    let { libelle,prix , quantite, contenu,articles } = req.body;
+    prix  = parseFloat(prix);
+    quantite = parseInt(quantite, 10);
 
     try {
       const updatedModel = await prisma.models.update({
