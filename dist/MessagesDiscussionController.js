@@ -141,10 +141,7 @@ export default class MessagesDiscussionController {
                 }
                 const discussion = yield prisma.usersDiscussions.findFirst({
                     where: {
-                        OR: [
-                            { userId, receiverId: discussionUserId },
-                            { userId: discussionUserId, receiverId: userId },
-                        ],
+                        id: discussionUserId
                     },
                 });
                 if (!discussion) {

@@ -142,10 +142,7 @@ export default class MessagesDiscussionController {
 
       const discussion = await prisma.usersDiscussions.findFirst({
         where: {
-          OR: [
-            { userId, receiverId: discussionUserId },
-            { userId: discussionUserId, receiverId: userId },
-          ],
+          id: discussionUserId
         },
       });
 
