@@ -32,7 +32,7 @@ export default class MessagesDiscussionController {
 
       if (existingDiscussion) {
         return res
-          .status(403)
+          .status(409)
           .json({ message: "Une discussion avec cet utilisateur existe déjà" });
       }
 
@@ -48,7 +48,7 @@ export default class MessagesDiscussionController {
         .json({ message: "Discussion créée avec succès", discussion });
     } catch (error) {
       console.error(error);
-      res.status(500).json({ error: error });
+      res.status(500).json({ message: "Erreur serveur : " });
     }
   }
 

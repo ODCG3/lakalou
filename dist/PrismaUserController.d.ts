@@ -11,6 +11,7 @@ export default class PrismaUserController {
     static unfollowUser(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
     static followUser(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
     static myFollowers(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
+    static Followings(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
     static profile(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
     static changeRole(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
     static bloquerUsers(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;

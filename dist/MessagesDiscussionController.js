@@ -34,7 +34,7 @@ export default class MessagesDiscussionController {
                 });
                 if (existingDiscussion) {
                     return res
-                        .status(403)
+                        .status(409)
                         .json({ message: "Une discussion avec cet utilisateur existe déjà" });
                 }
                 const discussion = yield prisma.usersDiscussions.create({
@@ -49,7 +49,7 @@ export default class MessagesDiscussionController {
             }
             catch (error) {
                 console.error(error);
-                res.status(500).json({ error: error });
+                res.status(500).json({ message: "Erreur serveur : " });
             }
         });
     }

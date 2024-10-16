@@ -157,7 +157,7 @@ router
 
 router
   .route("/commande")
-  .post(auth, (req, res) => CommandeModelController.createCommande(req, res));  
+  .post(auth, (req, res) => CommandeModelController.createCommande(req, res));
 router
   .route("/commandes/post/:postId")
   .post(auth, (req, res) => CommandeModelController.createCommande(req, res));
@@ -287,6 +287,10 @@ router
 router
   .route("/myFollowers")
   .get(auth, (req, res) => PrismaUserController.myFollowers(req, res));
+
+router
+  .route("/following")
+  .get(auth, (req, res) => PrismaUserController.Followings(req, res));
 
 router
   .route("/tailleurs/statistique")
