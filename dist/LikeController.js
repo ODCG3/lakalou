@@ -9,87 +9,80 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
-// Ajouter un like
-export const likePost = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const { postId } = req.params; // Récupérer l'ID du post
-        const userId = req.user.userID; // Récupérer l'ID de l'utilisateur depuis le token
-        // Vérifier si l'utilisateur a déjà liké le post
-        const existingLike = yield prisma.likes.findFirst({
-            where: {
-                userId: userId,
-                postId: parseInt(postId, 10),
-            },
+export default class LikeController {
+    // Ajouter un like
+    static likePost(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { postId } = req.params;
+                const userId = req.user.userID; // Récupérer l'utilisateur depuis le token
+                // Vérifier si le like existe déjà
+                const existingLike = yield prisma.likes.findFirst({
+                    where: {
+                        userId: userId,
+                        postId: parseInt(postId, 10),
+                    },
+                });
+                if (existingLike) {
+                    res.status(400).json({ message: "Vous avez déjà aimé ce post." });
+                    return;
+                }
+                // Créer le like
+                const like = yield prisma.likes.create({
+                    data: {
+                        userId: userId,
+                        postId: parseInt(postId, 10),
+                    },
+                });
+                res.status(200).json({ message: "Post aimé avec succès.", like });
+            }
+            catch (error) {
+                console.error(error);
+                res.status(500).json({ message: "Erreur du serveur.", error });
+            }
         });
-        if (existingLike) {
-            res.status(400).json({ message: "Vous avez déjà aimé ce post." });
-            return;
-        }
-        // Créer un nouveau like
-        const like = yield prisma.likes.create({
-            data: {
-                userId: userId,
-                postId: parseInt(postId),
-            },
-        });
-        // Mettre à jour le nombre de likes sur le post
-        const post = yield prisma.posts.update({
-            where: { id: parseInt(postId, 10) },
-            data: {
-                Likes: {
-                    connect: { id: userId },
-                },
-            },
-        });
-        // Envoyer un message de succès
-        res.status(200).json({ message: "Post aimé avec succès.", like });
     }
-    catch (error) {
-        res.status(500).json({ message: "Erreur du serveur.", error });
-    }
-});
-// Retirer un like
-export const unlikePost = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const { postId, likeID } = req.params;
-        const userId = req.user.userID;
-        const likeExist = yield prisma.likes.findUnique({
-            where: { id: parseInt(likeID, 10) },
+    // Retirer un like (modifié)
+    static unlikePost(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { postId } = req.params;
+                const userId = req.user.userID;
+                // Trouver le like correspondant à cet utilisateur et ce post
+                const existingLike = yield prisma.likes.findFirst({
+                    where: { userId, postId: parseInt(postId, 10) },
+                });
+                if (!existingLike) {
+                    res.status(400).json({ message: "Vous n'avez pas aimé ce post." });
+                    return;
+                }
+                // Supprimer le like
+                yield prisma.likes.delete({
+                    where: { id: existingLike.id },
+                });
+                res.status(200).json({ message: "Like retiré avec succès." });
+            }
+            catch (error) {
+                console.error(error);
+                res.status(500).json({ message: "Erreur du serveur.", error });
+            }
         });
-        if (!likeExist) {
-            res.status(400).json({ message: "Vous n'avez pas aimé ce post." });
-            return;
-        }
-        const like = yield prisma.likes.delete({
-            where: { id: parseInt(likeID, 10) },
+    }
+    // Compter les likes d'un post
+    static countPostLikes(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { postId } = req.params;
+                // Compter le nombre de likes pour le post donné
+                const likeCount = yield prisma.likes.count({
+                    where: { postId: parseInt(postId, 10) },
+                });
+                res.status(200).json({ postId: parseInt(postId, 10), likeCount });
+            }
+            catch (error) {
+                console.error("Erreur lors du comptage des likes :", error);
+                res.status(500).json({ message: "Erreur du serveur.", error });
+            }
         });
-        // Mettre à jour le nombre de likes sur le post
-        const post = yield prisma.posts.update({
-            where: { id: parseInt(postId, 10) },
-            data: {
-                Likes: {
-                    disconnect: { id: userId },
-                },
-            },
-        });
-        res
-            .status(200)
-            .json({ message: "Like retiré avec succès.", data: { like, post } });
     }
-    catch (error) {
-        res.status(500).json({ message: "Erreur du serveur.", error });
-    }
-});
-// Récupérer tous les likes d'un post
-export const getPostLikes = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const { postId } = req.params;
-        const likes = yield prisma.likes.findMany({
-            where: { postId: parseInt(postId, 10) },
-        });
-        res.status(200).json({ likes });
-    }
-    catch (error) {
-        res.status(500).json({ message: "Erreur du serveur.", error });
-    }
-});
+}
