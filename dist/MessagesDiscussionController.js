@@ -132,7 +132,7 @@ export default class MessagesDiscussionController {
             try {
                 const discussionUserId = parseInt(req.params.discussionUser);
                 const userId = req.user.userID;
-                const { messageContent } = req.body;
+                const { messageContent, file } = req.body;
                 // Vérifier si le message est vide ou ne contient que des espaces
                 if (!messageContent || messageContent.trim() === "") {
                     return res
@@ -155,6 +155,7 @@ export default class MessagesDiscussionController {
                         content: messageContent,
                         senderId: userId,
                         discussionId: discussion.id,
+                        file: file
                     },
                 });
                 res.status(201).json({ message: "Message envoyé avec succès" });
