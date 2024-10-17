@@ -510,7 +510,7 @@ export default class PrismaUserController {
                     select: {
                         id: true,
                         // afichier les informations du user
-                        Users_Followers_followerIdToUsers: {
+                        Users_Followers_userIdToUsers: {
                             select: {
                                 id: true,
                                 nom: true,
@@ -524,6 +524,45 @@ export default class PrismaUserController {
                     },
                 });
                 return res.status(200).json({ followers });
+            }
+            catch (error) {
+                console.error(error);
+                return res.status(500).json({
+                    message: "Erreur lors de la récupération des followers",
+                    error: error,
+                });
+            }
+        });
+    }
+    static myFollowings(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a, _b;
+            const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
+            if (!userId) {
+                return res.status(401).json({
+                    message: "Vous devez vous connecter pour accéder à ce contenu",
+                });
+            }
+            try {
+                const followings = yield prisma.followers.findMany({
+                    where: { userId: (_b = req.user) === null || _b === void 0 ? void 0 : _b.userID },
+                    select: {
+                        id: true,
+                        // afichier les informations du user
+                        Users_Followers_followerIdToUsers: {
+                            select: {
+                                id: true,
+                                nom: true,
+                                prenom: true,
+                                photoProfile: true,
+                                role: true,
+                                badges: true,
+                                credits: true,
+                            },
+                        },
+                    },
+                });
+                return res.status(200).json({ followings });
             }
             catch (error) {
                 console.error(error);
@@ -1365,11 +1404,12 @@ export default class PrismaUserController {
                         photoProfile: tailleur.photoProfile,
                         role: tailleur.role,
                         averageRate,
+                        rank: 0, // Initial value
                     };
                 });
-                // Trier les tailleurs par note moyenne décroissante
+                // Sort by average rate
                 ranking.sort((a, b) => b.averageRate - a.averageRate);
-                // Attribuer les rangs
+                // Assign ranks
                 let rank = 1;
                 let previousRate = null;
                 let tiedUsersCount = 0;
@@ -1381,21 +1421,28 @@ export default class PrismaUserController {
                         rank += tiedUsersCount;
                         tiedUsersCount = 1;
                     }
-                    tailleur["rank"] = rank;
+                    tailleur.rank = rank;
                     previousRate = tailleur.averageRate;
                 });
-                res.status(200).json(ranking);
+                // If res is defined, send the response (used for direct requests to get ranking)
+                if (res) {
+                    res.status(200).json(ranking);
+                }
+                return ranking;
             }
             catch (error) {
-                res.status(500).json({
-                    message: `Erreur lors de la récupération du classement des tailleurs: ${error.message}`,
-                });
+                if (res) {
+                    res.status(500).json({
+                        message: `Erreur lors de la récupération du classement des tailleurs: ${error.message}`,
+                    });
+                }
+                return []; // Return an empty array in case of an error
             }
         });
     }
     static getStatistiques(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a;
+            var _a, _b;
             const connectedUser = yield prisma.users.findUnique({
                 where: { id: req.user.userID },
                 include: { UsersMesModels: true, CommandeModels: true },
@@ -1406,23 +1453,48 @@ export default class PrismaUserController {
                 });
             }
             try {
-                // Trouver le modèle le plus vendu
-                const mostSoldModel = connectedUser.UsersMesModels.sort((a, b) => { var _a, _b; return ((_a = a.nombreDeCommande) !== null && _a !== void 0 ? _a : 0) - ((_b = b.nombreDeCommande) !== null && _b !== void 0 ? _b : 0); });
-                // Trouver les posts les plus vus
+                // Get the most sold model
+                const mostSoldModel = connectedUser.UsersMesModels.sort((a, b) => { var _a, _b; return ((_a = b.nombreDeCommande) !== null && _a !== void 0 ? _a : 0) - ((_b = a.nombreDeCommande) !== null && _b !== void 0 ? _b : 0); })[0];
+                // Get the most viewed posts
                 const mostViewedPosts = yield prisma.posts.findMany({
                     where: { utilisateurId: connectedUser.id },
                     orderBy: { vues: "desc" },
                 });
-                // Calculer le ratio des ventes par rapport aux posts
+                // Calculate the sales to posts ratio
                 const userSalesCount = connectedUser.CommandeModels.length;
                 const userPostsCount = yield prisma.posts.count({
                     where: { utilisateurId: connectedUser.id },
                 });
-                const salesToPostsRatio = userSalesCount / userPostsCount;
+                const salesToPostsRatio = userPostsCount > 0 ? (userSalesCount / userPostsCount) : 0;
+                // Get followers and followings count
+                const userFollowersCount = yield prisma.followers.count({
+                    where: { followerId: connectedUser.id },
+                });
+                const userFollowingsCount = yield prisma.followers.count({
+                    where: { userId: connectedUser.id },
+                });
+                const tailleursPostsCount = yield prisma.posts.count({
+                    where: { utilisateurId: connectedUser.id },
+                });
+                // Get total likes
+                const postsWithLikes = yield prisma.posts.findMany({
+                    where: { utilisateurId: connectedUser.id },
+                    include: { Likes: true },
+                });
+                const totalLikes = postsWithLikes.reduce((acc, post) => acc + (post.Likes.length || 0), 0);
+                // Get tailleur ranking (do not return the response in getTailleurRanking)
+                const tailleurRanking = yield this.getTailleurRanking();
+                const tailleurRank = ((_b = tailleurRanking.find((tailleur) => tailleur.id === connectedUser.id)) === null || _b === void 0 ? void 0 : _b.rank) || null;
+                // Send the statistics response
                 res.status(200).json({
                     mostSoldModel,
                     mostViewedPosts,
-                    salesToPostsRatio: salesToPostsRatio * 100 + "%",
+                    salesToPostsRatio: (salesToPostsRatio * 100).toFixed(2) + "%",
+                    tailleursPostsCount,
+                    userFollowersCount,
+                    userFollowingsCount,
+                    totalLikes,
+                    tailleurRank,
                 });
             }
             catch (err) {

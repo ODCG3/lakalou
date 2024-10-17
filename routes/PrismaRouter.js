@@ -289,6 +289,10 @@ router
   .get(auth, (req, res) => PrismaUserController.myFollowers(req, res));
 
 router
+  .route("/myFollowings")
+  .get(auth, (req, res) => PrismaUserController.myFollowings(req, res));
+
+router
   .route("/tailleurs/statistique")
   .get(auth, (req, res) => PrismaUserController.getStatistiques(req, res));
 

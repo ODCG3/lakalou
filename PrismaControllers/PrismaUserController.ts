@@ -23,6 +23,17 @@ interface Measurements {
   ceinture?: number;
 }
 
+interface Tailleur {
+  id: number;
+  nom: string | null; // Permettre null si nécessaire
+  prenom: string | null; // Permettre null si nécessaire
+  email: string | null; // Permettre null si nécessaire
+  photoProfile: string | null; // Permettre null si nécessaire
+  role: string | null; // Modifiez ce type si nécessaire
+  averageRate: number;
+  rank: number; // Assurez-vous que rank est ici
+}
+
 export default class PrismaUserController {
   static async create(req: Request, res: Response) {
     const {
@@ -601,7 +612,7 @@ export default class PrismaUserController {
         select: {
           id: true,
           // afichier les informations du user
-          Users_Followers_followerIdToUsers: {
+          Users_Followers_userIdToUsers: {
             select: {
               id: true,
               nom: true,
@@ -624,6 +635,45 @@ export default class PrismaUserController {
       });
     }
   }
+
+  static async myFollowings(req: Request, res: Response) {
+    const userId = req.user?.userID;
+
+    if (!userId) {
+      return res.status(401).json({
+        message: "Vous devez vous connecter pour accéder à ce contenu",
+      });
+    }
+    try {
+      const followings = await prisma.followers.findMany({
+        where: { userId: req.user?.userID },
+        select: {
+          id: true,
+          // afichier les informations du user
+          Users_Followers_followerIdToUsers: {
+            select: {
+              id: true,
+              nom: true,
+              prenom: true,
+              photoProfile: true,
+              role: true,
+              badges: true,
+              credits: true,
+            },
+          },
+        },
+      });
+
+      return res.status(200).json({ followings });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({
+        message: "Erreur lors de la récupération des followers",
+        error: error,
+      });
+    }
+  }
+
 
   // Méthode profile
   static async profile(req: Request, res: Response) {
@@ -1516,111 +1566,150 @@ static async findByName(req: Request, res: Response) {
     }
   }
 
-  static async getTailleurRanking(req: Request, res: Response): Promise<void> {
+  static async getTailleurRanking(req?: Request, res?: Response): Promise<Tailleur[]> {
     try {
-      const tailleurs = await prisma.users.findMany({
-        where: { role: "tailleur" },
-        select: {
-          id: true,
-          nom: true,
-          prenom: true,
-          email: true,
-          photoProfile: true,
-          role: true,
-          UsersNotes_UsersNotes_userIdToUsers: {
+        const tailleurs = await prisma.users.findMany({
+            where: { role: "tailleur" },
             select: {
-              rate: true,
+                id: true,
+                nom: true,
+                prenom: true,
+                email: true,
+                photoProfile: true,
+                role: true,
+                UsersNotes_UsersNotes_userIdToUsers: {
+                    select: {
+                        rate: true,
+                    },
+                },
             },
-          },
-        },
-      });
+        });
 
-      const ranking = tailleurs.map((tailleur) => {
-        const averageRate =
-          tailleur.UsersNotes_UsersNotes_userIdToUsers.reduce(
-            (acc, note) => acc + note.rate!,
-            0
-          ) / tailleur.UsersNotes_UsersNotes_userIdToUsers.length || 0;
-        return {
-          id: tailleur.id,
-          nom: tailleur.nom,
-          prenom: tailleur.prenom,
-          email: tailleur.email,
-          photoProfile: tailleur.photoProfile,
-          role: tailleur.role,
-          averageRate,
-        };
-      });
+        const ranking: Tailleur[] = tailleurs.map((tailleur) => {
+            const averageRate =
+                tailleur.UsersNotes_UsersNotes_userIdToUsers.reduce(
+                    (acc, note) => acc + note.rate!,
+                    0
+                ) / tailleur.UsersNotes_UsersNotes_userIdToUsers.length || 0;
 
-      // Trier les tailleurs par note moyenne décroissante
-      ranking.sort((a, b) => b.averageRate - a.averageRate);
+            return {
+                id: tailleur.id,
+                nom: tailleur.nom,
+                prenom: tailleur.prenom,
+                email: tailleur.email,
+                photoProfile: tailleur.photoProfile,
+                role: tailleur.role,
+                averageRate,
+                rank: 0, // Initial value
+            };
+        });
 
-      // Attribuer les rangs
-      let rank = 1;
-      let previousRate: number | null = null;
-      let tiedUsersCount = 0;
+        // Sort by average rate
+        ranking.sort((a, b) => b.averageRate - a.averageRate);
 
-      ranking.forEach((tailleur: any, index) => {
-        if (previousRate === tailleur.averageRate) {
-          tiedUsersCount++;
-        } else {
-          rank += tiedUsersCount;
-          tiedUsersCount = 1;
+        // Assign ranks
+        let rank = 1;
+        let previousRate: number | null = null;
+        let tiedUsersCount = 0;
+
+        ranking.forEach((tailleur, index) => {
+            if (previousRate === tailleur.averageRate) {
+                tiedUsersCount++;
+            } else {
+                rank += tiedUsersCount;
+                tiedUsersCount = 1;
+            }
+
+            tailleur.rank = rank;
+            previousRate = tailleur.averageRate;
+        });
+
+        // If res is defined, send the response (used for direct requests to get ranking)
+        if (res) {
+            res.status(200).json(ranking);
         }
-
-        tailleur["rank"] = rank;
-        previousRate = tailleur.averageRate;
-      });
-
-      res.status(200).json(ranking);
+        
+        return ranking;
     } catch (error) {
-      res.status(500).json({
-        message: `Erreur lors de la récupération du classement des tailleurs: ${
-          (error as Error).message
-        }`,
-      });
+        if (res) {
+            res.status(500).json({
+                message: `Erreur lors de la récupération du classement des tailleurs: ${(error as Error).message}`,
+            });
+        }
+        return []; // Return an empty array in case of an error
     }
   }
 
   static async getStatistiques(req: Request, res: Response) {
     const connectedUser = await prisma.users.findUnique({
-      where: { id: req.user!.userID },
-      include: { UsersMesModels: true, CommandeModels: true },
+        where: { id: req.user!.userID },
+        include: { UsersMesModels: true, CommandeModels: true },
     });
 
     if (!connectedUser || connectedUser.status?.toLowerCase() !== "premium") {
-      return res.status(401).json({
-        message: "Vous devez être premium pour effectuer cette action",
-      });
+        return res.status(401).json({
+            message: "Vous devez être premium pour effectuer cette action",
+        });
     }
 
     try {
-      // Trouver le modèle le plus vendu
-      const mostSoldModel = connectedUser.UsersMesModels.sort(
-        (a, b) => (a.nombreDeCommande ?? 0) - (b.nombreDeCommande ?? 0)
-      );
+        // Get the most sold model
+        const mostSoldModel = connectedUser.UsersMesModels.sort(
+            (a, b) => (b.nombreDeCommande ?? 0) - (a.nombreDeCommande ?? 0)
+        )[0];
 
-      // Trouver les posts les plus vus
-      const mostViewedPosts = await prisma.posts.findMany({
-        where: { utilisateurId: connectedUser.id },
-        orderBy: { vues: "desc" },
-      });
+        // Get the most viewed posts
+        const mostViewedPosts = await prisma.posts.findMany({
+            where: { utilisateurId: connectedUser.id },
+            orderBy: { vues: "desc" },
+        });
 
-      // Calculer le ratio des ventes par rapport aux posts
-      const userSalesCount = connectedUser.CommandeModels.length;
-      const userPostsCount = await prisma.posts.count({
-        where: { utilisateurId: connectedUser.id },
-      });
+        // Calculate the sales to posts ratio
+        const userSalesCount = connectedUser.CommandeModels.length;
+        const userPostsCount = await prisma.posts.count({
+            where: { utilisateurId: connectedUser.id },
+        });
 
-      const salesToPostsRatio = userSalesCount / userPostsCount;
+        const salesToPostsRatio = userPostsCount > 0 ? (userSalesCount / userPostsCount) : 0;
 
-      res.status(200).json({
-        mostSoldModel,
-        mostViewedPosts,
-        salesToPostsRatio: salesToPostsRatio * 100 + "%",
-      });
+        // Get followers and followings count
+        const userFollowersCount = await prisma.followers.count({
+            where: { followerId: connectedUser.id },
+        });
+
+        const userFollowingsCount = await prisma.followers.count({
+            where: { userId: connectedUser.id },
+        });
+
+        const tailleursPostsCount = await prisma.posts.count({
+            where: { utilisateurId: connectedUser.id },
+        });
+
+        // Get total likes
+        const postsWithLikes = await prisma.posts.findMany({
+            where: { utilisateurId: connectedUser.id },
+            include: { Likes: true },
+        });
+
+        const totalLikes = postsWithLikes.reduce((acc, post) => acc + (post.Likes.length || 0), 0);
+
+        // Get tailleur ranking (do not return the response in getTailleurRanking)
+        const tailleurRanking: Tailleur[] = await this.getTailleurRanking();
+        const tailleurRank = tailleurRanking.find((tailleur) => tailleur.id === connectedUser.id)?.rank || null;
+
+        // Send the statistics response
+        res.status(200).json({
+            mostSoldModel,
+            mostViewedPosts,
+            salesToPostsRatio: (salesToPostsRatio * 100).toFixed(2) + "%",
+            tailleursPostsCount,
+            userFollowersCount,
+            userFollowingsCount,
+            totalLikes,
+            tailleurRank,
+        });
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+        res.status(500).json({ message: (err as Error).message });
     }
   }
 
