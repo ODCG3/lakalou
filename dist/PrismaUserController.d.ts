@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request, Response } from "express";
 export default class PrismaUserController {
     static create(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static login(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
@@ -6,6 +6,7 @@ export default class PrismaUserController {
     static addNotes(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static filterByNotes(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static getNotes(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+    static getUserNotesFromPost(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static reportUser(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static unfollowUser(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
     static followUser(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
@@ -18,6 +19,8 @@ export default class PrismaUserController {
     static updateNote(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static chargeCredit(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
     static updateMeasurements(req: Request, res: Response): Promise<Response>;
+    static addMesure(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
+    static findByName(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
     static acheterBadge(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static acheterBadgeVandeur(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static getTailleurs(req: Request, res: Response): Promise<void>;
@@ -27,4 +30,5 @@ export default class PrismaUserController {
     static filterTailleurById(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
     static filterByName(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
     static filterTailleurByCertificat(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+    static getConnectedUser(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
 }

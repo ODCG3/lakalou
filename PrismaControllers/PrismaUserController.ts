@@ -1,18 +1,18 @@
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import isEmail from 'validator/lib/isEmail.js';
-import { validateImageExtension, validateName } from '../utils/Validator.js';
-import { Request, Response } from 'express';
-import { Error } from 'mongoose';
-import validator from 'validator';
-
+import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import isEmail from "validator/lib/isEmail.js";
+import { validateImageExtension, validateName } from "../utils/Validator.js";
+import { Request, Response } from "express";
+import { Error } from "mongoose";
+import validator from "validator";
 
 const prisma = new PrismaClient();
+
 interface Measurements {
   cou?: number;
   longueurPantallon?: number;
-  epaule?: number
+  epaule?: number;
   longueurManche?: number;
   hanche?: number;
   poitrine?: number;
@@ -35,7 +35,7 @@ export default class PrismaUserController {
       role,
     } = req.body;
 
-
+    // Valider les données reçues
     if (
       !nom ||
       !prenom ||
@@ -56,12 +56,6 @@ export default class PrismaUserController {
         .json({ error: "Le mot de passe doit contenir au moins 8 caractères" });
     }
 
-    if (role !== "tailleur" && role !== "visiteur" && role !== "vendeur") {
-      return res
-        .status(402)
-        .json({ error: "Le rôle doit être 'tailleur' ou 'visiteur'" });
-    }
-
     if (password !== confirmationPassword) {
       return res
         .status(405)
@@ -71,40 +65,35 @@ export default class PrismaUserController {
     if (!isEmail(email)) {
       return res.status(406).json({ error: "Cet email n'est pas valide" });
     }
-
-    if (!validateName(nom)) {
-      return res.status(406).json({ error: "Le nom n'est pas valide" });
-    }
-
-    if (!validateName(prenom)) {
-      return res.status(406).json({ error: "Le prénom n'est pas valide" });
-    }
-
-    if (!validateImageExtension(photoProfile)) {
-      return res
-        .status(406)
-        .json({ error: "L'extension de l'image n'est pas valide" });
-    }
-
+    console.log(
+      nom,
+      prenom,
+      email,
+      password,
+      confirmationPassword,
+      photoProfile,
+      role
+    );
     try {
+      // Hacher le mot de passe
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      const existingUser = await prisma.users.findUnique({
-        where: { email },
-      });
-
+      // Vérifier si l'utilisateur existe déjà
+      const existingUser = await prisma.users.findUnique({ where: { email } });
       if (existingUser) {
         return res.status(407).json({ error: "Cet email est déjà utilisé" });
       }
 
+      // Créer l'utilisateur avec l'URL de l'image déjà téléchargée sur Cloudinary
       const user = await prisma.users.create({
         data: {
           nom,
           prenom,
           email,
           password: hashedPassword,
-          photoProfile,
+          photoProfile, // URL de l'image envoyée depuis le frontend
           role,
+          credits: 10,
         },
       });
 
@@ -116,7 +105,7 @@ export default class PrismaUserController {
 
   static async login(req: Request, res: Response) {
     const { email, password } = req.body;
-    console.log(email,password);
+    console.log(email, password);
 
     if (!email || !password) {
       return res
@@ -129,31 +118,60 @@ export default class PrismaUserController {
         where: { email },
       });
 
-      const message = await prisma.usersDiscussions.findMany(
-        {
-          where: { userId: user?.id },
-          include: {
-            Users_UsersDiscussions_receiverIdToUsers: true,
-            UsersDiscussionsMessages: true,
-          },
-        }
-      );
+      const message = await prisma.usersDiscussions.findMany({
+        where: { userId: user?.id },
+        include: {
+          Users_UsersDiscussions_receiverIdToUsers: true,
+          UsersDiscussionsMessages: true,
+        },
+      });
+
+      const models = await prisma.models.findMany({
+        where: {
+          tailleurID: user?.id,
+        },
+      });
 
       const posts = await prisma.posts.findMany({
-        where: { utilisateurId: user?.id },
         include: {
           Models: true,
         },
-      })
+      });
 
-      const stories = await prisma.stories.findMany(
-        {
-          where: { userId: user?.id },
-          include: {
-            Models: true,
+      // const stories = await prisma.stories.findMany({
+      //   where: {
+      //     Users: {
+      //       Followers_Followers_followerIdToUsers: {
+      //         some: {
+      //           followerId: user?.id
+      //         }
+      //       },
+      //     },
+      //   },
+      //   include: {
+      //     Models: true,
+      //   },
+      // });
+
+      const stories = await prisma.stories.findMany({
+        where: {
+          userId: {
+            in: await prisma.followers
+              .findMany({
+                where: {
+                  followerId: user?.id, // ID of the currently logged-in user
+                },
+                select: {
+                  userId: true, // Get the user IDs of users being followed
+                },
+              })
+              .then((follows) => follows.map((follow) => follow.userId)), // Extract the user IDs
           },
-        }
-      );
+        },
+        include: {
+          Models: true, // Include any related models if needed
+        },
+      });
 
       if (!user) {
         return res.status(401).json({ error: "Utilisateur inconnu" });
@@ -178,10 +196,9 @@ export default class PrismaUserController {
         path: "/",
       });
 
-      res.status(200).json({ token, user , message , stories , posts});
-
+      res.status(200).json({ token, user, message, stories, posts, models });
     } catch (error) {
-      res.status(500).json({ erreur: error  });
+      res.status(500).json({ erreur: error });
     }
   }
 
@@ -236,9 +253,13 @@ export default class PrismaUserController {
           .json({ error: "Vous ne pouvez pas vous noter vous-même" });
       }
 
-      const existingNote = userToRate.UsersNotes_UsersNotes_raterIDToUsers.find(
-        (note) => note.raterID === raterId
-      );
+      // Check if the user has already rated the same user
+      const existingNote = await prisma.usersNotes.findFirst({
+        where: {
+          raterID: raterId,
+          userId: userToRate.id,
+        },
+      });
 
       if (existingNote) {
         return res
@@ -274,19 +295,20 @@ export default class PrismaUserController {
       if (!userToRate) {
         return res.status(403).json({ error: "Utilisateur non trouvé" });
       }
-      if (userToRate.role!== "tailleur") {
-        return res
-         .status(402)
-         .json({ error: "Vous ne pouvez pas filtrer par notes pour un tailleur" });
+      if (userToRate.role !== "tailleur") {
+        return res.status(402).json({
+          error: "Vous ne pouvez pas filtrer par notes pour un tailleur",
+        });
       }
-      const filteredNotes = userToRate.UsersNotes_UsersNotes_raterIDToUsers.filter(
-        (note) => (note.rate ?? 0) >= rate
-      );
+      const filteredNotes =
+        userToRate.UsersNotes_UsersNotes_raterIDToUsers.filter(
+          (note) => (note.rate ?? 0) >= rate
+        );
       res.status(200).json(filteredNotes);
-      } catch (error) {
-        res.status(500).json({ error: "Erreur interne du serveur" });
-      }
+    } catch (error) {
+      res.status(500).json({ error: "Erreur interne du serveur" });
     }
+  }
   //getNotes pour lister touts les notes du user connecter
   static async getNotes(req: Request, res: Response) {
     const userId = req.user!.userID;
@@ -306,7 +328,85 @@ export default class PrismaUserController {
       res.status(500).json({ error: "Erreur interne du serveur" });
     }
   }
-  
+
+  static async getUserNotesFromPost(req: Request, res: Response) {
+    const { postId } = req.params; // On récupère le postId des paramètres
+
+    try {
+      // Étape 1: Récupérer le post par son ID
+      const post = await prisma.posts.findUnique({
+        where: { id: Number(postId) },
+        select: { utilisateurId: true }, // On ne récupère que l'utilisateur lié au post
+      });
+
+      if (!post) {
+        return res.status(404).json({ error: "Post non trouvé" });
+      }
+
+      const userId = post.utilisateurId;
+
+      // Étape 2: Récupérer les notes de cet utilisateur
+      const userNotes = await prisma.usersNotes.findMany({
+        where: { userId: userId }, // On utilise l'utilisateurId récupéré du post
+        select: { rate: true }, // On récupère seulement les notes (rate)
+      });
+
+      if (userNotes.length === 0) {
+        return res
+          .status(404)
+          .json({ message: "Aucune note trouvée pour cet utilisateur." });
+      }
+
+      // Calcul du total des notes
+      const totalNotes = userNotes.reduce(
+        (acc, note) => acc + (note.rate || 0),
+        0
+      );
+
+      // On retourne le total des notes
+      res.status(200).json({ totalNotes });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Erreur interne du serveur" });
+    }
+  }
+
+  //getTotalNotes pour retourner la somme des notes de l'utilisateur par ID
+  // static async getTotalNotesForPostUser(req: Request, res: Response) {
+  //   const postId = parseInt(req.params.postId, 10);
+  //   try {
+  //     // Récupérer le post et l'utilisateurId associé
+  //     const post = await prisma.posts.findUnique({
+  //       where: { id: postId },
+  //       select: { utilisateurId: true },
+  //     });
+
+  //     if (!post) {
+  //       return res.status(404).json({ error: "Post non trouvé" });
+  //     }
+
+  //     // Récupérer toutes les notes de l'utilisateur
+  //     const userNotes = await prisma.usersNotes.findMany({
+  //       where: { userId: post.utilisateurId },
+  //       select: { rate: true },
+  //     });
+
+  //     // Calculer le total des notes
+  //     const totalNotes = userNotes.reduce(
+  //       (sum, note) => sum + (note.rate || 0),
+  //       0
+  //     );
+
+  //     res.status(200).json({
+  //       utilisateurId: post.utilisateurId,
+  //       totalNotes: totalNotes,
+  //     });
+  //   } catch (error) {
+  //     console.error("Erreur lors de la récupération des notes:", error);
+  //     res.status(500).json({ error: "Erreur interne du serveur" });
+  //   }
+  // }
+
   //reportUser
   static async reportUser(req: Request, res: Response) {
     const userId = req.user!.userID;
@@ -407,7 +507,7 @@ export default class PrismaUserController {
 
       // Retirer l'utilisateur connecté de la liste des followers de l'utilisateur ciblé
       await prisma.followers.delete({
-        where: { followerId: followerId },
+        where: { id: followerId },
       });
 
       // Retirer l'utilisateur ciblé de la liste des followings de l'utilisateur connecté
@@ -492,7 +592,7 @@ export default class PrismaUserController {
         where: { followerId: req.user?.userID },
         select: {
           id: true,
-          // afichier les informations du user 
+          // afichier les informations du user
           Users_Followers_followerIdToUsers: {
             select: {
               id: true,
@@ -502,17 +602,18 @@ export default class PrismaUserController {
               role: true,
               badges: true,
               credits: true,
-
             },
           },
         },
       });
 
       return res.status(200).json({ followers });
-
     } catch (error) {
       console.error(error);
-      return res.status(500).json({ message: "Erreur lors de la récupération des followers", error: error });
+      return res.status(500).json({
+        message: "Erreur lors de la récupération des followers",
+        error: error,
+      });
     }
   }
 
@@ -611,11 +712,6 @@ export default class PrismaUserController {
     }
   }
 
- 
-   
-  
-
-
   // Méthode bloquerUsers
   static async bloquerUsers(req: Request, res: Response) {
     /* const { userID } = req.params; */
@@ -694,7 +790,7 @@ export default class PrismaUserController {
       currentUser.BlockedUsers.push({
         id: utilisateurId,
         storyId: Number(storyId),
-        blockedUserId: Number(utilisateurId)
+        blockedUserId: Number(utilisateurId),
       });
       console.log(currentUser.BlockedUsers);
       return res
@@ -713,55 +809,55 @@ export default class PrismaUserController {
     const utilisateurId = Number(req.body.utilisateurId);
     const userId = req.user?.userID;
     const storyId = req.body.storyId;
-  
+
     //console.log(userId);
     //console.log(utilisateurId);
     //console.log(storyId);
-  
+
     if (!userId) {
       return res.status(401).json({
         message: "Vous devez vous connecter pour effectuer cette action",
       });
     }
-  
+
     if (!utilisateurId || isNaN(Number(utilisateurId))) {
       return res.status(400).json({ error: "ID utilisateur invalide" });
     }
-  
+
     if (!storyId) {
       return res.status(400).json({ error: "ID de la story obligatoire" });
     }
-  
+
     try {
       const story = await prisma.stories.findUnique({
         where: { id: Number(storyId) },
       });
-  
+
       if (!story) {
         return res.status(404).json({ error: "Story non trouvée" });
       }
-  
+
       if (Number(utilisateurId) === userId) {
         return res
           .status(400)
           .json({ error: "Vous ne pouvez pas vous débloquer vous-même" });
       }
-  
+
       const userToUnblock = await prisma.users.findUnique({
         where: { id: Number(utilisateurId) },
       });
-  
+
       if (!userToUnblock) {
         return res
           .status(404)
           .json({ error: "Utilisateur à débloquer non trouvé" });
       }
-  
+
       const currentUser = await prisma.users.findUnique({
         where: { id: userId },
         include: { BlockedUsers: true },
       });
-  
+
       if (!currentUser) {
         return res
           .status(404)
@@ -780,20 +876,20 @@ export default class PrismaUserController {
           ],
         },
       });
-  
+
       if (!isBlocked) {
         return res
           .status(400)
           .json({ error: "Cet utilisateur n'est pas bloqué" });
       }
-  
+
       await prisma.blockedUsers.deleteMany({
         where: {
           storyId: Number(storyId),
           blockedUserId: Number(utilisateurId),
         },
       });
-  
+
       return res
         .status(200)
         .json({ message: "Utilisateur débloqué avec succès" });
@@ -814,35 +910,31 @@ export default class PrismaUserController {
         message: "Vous devez vous connecter pour effectuer cette action",
       });
     }
-  
-  
-  
+
     try {
       const currentUser = await prisma.users.findUnique({
         where: { id: userId },
         include: { BlockedUsers: true },
       });
-  
+
       if (!currentUser) {
         return res
-         .status(404)
-         .json({ error: "Utilisateur courant non trouvé" });
+          .status(404)
+          .json({ error: "Utilisateur courant non trouvé" });
       }
-  
+
       const userToBlock = await prisma.users.findUnique({
         where: { id: Number(userId) },
         include: { BlockedUsers: true },
-      })
+      });
       if (!userToBlock) {
         return res
-         .status(404)
-         .json({ error: "Utilisateur à bloquer non trouvé" });
+          .status(404)
+          .json({ error: "Utilisateur à bloquer non trouvé" });
       }
       const isBlocked = await prisma.blockedUsers.findMany({
         where: {
-          AND: [
-            { blockedUserId: Number(utilisateurId) },
-          ],
+          AND: [{ blockedUserId: Number(utilisateurId) }],
         },
       });
       return res.status(200).json({ isBlocked });
@@ -853,7 +945,6 @@ export default class PrismaUserController {
         .json({ error: "Erreur interne du serveur", details: error });
     }
   }
-  
 
   static async updateNote(req: Request, res: Response) {
     const { id, noteId } = req.params;
@@ -981,51 +1072,194 @@ export default class PrismaUserController {
 
   static async updateMeasurements(req: Request, res: Response): Promise<Response> {
     try {
-      const userId = req.user!.userID; // Utiliser l'ID de l'utilisateur connecté
-      const measurements = req.body;
-
-      if (!userId) {
-        return res.status(400).json({ error: "Utilisateur non authentifié." });
+      const userId = req.params.userId; // ID de l'utilisateur cible dans l'URL
+      const connectedUserId = req.user?.userID;
+  
+      if (!connectedUserId) {
+        return res.status(401).json({
+          error: "Vous devez être connecté pour effectuer cette action.",
+        });
       }
-
-      // Liste des champs à vérifier
-      const fields = [
-        'cou', 'longueurPantallon', 'epaule', 'longueurManche',
-        'hanche', 'poitrine', 'cuisse', 'longueur', 'tourBras',
-        'tourPoignet', 'ceintur'
-      ];
-
-      // Vérification des champs
-      for (const field of fields) {
-        const value = measurements[field];
-
-        // Si le champ est vide, on continue sans vérifier
-        if (value === undefined || value === null || value === '') {
-          continue;
-        }
-
-        // Vérifier si la valeur est un nombre
-        if (!validator.isFloat(value.toString())) {
-          return res.status(400).json({ error: `La valeur pour ${field} doit être un nombre.` });
-        }
-      }
-
-      // Mettre à jour les mesures de l'utilisateur
-      const updatedUser = await prisma.mesures.update({
-        where: { UserID: userId },
-        data: measurements,
+  
+      // Vérifier que l'utilisateur connecté est un tailleur
+      const connectedUser = await prisma.users.findUnique({
+        where: { id: connectedUserId },
       });
-
-      if (!updatedUser) {
+  
+      if (!connectedUser || connectedUser.role !== 'tailleur') {
+        return res.status(403).json({
+          error: "Vous n'êtes pas autorisé à effectuer cette action.",
+        });
+      }
+  
+      // Vérifier que l'utilisateur cible existe
+      const user = await prisma.users.findUnique({
+        where: { id: Number(userId) },
+      });
+  
+      if (!user) {
         return res.status(404).json({ error: "Utilisateur non trouvé." });
       }
-
-      return res.status(200).json({ message: "Mesures mises à jour avec succès." });
+  
+      const measurements = req.body;
+  
+      const fieldsToFloat = [
+        "cou",
+        "longueurPantallon",
+        "epaule",
+        "longueurManche",
+        "hanche",
+        "poitrine",
+        "cuisse",
+        "longueur",
+        "tourBras",
+        "tourPoignet",
+        "ceinture",
+      ];
+  
+      for (const field of fieldsToFloat) {
+        if (measurements[field]) {
+          measurements[field] = parseFloat(measurements[field]);
+        }
+      }
+  
+      // Mettre à jour les mesures de l'utilisateur
+      const updatedUser = await prisma.mesures.update({
+        where: { UserID: Number(userId) },
+        data: measurements,
+      });
+  
+      return res.status(200).json({
+        message: "Mesures mises à jour avec succès.",
+      });
     } catch (error) {
       console.error(error);
       return res.status(500).json({ error: "Erreur interne du serveur." });
     }
   }
+  
+  //addMesure
+ //addMesure
+// Add or update measurements
+static async addMesure(req: Request, res: Response) {
+  try {
+    const userId = req.params.userId; // L'ID de l'utilisateur à partir de l'URL
+    const connectedUserId = req.user?.userID; // ID de l'utilisateur connecté
+
+    if (!connectedUserId) {
+      return res.status(401).json({
+        error: "Vous devez être connecté pour effectuer cette action.",
+      });
+    }
+
+    // Vérifier que l'utilisateur connecté est un tailleur
+    const connectedUser = await prisma.users.findUnique({
+      where: { id: connectedUserId },
+    });
+
+    if (!connectedUser || connectedUser.role !== 'tailleur') {
+      return res.status(403).json({
+        error: "Vous n'êtes pas autorisé à effectuer cette action.",
+      });
+    }
+
+    // Vérifier que l'utilisateur cible existe
+    const user = await prisma.users.findUnique({
+      where: { id: Number(userId) },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "Utilisateur non trouvé." });
+    }
+
+    // Vérification des mesures envoyées
+    const measurements = req.body;
+
+    const fieldsToFloat = [
+      "cou",
+      "longueurPantallon",
+      "epaule",
+      "longueurManche",
+      "hanche",
+      "poitrine",
+      "cuisse",
+      "longueur",
+      "tourBras",
+      "tourPoignet",
+      "ceinture",
+    ];
+    
+    for (const field of fieldsToFloat) {
+      if (measurements[field]) {
+        measurements[field] = parseFloat(measurements[field]);
+      }
+    }
+
+    // Check if measurements already exist for this user
+    const existingMeasurements = await prisma.mesures.findUnique({
+      where: { UserID: Number(userId) },
+    });
+
+    let result;
+
+    if (existingMeasurements) {
+      // If measurements exist, update them
+      result = await prisma.mesures.update({
+        where: { UserID: Number(userId) },
+        data: measurements,
+      });
+
+      return res.status(200).json({
+        message: "Mesures mises à jour avec succès.",
+        data: result,
+      });
+    } else {
+      // Otherwise, create new measurements
+      result = await prisma.mesures.create({
+        data: {
+          ...measurements,
+          UserID: Number(userId),
+        },
+      });
+
+      return res.status(201).json({
+        message: "Mesures ajoutées avec succès.",
+        data: result,
+      });
+    }
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Erreur interne du serveur." });
+  }
+}
+
+
+  
+  // Find user by name
+static async findByName(req: Request, res: Response) {
+  try {
+    const name = req.query.name;
+
+    if (!name) {
+      return res.status(400).json({ error: "Nom d'utilisateur requis." });
+    }
+
+    const user = await prisma.users.findFirst({
+      where: { nom: String(name) },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "Utilisateur non trouvé." });
+    }
+
+    return res.status(200).json({ user });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Erreur interne du serveur." });
+  }
+}
+
+  
   static async acheterBadge(req: Request, res: Response) {
     const userId = req.user?.userID;
 
@@ -1045,25 +1279,29 @@ export default class PrismaUserController {
       });
 
       if (!userData) {
-        return res.status(404).json({ error: 'Utilisateur non trouvé' });
+        return res.status(404).json({ error: "Utilisateur non trouvé" });
       }
 
       const { credits, badges, Followers_Followers_userIdToUsers } = userData;
       const followersCount = Followers_Followers_userIdToUsers.length; // Compter le nombre de followers
 
       // Vérifier si l'utilisateur a au moins 100 followers
-      if (followersCount < 100) {
-        return res.status(403).json({ message: 'Vous devez avoir au moins 100 followers pour acheter un badge' });
+      if (followersCount < 1) {
+        return res.status(403).json({
+          message:
+            "Vous devez avoir au moins 100 followers pour acheter un badge",
+        });
       }
 
       // Vérifier si le badge est déjà acquis
-      if (badges) { // badges est un booléen, donc juste vérifiez s'il est vrai
-        return res.status(405).json({ message: 'Badge déjà acquis' });
+      if (badges) {
+        // badges est un booléen, donc juste vérifiez s'il est vrai
+        return res.status(405).json({ message: "Badge déjà acquis" });
       }
 
       // Vérifier si l'utilisateur a suffisamment de crédits
       if (credits === null || credits < 5) {
-        return res.status(406).json({ message: 'Crédit insuffisant' });
+        return res.status(406).json({ message: "Crédit insuffisant" });
       }
 
       // Ajouter le badge en utilisant une approche différente
@@ -1071,20 +1309,19 @@ export default class PrismaUserController {
         where: { id: userId },
         data: {
           credits: { decrement: 5 }, // Décrémenter les crédits
-          badges: true // Définir le badge comme acquis
-          
+          badges: true, // Définir le badge comme acquis
+          certificat: true, // Définir le certificat comme acquis
         },
       });
 
-      res.status(200).json({ message: 'Badge acquis avec succès' });
-
+      res.status(200).json({ message: "Badge acquis avec succès" });
     } catch (err) {
       console.error(err);
-      res.status(500).json({ error: 'Une erreur est survenue' });
+      res.status(500).json({ error: "Une erreur est survenue" });
     } finally {
       await prisma.$disconnect();
     }
-  } 
+  }
 
   //En tant que vendeur je peut acheter un badge
   static async acheterBadgeVandeur(req: Request, res: Response) {
@@ -1093,7 +1330,7 @@ export default class PrismaUserController {
 
     console.log(userId);
     console.log(VandeurId);
-    if (!userId ||!VandeurId) {
+    if (!userId || !VandeurId) {
       return res.status(401).json({ message: "Utilisateur non authentifié" });
     }
 
@@ -1109,39 +1346,53 @@ export default class PrismaUserController {
       });
 
       if (!userVendeurData) {
-        return res.status(404).json({ error: 'Utilisateur vendeur non trouvé' });
+        return res
+          .status(404)
+          .json({ error: "Utilisateur vendeur non trouvé" });
       }
 
       const { role, badges } = userVendeurData;
 
-      if (role!== 'vendeur') {
-        return res.status(403).json({ message: 'Vous devez être un vendeur pour acheter un badge' });
+      if (role !== "vendeur") {
+        return res.status(403).json({
+          message: "Vous devez être un vendeur pour acheter un badge",
+        });
       }
 
       if (badges) {
-        return res.status(405).json({ message: 'Vous avez déjà acheté un badge' });
+        return res
+          .status(405)
+          .json({ message: "Vous avez déjà acheté un badge" });
       }
-      
-       // Compter le nombre de follower du vandeur
-       const followersVendeurCount = userVendeurData.Followers_Followers_userIdToUsers.length;
 
-    
+      // Compter le nombre de follower du vandeur
+      const followersVendeurCount =
+        userVendeurData.Followers_Followers_userIdToUsers.length;
 
       // Vérifier si l'utilisateur a au moins 100 followers
       if (followersVendeurCount < 10) {
-        return res.status(403).json({ message: 'Vous devez avoir au moins 100 followers pour acheter un badge' });
+        return res.status(403).json({
+          message:
+            "Vous devez avoir au moins 100 followers pour acheter un badge",
+        });
       }
       // Vérifier si
       // Vérifier si l'utilisateur vendeur a suffisamment de crédits
       const userAcheteurData = await prisma.users.findUnique({
-        where: { id: Number(VandeurId)},
+        where: { id: Number(VandeurId) },
         select: {
           credits: true,
           Followers_Followers_userIdToUsers: true,
         },
       });
-      if (!userAcheteurData || userAcheteurData.credits === null || userAcheteurData.credits < 10) {
-        return res.status(406).json({ message: 'Acheteur sans crédits suffisants' });
+      if (
+        !userAcheteurData ||
+        userAcheteurData.credits === null ||
+        userAcheteurData.credits < 10
+      ) {
+        return res
+          .status(406)
+          .json({ message: "Acheteur sans crédits suffisants" });
       }
 
       // Ajouter le badge en utilisant une approche différente
@@ -1158,13 +1409,11 @@ export default class PrismaUserController {
         },
       });
       res.status(200).json({ message: "Badge acheté avec succès" });
-    }
-    catch (err) {
+    } catch (err) {
       console.error(err);
       res.status(500).json({ message: "Erreur lors de l'achat du badge" });
     }
   }
-
 
   static async getTailleurs(req: Request, res: Response) {
     try {
@@ -1185,7 +1434,6 @@ export default class PrismaUserController {
       });
 
       console.log(connectedUser);
-      
 
       if (!connectedUser || connectedUser.role !== "tailleur") {
         res
@@ -1259,7 +1507,7 @@ export default class PrismaUserController {
       res.status(500).json({ message: `Erreur: ${(err as Error).message}` });
     }
   }
-  
+
   static async getTailleurRanking(req: Request, res: Response): Promise<void> {
     try {
       const tailleurs = await prisma.users.findMany({
@@ -1304,7 +1552,7 @@ export default class PrismaUserController {
       let previousRate: number | null = null;
       let tiedUsersCount = 0;
 
-      ranking.forEach((tailleur:any, index) => {
+      ranking.forEach((tailleur: any, index) => {
         if (previousRate === tailleur.averageRate) {
           tiedUsersCount++;
         } else {
@@ -1319,29 +1567,35 @@ export default class PrismaUserController {
       res.status(200).json(ranking);
     } catch (error) {
       res.status(500).json({
-        message: `Erreur lors de la récupération du classement des tailleurs: ${(error as Error).message}`,
+        message: `Erreur lors de la récupération du classement des tailleurs: ${
+          (error as Error).message
+        }`,
       });
     }
   }
-  
+
   static async getStatistiques(req: Request, res: Response) {
     const connectedUser = await prisma.users.findUnique({
       where: { id: req.user!.userID },
       include: { UsersMesModels: true, CommandeModels: true },
     });
 
-    if (!connectedUser || connectedUser.status?.toLowerCase() !== 'premium') {
-      return res.status(401).json({ message: "Vous devez être premium pour effectuer cette action" });
+    if (!connectedUser || connectedUser.status?.toLowerCase() !== "premium") {
+      return res.status(401).json({
+        message: "Vous devez être premium pour effectuer cette action",
+      });
     }
 
     try {
       // Trouver le modèle le plus vendu
-      const mostSoldModel = connectedUser.UsersMesModels.sort((a, b) => (a.nombreDeCommande ?? 0) - (b.nombreDeCommande ?? 0));
+      const mostSoldModel = connectedUser.UsersMesModels.sort(
+        (a, b) => (a.nombreDeCommande ?? 0) - (b.nombreDeCommande ?? 0)
+      );
 
       // Trouver les posts les plus vus
       const mostViewedPosts = await prisma.posts.findMany({
         where: { utilisateurId: connectedUser.id },
-        orderBy: { vues: 'desc' },
+        orderBy: { vues: "desc" },
       });
 
       // Calculer le ratio des ventes par rapport aux posts
@@ -1352,67 +1606,84 @@ export default class PrismaUserController {
 
       const salesToPostsRatio = userSalesCount / userPostsCount;
 
-      res.status(200).json({ mostSoldModel, mostViewedPosts, salesToPostsRatio: salesToPostsRatio * 100 + "%" });
+      res.status(200).json({
+        mostSoldModel,
+        mostViewedPosts,
+        salesToPostsRatio: salesToPostsRatio * 100 + "%",
+      });
     } catch (err) {
       res.status(500).json({ message: (err as Error).message });
     }
   }
 
-
   static async filterTailleurById(req: Request, res: Response) {
     const { tailleurId } = req.params;
     try {
-        const tailleur = await prisma.users.findUnique({
-            where: { id: parseInt(tailleurId, 10) },
-        });
+      const tailleur = await prisma.users.findUnique({
+        where: { id: parseInt(tailleurId, 10) },
+      });
 
-        if (!tailleur || tailleur.role !== 'tailleur') {
-            return res.status(404).json({ message: "Tailleur non trouvé" });
-        }
+      if (!tailleur || tailleur.role !== "tailleur") {
+        return res.status(404).json({ message: "Tailleur non trouvé" });
+      }
 
-        return res.status(200).json(tailleur);
+      return res.status(200).json(tailleur);
     } catch (error) {
-        return res.status(500).json({ message: "Erreur serveur : " + error });
+      return res.status(500).json({ message: "Erreur serveur : " + error });
     }
   }
 
   static async filterByName(req: Request, res: Response) {
     const { name } = req.params;
     try {
-        const tailleurs = await prisma.users.findMany({
-            where: {
-                role: 'tailleur',
-                nom: {
-                    contains: name
-                }
-            }
-        });
+      const tailleurs = await prisma.users.findMany({
+        where: {
+          role: "tailleur",
+          nom: {
+            contains: name,
+          },
+        },
+      });
 
-        if (tailleurs.length === 0) {
-          return res.status(404).json({ message: "Tailleur non trouvé" });
-        }
+      if (tailleurs.length === 0) {
+        return res.status(404).json({ message: "Tailleur non trouvé" });
+      }
 
-        return res.status(200).json(tailleurs);
+      return res.status(200).json(tailleurs);
     } catch (error) {
-        return res.status(500).json({ message: "Erreur serveur : " + error });
+      return res.status(500).json({ message: "Erreur serveur : " + error });
     }
   }
 
-    //filterTailleurByCertificat
-    static async filterTailleurByCertificat(req: Request, res: Response) {
-      
-      //je veut filtrer les users qui ont le role tailleur et qui ont le certificat
-      try {
-        const filteredUsers = await prisma.users.findMany({
-          where: {certificat:true },
-        });
-        if (!filteredUsers) {
-          return res.status(404).json({ error: "Aucun utilisateur trouvé" });
-        }
-
-        res.status(200).json(filteredUsers);
-      } catch (error) {
-        res.status(500).json({ error: "Erreur interne du serveur" });
+  //filterTailleurByCertificat
+  static async filterTailleurByCertificat(req: Request, res: Response) {
+    //je veut filtrer les users qui ont le role tailleur et qui ont le certificat
+    try {
+      const filteredUsers = await prisma.users.findMany({
+        where: { certificat: true },
+      });
+      if (!filteredUsers) {
+        return res.status(404).json({ error: "Aucun utilisateur trouvé" });
       }
+
+      res.status(200).json(filteredUsers);
+    } catch (error) {
+      res.status(500).json({ error: "Erreur interne du serveur" });
     }
+  }
+
+  static async getConnectedUser(req: Request, res: Response) {
+    try {
+      const userId = req.user?.userID;
+      if (!userId) {
+        return res.status(401).json({
+          message: "Vous devez vous connecter pour effectuer cette action",
+        });
+      }
+
+      return res.status(200).json(userId);
+    } catch (err) {
+      console.error(err);
+    }
+  }
 }
