@@ -11,8 +11,6 @@ import StoryController from "../dist/StoryController.js";
 import ArticleController from "../dist/ArticleController.js";
 import PostArticleController from "../dist/PostArticleController.js";
 import CommentController from "../dist/CommentController.js";
-import LikeController from "../dist/LikeController.js";
-import DislikeController from "../dist/DislikeController.js";
 
 router
   .route("/register")
@@ -66,7 +64,9 @@ router
   .route("/myPosition")
   .get(auth, (req, res) => PrismaUserController.myPosition(req, res));
 
-router.route("/rang").get(auth, (req, res) => PrismaUserController.getTailleurRanking(req, res));
+router
+  .route("/rang")
+  .get(auth, (req, res) => PrismaUserController.getTailleurRanking(req, res));
 
 router
   .route("/model/create")
@@ -112,11 +112,19 @@ router
   .route("/post/create")
   .post(auth, (req, res) => PostController.createPost(req, res));
 
-router.route("/post/:postId/comments/create").post(auth, (req, res) => CommentController.addComment(req, res));
-router.route("/comment/:commentId").delete(auth, (req, res) => CommentController.deleteComment(req, res));
-router.route("/post/:postId/comments").get(auth, (req, res) => CommentController.getPostComments(req, res));
+router
+  .route("/post/:postId/comments/create")
+  .post(auth, (req, res) => CommentController.addComment(req, res));
+router
+  .route("/comment/:commentId")
+  .delete(auth, (req, res) => CommentController.deleteComment(req, res));
+router
+  .route("/post/:postId/comments")
+  .get(auth, (req, res) => CommentController.getPostComments(req, res));
 
-router.route("/post") .get(auth, (req, res) => PostController.getPosts(req, res));
+router
+  .route("/post")
+  .get(auth, (req, res) => PostController.getPosts(req, res));
 router
   .route("/post/:postId")
   .get(auth, (req, res) => PostController.getPostById(req, res));
@@ -132,25 +140,19 @@ router
 router
   .route("/post/favorite/create/:postId")
   .post(auth, (req, res) => PostController.addFavoris(req, res));
+
+router
+  .route("/user/favorites")
+  .get(auth, (req, res) => PostController.getUserFavorites(req, res));
+  
 router
   .route("/post/favorite/remove/:postId")
   .delete(auth, (req, res) => PostController.deleteFavoris(req, res));
 //router.route("/post/favorite").get(auth, (req, res) => PostController.getAllFavoris(req, res));
 
-router.route("/post/:postId/share").post(auth, (req, res) => PostController.partagerPost(req, res));
-  // Routes pour les likes
- router.route("/post/:postId/like").post(auth,(rep, res)=> LikeController.likePost(rep,res));
-router.route("/post/:postId/like/:likeID/unlike").post(auth,(rep, res)=> LikeController.unlikePost(rep,res));
-router.route("/post/:postId/likes").get(auth,(rep, res)=> LikeController.getPostLikes(rep,res));
-router.route("/post/:postId/likes/count").get(auth, (req, res) => LikeController.countPostLikes(req, res));
-
-
-
-// Routes pour les dislikes
-router.route("/post/:postId/dislike").post(auth, (req, res) => DislikeController.dislikePost(req, res));
-router.route("/post/:postId/undislike").post(auth, (req, res) => DislikeController.undislikePost(req, res));
-router.route("/post/:postId/Dislike").get(auth, (req, res) => DislikeController.getPostDislike(req, res));
-
+router
+  .route("/post/:postId/share")
+  .post(auth, (req, res) => PostController.partagerPost(req, res));
 router
   .route("/notifications")
   .get(auth, (req, res) => PostController.getNotifications(req, res));
@@ -160,7 +162,7 @@ router
 
 router
   .route("/commande")
-  .post(auth, (req, res) => CommandeModelController.createCommande(req, res));  
+  .post(auth, (req, res) => CommandeModelController.createCommande(req, res));
 router
   .route("/commandes/post/:postId")
   .post(auth, (req, res) => CommandeModelController.createCommande(req, res));
@@ -177,28 +179,73 @@ router
   .route("/commandes/:commandeId")
   .get(auth, (req, res) => CommandeModelController.getCommandeById(req, res));
 
-router.route('/user/discussions/create').post(auth, (req, res) => MessagesDiscussionController.createDiscussion(req, res));
-router.route('/user/discussions').get(auth, (req, res) => MessagesDiscussionController.getDiscussions(req, res));
-router.route('/user/discussions/:userId').get(auth, (req, res) => MessagesDiscussionController.getDiscussionsByUser(req, res));
-router.route('/user/discussions/:discussionUser/messages').post(auth, (req, res) => MessagesDiscussionController.sendMessageToDiscussion(req, res));
-router.route('/user/discussions/:discussionId/messages/:messageId').delete(auth, (req, res) => MessagesDiscussionController.deleteMessage(req, res));
-router.route('/user/discussions/:discussionId/messages/:messageId').put(auth, (req, res) => MessagesDiscussionController.modifierMessages(req, res));
-router.route('/user/chargeCredit').post(auth, (req, res) => PrismaUserController.chargeCredit(req, res));
+router
+  .route("/user/discussions/create")
+  .post(auth, (req, res) =>
+    MessagesDiscussionController.createDiscussion(req, res)
+  );
+router
+  .route("/user/discussions")
+  .get(auth, (req, res) =>
+    MessagesDiscussionController.getDiscussions(req, res)
+  );
+router
+  .route("/user/discussions/:userId")
+  .get(auth, (req, res) =>
+    MessagesDiscussionController.getDiscussionsByUser(req, res)
+  );
+router
+  .route("/user/discussions/:discussionUser/messages")
+  .post(auth, (req, res) =>
+    MessagesDiscussionController.sendMessageToDiscussion(req, res)
+  );
+router
+  .route("/user/discussions/:discussionId/messages/:messageId")
+  .delete(auth, (req, res) =>
+    MessagesDiscussionController.deleteMessage(req, res)
+  );
+router
+  .route("/user/discussions/:discussionId/messages/:messageId")
+  .put(auth, (req, res) =>
+    MessagesDiscussionController.modifierMessages(req, res)
+  );
+router
+  .route("/user/chargeCredit")
+  .post(auth, (req, res) => PrismaUserController.chargeCredit(req, res));
 
-router.route('/user/:userId/modifierMesure').put(auth, (req, res) => PrismaUserController.updateMeasurements(req, res));
-router.route('/user/:userId/addMesure').post(auth, (req, res) => PrismaUserController.addMesure(req, res));
-router.get('/user/findByName', auth, PrismaUserController.findByName);
+router
+  .route("/user/:userId/modifierMesure")
+  .put(auth, (req, res) => PrismaUserController.updateMeasurements(req, res));
+router
+  .route("/user/:userId/addMesure")
+  .post(auth, (req, res) => PrismaUserController.addMesure(req, res));
+router.get("/user/findByName", auth, PrismaUserController.findByName);
 
-router.route('/user/getMesure/:userId').get(auth, (req, res) => PrismaUserController.getMesureByUserId(req, res));
-router.route('/user/acheterBadge').post(auth, (req, res) => PrismaUserController.acheterBadge(req, res));
-router.route('/user/listeSouhaits/:id').post(auth, (req, res) => ListeSouhaitsController.listeSouhaits(req, res));
-router.route('/user/listeSouhaits').get(auth, (req, res) => ListeSouhaitsController.voirListeSouhaits(req, res));
+router
+  .route("/user/getMesure/:userId")
+  .get(auth, (req, res) => PrismaUserController.getMesureByUserId(req, res));
+router
+  .route("/user/acheterBadge")
+  .post(auth, (req, res) => PrismaUserController.acheterBadge(req, res));
+router
+  .route("/user/listeSouhaits/:id")
+  .post(auth, (req, res) => ListeSouhaitsController.listeSouhaits(req, res));
+router
+  .route("/user/listeSouhaits")
+  .get(auth, (req, res) => ListeSouhaitsController.voirListeSouhaits(req, res));
 
 router
   .route("/user/discussions/create")
   .post(auth, (req, res) =>
     MessagesDiscussionController.createDiscussion(req, res)
   );
+
+router
+  .route("/user/discussion/:discussionId")
+  .get(auth, (req, res) =>
+    MessagesDiscussionController.getDiscussionById(req, res)
+  );
+
 router
   .route("/user/discussions")
   .get(auth, (req, res) =>
@@ -250,14 +297,14 @@ router
   .route("/getConnectedUser")
   .get(auth, (req, res) => PrismaUserController.getConnectedUser());
 
-router.get("/signale/:userId", auth, PrismaUserController.reportUser);
+router.post("/signale/:userId", auth, PrismaUserController.reportUser);
 
 router
   .route("/followUser")
   .post(auth, (req, res) => PrismaUserController.followUser(req, res));
 
 router
-  .route("/unfollowUser")
+  .route("/unfollowUser") 
   .post(auth, (req, res) => PrismaUserController.unfollowUser(req, res));
 
 router
@@ -283,6 +330,10 @@ router
 router
   .route("/myFollowers")
   .get(auth, (req, res) => PrismaUserController.myFollowers(req, res));
+
+router
+  .route("/following")
+  .get(auth, (req, res) => PrismaUserController.Followings(req, res));
 
 router
   .route("/tailleurs/statistique")
