@@ -273,7 +273,7 @@ model UsersDiscussions {
 model UsersDiscussionsMessages {
   id               Int              @id @default(autoincrement())
   content          String?          @db.Text
-  createdAt        DateTime?        @default(now()) @db.Time()
+  createdAt        DateTime?        @default(now()) @db.DateTime(0)
   senderId         Int
   discussionId     Int
   file             String?          @db.VarChar(255)

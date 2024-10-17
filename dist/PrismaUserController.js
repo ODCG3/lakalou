@@ -271,6 +271,38 @@ export default class PrismaUserController {
             }
         });
     }
+    //getTotalNotes pour retourner la somme des notes de l'utilisateur par ID
+    // static async getTotalNotesForPostUser(req: Request, res: Response) {
+    //   const postId = parseInt(req.params.postId, 10);
+    //   try {
+    //     // Récupérer le post et l'utilisateurId associé
+    //     const post = await prisma.posts.findUnique({
+    //       where: { id: postId },
+    //       select: { utilisateurId: true },
+    //     });
+    //     if (!post) {
+    //       return res.status(404).json({ error: "Post non trouvé" });
+    //     }
+    //     // Récupérer toutes les notes de l'utilisateur
+    //     const userNotes = await prisma.usersNotes.findMany({
+    //       where: { userId: post.utilisateurId },
+    //       select: { rate: true },
+    //     });
+    //     // Calculer le total des notes
+    //     const totalNotes = userNotes.reduce(
+    //       (sum, note) => sum + (note.rate || 0),
+    //       0
+    //     );
+    //     res.status(200).json({
+    //       utilisateurId: post.utilisateurId,
+    //       totalNotes: totalNotes,
+    //     });
+    //   } catch (error) {
+    //     console.error("Erreur lors de la récupération des notes:", error);
+    //     res.status(500).json({ error: "Erreur interne du serveur" });
+    //   }
+    // }
+    //reportUser
     static getUserNotesFromPost(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             const { postId } = req.params; // On récupère le postId des paramètres
@@ -336,7 +368,6 @@ export default class PrismaUserController {
     //     res.status(500).json({ error: "Erreur interne du serveur" });
     //   }
     // }
-
     // Report User version1
     // static async reportUser(req: Request, res: Response) {
     //   const userId = req.user!.userID;
@@ -549,8 +580,7 @@ export default class PrismaUserController {
                     select: {
                         id: true,
                         // afichier les informations du user
-                        Users_Followers_followerIdToUsers: {
-
+                        Users_Followers_userIdToUsers: {
                             select: {
                                 id: true,
                                 nom: true,
@@ -571,7 +601,6 @@ export default class PrismaUserController {
                     message: "Erreur lors de la récupération des followers",
                     error: error,
                 });
-
             }
         });
     }
@@ -1053,7 +1082,6 @@ export default class PrismaUserController {
                         error: "Vous n'êtes pas autorisé à effectuer cette action.",
                     });
                 }
-
                 // Vérifier que l'utilisateur cible existe
                 const user = yield prisma.users.findUnique({
                     where: { id: Number(userId) },
@@ -1098,6 +1126,8 @@ export default class PrismaUserController {
     //addMesure
     //addMesure
     // Add or update measurements
+    //addMesure
+    // Add or update measurements
     static addMesure(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a;
@@ -1113,8 +1143,7 @@ export default class PrismaUserController {
                 const connectedUser = yield prisma.users.findUnique({
                     where: { id: connectedUserId },
                 });
-                if (!connectedUser || connectedUser.role !== 'tailleur') {
-
+                if (!connectedUser || connectedUser.role !== "tailleur") {
                     return res.status(403).json({
                         error: "Vous n'êtes pas autorisé à effectuer cette action.",
                     });
@@ -1577,17 +1606,15 @@ export default class PrismaUserController {
     }
     static getConnectedUser(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a;
             try {
-                const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
-
+                const userId = req.user.userID;
+                console.log(userId);
                 if (!userId) {
                     return res.status(401).json({
                         message: "Vous devez vous connecter pour effectuer cette action",
                     });
                 }
-                return res.status(200).json(userId);
-
+                res.status(200).json(userId);
             }
             catch (err) {
                 console.error(err);

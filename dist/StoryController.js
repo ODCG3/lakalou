@@ -273,7 +273,6 @@ const viewStory = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
     catch (error) {
         console.error(error);
-
         res.status(500).json({
             error: "Une erreur interne est survenue. Veuillez réessayer plus tard.",
         });
@@ -316,7 +315,6 @@ const getStoryViews = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     }
     catch (error) {
         res.status(500).json({ error: error.message });
-
     }
 });
 export default {

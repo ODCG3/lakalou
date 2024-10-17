@@ -84,7 +84,14 @@ export default class PostController {
                         Users: true,
                     },
                 });
-                res.status(200).json(posts);
+                // Ajout du comptage des likes pour chaque post
+                const postsWithLikesAndComments = yield Promise.all(posts.map((post) => __awaiter(this, void 0, void 0, function* () {
+                    const likeCount = yield prisma.likes.count({
+                        where: { postId: post.id },
+                    });
+                    return Object.assign(Object.assign({}, post), { likeCount, comments: post.Comments });
+                })));
+                res.status(200).json(postsWithLikesAndComments);
             }
             catch (error) {
                 res.status(500).json({ error: "Erreur interne du serveur" });

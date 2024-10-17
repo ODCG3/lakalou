@@ -101,7 +101,7 @@ router
 router
   .route("/story/other-user-stories")
   .get(auth, (req, res) => StoryController.getOtherUserStories(req, res));
-  
+
 
 router
   .route("/story/:id")
@@ -112,7 +112,7 @@ router
 router
   .route("/story/:id/views")
   .get(auth, (req, res) => StoryController.getStoryViews(req, res)); // Obtenir le nombre de vues
-  router
+router
   .route("/story/user-stories")
   .get(auth, (req, res) => StoryController.getUserStories(req, res)); // Obtenir le nombre de vues
 router
@@ -151,7 +151,7 @@ router
 router
   .route("/user/favorites")
   .get(auth, (req, res) => PostController.getUserFavorites(req, res));
-  
+
 router
   .route("/post/favorite/remove/:postId")
   .delete(auth, (req, res) => PostController.deleteFavoris(req, res));
@@ -169,7 +169,7 @@ router
 
 router
   .route("/commande")
-  .post(auth, (req, res) => CommandeModelController.createCommande(req, res));  
+  .post(auth, (req, res) => CommandeModelController.createCommande(req, res));
 
 router
   .route("/commandes/post/:postId")
@@ -251,6 +251,7 @@ router
   .route("/user/listeSouhaits")
   .get(auth, (req, res) => ListeSouhaitsController.voirListeSouhaits(req, res));
 
+router
   .route("/souhaits/:id")
   .delete(auth, (req, res) =>
     ListeSouhaitsController.supprimerSouhait(req, res)
@@ -332,7 +333,7 @@ router
   .post(auth, (req, res) => PrismaUserController.followUser(req, res));
 
 router
-  .route("/unfollowUser") 
+  .route("/unfollowUser")
   .post(auth, (req, res) => PrismaUserController.unfollowUser(req, res));
 
 router
