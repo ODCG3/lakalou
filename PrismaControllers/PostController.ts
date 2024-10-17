@@ -94,6 +94,7 @@ export default class PostController {
             where: { postId: post.id },
           });
 
+          
           return {
             ...post,
             likeCount,  // Ajoute le nombre de likes au post
