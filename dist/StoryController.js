@@ -171,6 +171,25 @@ const getStories = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
                 },
             }
         });
+        const storys = yield prisma.stories.findMany({
+            where: {
+                userId: {
+                    in: yield prisma.followers
+                        .findMany({
+                        where: {
+                            followerId: viewerId,
+                        },
+                        select: {
+                            userId: true, // Get the user IDs of users being followed
+                        },
+                    })
+                        .then((follows) => follows.map((follow) => follow.userId)), // Extract the user IDs
+                },
+            },
+            include: {
+                Models: true, // Include any related models if needed
+            },
+        });
         res.status(200).json(stories);
     }
     catch (error) {
@@ -254,6 +273,7 @@ const viewStory = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
     catch (error) {
         console.error(error);
+
         res.status(500).json({
             error: "Une erreur interne est survenue. Veuillez réessayer plus tard.",
         });
@@ -296,6 +316,7 @@ const getStoryViews = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     }
     catch (error) {
         res.status(500).json({ error: error.message });
+
     }
 });
 export default {

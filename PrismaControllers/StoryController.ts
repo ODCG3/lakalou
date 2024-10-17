@@ -194,6 +194,26 @@ const getStories = async (req: Request, res: Response) => {
       }
     });
 
+    const storys = await prisma.stories.findMany({
+      where: {
+        userId: {
+          in: await prisma.followers
+            .findMany({
+              where: {
+                followerId: viewerId,
+              },
+              select: {
+                userId: true, // Get the user IDs of users being followed
+              },
+            })
+            .then((follows) => follows.map((follow) => follow.userId)), // Extract the user IDs
+        },
+      },
+      include: {
+        Models: true, // Include any related models if needed
+      },
+    });
+
     res.status(200).json(stories);
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
@@ -244,8 +264,6 @@ const deleteStory = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Une erreur est survenue lors de la suppression de la story" });
   }
 };
-
-
 
 
 const viewStory = async (req: Request, res: Response) => {
@@ -317,6 +335,7 @@ const getUserStories = async (req: Request, res: Response) => {
     res.status(200).json(stories);
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
+
   }
 };
 
@@ -341,6 +360,7 @@ const getStoryViews = async (req: Request, res: Response) => {
     res.status(200).json({ views: story.Views, viewDetails: story.StoryViews });
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
+
   }
 };
 

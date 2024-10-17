@@ -7,7 +7,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 export default class PostController {
     static createPost(req, res) {
@@ -21,17 +21,25 @@ export default class PostController {
                     return res.status(404).json({ error: "Utilisateur non trouvé." });
                 }
                 if (connectedUser.role !== "tailleur") {
-                    return res.status(403).json({ error: "Seuls les tailleurs peuvent créer des posts." });
+                    return res
+                        .status(403)
+                        .json({ error: "Seuls les tailleurs peuvent créer des posts." });
                 }
                 const { modelId, description, titre } = req.body;
                 if (!modelId || !description || !titre) {
-                    return res.status(400).json({ error: "Tous les champs (modelId, description, titre) sont requis." });
+                    return res
+                        .status(400)
+                        .json({
+                        error: "Tous les champs (modelId, description, titre) sont requis.",
+                    });
                 }
                 const modelExists = yield prisma.models.findUnique({
                     where: { id: modelId },
                 });
                 if (!modelExists) {
-                    return res.status(404).json({ error: "Le modèle spécifié n'existe pas." });
+                    return res
+                        .status(404)
+                        .json({ error: "Le modèle spécifié n'existe pas." });
                 }
                 if ((connectedUser === null || connectedUser === void 0 ? void 0 : connectedUser.credits) > 0) {
                     const createdPost = yield prisma.posts.create({
@@ -42,33 +50,44 @@ export default class PostController {
                             titre,
                             datePublication: new Date(),
                             vues: 0,
-                        }
+                        },
                     });
                     yield prisma.users.update({
                         where: { id: utilisateurId },
-                        data: { credits: { decrement: 1 } }
+                        data: { credits: { decrement: 1 } },
                     });
                     // Envoyer des notifications aux abonnés du tailleur
                     yield this.notifyFollowers(utilisateurId, createdPost.id);
-                    res.status(201).json({ message: "Post créé avec succès", post: createdPost });
+                    res
+                        .status(201)
+                        .json({ message: "Post créé avec succès", post: createdPost });
                 }
                 else {
-                    res.status(403).json({ error: 'Vous n\'avez pas assez de crédits pour poster. Veuillez recharger votre compte.' });
+                    res
+                        .status(403)
+                        .json({
+                        error: "Vous n'avez pas assez de crédits pour poster. Veuillez recharger votre compte.",
+                    });
                 }
             }
             catch (error) {
-                res.status(500).json({ error: 'Erreur interne du serveur' });
+                res.status(500).json({ error: "Erreur interne du serveur" });
             }
         });
     }
     static getPosts(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const posts = yield prisma.posts.findMany();
+                const posts = yield prisma.posts.findMany({
+                    include: {
+                        Models: true,
+                        Users: true,
+                    },
+                });
                 res.status(200).json(posts);
             }
             catch (error) {
-                res.status(500).json({ error: 'Erreur interne du serveur' });
+                res.status(500).json({ error: "Erreur interne du serveur" });
             }
         });
     }
@@ -78,17 +97,17 @@ export default class PostController {
             try {
                 // Récupérer le post par son ID avec Prisma
                 const postData = yield prisma.posts.findUnique({
-                    where: { id: parseInt(postId) }
+                    where: { id: parseInt(postId) },
                 });
                 // Vérifier si le post existe
                 if (!postData) {
-                    return res.status(404).json({ error: 'Post not found' });
+                    return res.status(404).json({ error: "Post not found" });
                 }
                 // Retourner le post récupéré
                 res.status(200).json(postData);
             }
             catch (error) {
-                res.status(500).json({ error: 'Erreur interne du serveur' });
+                res.status(500).json({ error: "Erreur interne du serveur" });
             }
         });
     }
@@ -106,7 +125,9 @@ export default class PostController {
                 }
                 // Vérification si l'utilisateur est le créateur du post
                 if (post.utilisateurId !== utilisateurId) {
-                    return res.status(403).json({ error: "Vous n'êtes pas autorisé à supprimer ce post." });
+                    return res
+                        .status(403)
+                        .json({ error: "Vous n'êtes pas autorisé à supprimer ce post." });
                 }
                 // Suppression du post
                 yield prisma.posts.delete({
@@ -115,7 +136,7 @@ export default class PostController {
                 res.status(200).json({ message: "Post supprimé avec succès." });
             }
             catch (error) {
-                res.status(500).json({ error: 'Erreur interne du serveur.' });
+                res.status(500).json({ error: "Erreur interne du serveur." });
             }
         });
     }
@@ -125,7 +146,7 @@ export default class PostController {
             try {
                 const post = yield prisma.posts.update({
                     where: { id: parseInt(postId) },
-                    data: { vues: { increment: 1 } }
+                    data: { vues: { increment: 1 } },
                 });
                 if (!post) {
                     return res.status(404).json({ error: "Post non trouvé." });
@@ -133,7 +154,7 @@ export default class PostController {
                 res.status(200).json({ message: "Vue ajoutée avec succès" });
             }
             catch (error) {
-                res.status(500).json({ error: 'Erreur interne du serveur' });
+                res.status(500).json({ error: "Erreur interne du serveur" });
             }
         });
     }
@@ -143,7 +164,7 @@ export default class PostController {
             try {
                 // Récupérer le post avec le nombre de vues
                 const postData = yield prisma.posts.findUnique({
-                    where: { id: parseInt(postId) }
+                    where: { id: parseInt(postId) },
                 });
                 // Vérifier si le post existe
                 if (!postData) {
@@ -155,7 +176,7 @@ export default class PostController {
                 res.status(200).json({ vues: numberOfVues });
             }
             catch (error) {
-                res.status(500).json({ error: 'Erreur interne du serveur' });
+                res.status(500).json({ error: "Erreur interne du serveur" });
             }
         });
     }
@@ -175,24 +196,58 @@ export default class PostController {
                 const favorisExists = yield prisma.favoris.findFirst({
                     where: {
                         postId: parseInt(postId),
-                        userId: utilisateurId
-                    }
+                        userId: utilisateurId,
+                    },
                 });
                 if (favorisExists) {
-                    return res.status(400).json({ error: "Ce post est déjà dans vos favoris." });
+                    return res
+                        .status(400)
+                        .send("Ce post est déjà dans vos favoris.");
                 }
                 // Ajouter le post aux favoris
                 const favoris = yield prisma.favoris.create({
                     data: {
                         createDate: new Date(), // Utiliser la date actuelle
                         postId: parseInt(postId),
-                        userId: utilisateurId
-                    }
+                        userId: utilisateurId,
+                    },
                 });
-                res.status(201).json({ message: "Post ajouté aux favoris" });
+                return res
+                    .status(201)
+                    .send("Post ajouté aux favoris");
             }
             catch (error) {
-                res.status(500).json({ error: 'Erreur interne du serveur' });
+                res.status(500).json({ error: "Erreur interne du serveur" });
+            }
+        });
+    }
+    static getUserFavorites(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const userId = req.user.userID; // Assuming you have middleware that sets req.user
+            try {
+                const favorites = yield prisma.favoris.findMany({
+                    where: {
+                        userId: userId
+                    },
+                    include: {
+                        Posts: {
+                            select: {
+                                id: true,
+                                description: true,
+                                datePublication: true,
+                                // Add any other post fields you want to include
+                            }
+                        }
+                    },
+                    orderBy: {
+                        createDate: 'desc'
+                    }
+                });
+                res.status(200).json(favorites);
+            }
+            catch (error) {
+                console.error('Error fetching user favorites:', error);
+                res.status(500).send('Une erreur est survenue lors de la récupération des favoris.');
             }
         });
     }
@@ -233,21 +288,21 @@ export default class PostController {
                 const favoris = yield prisma.favoris.findFirst({
                     where: {
                         postId: parseInt(postId),
-                        userId: utilisateurId
-                    }
+                        userId: utilisateurId,
+                    },
                 });
                 if (!favoris) {
                     return res.status(404).json({ error: "Favori non trouvé." });
                 }
                 // Supprimer le favori
                 yield prisma.favoris.delete({
-                    where: { id: favoris.id } // Utiliser l'ID unique du favori
+                    where: { id: favoris.id }, // Utiliser l'ID unique du favori
                 });
                 res.status(200).json({ message: "Favori supprimé avec succès." });
             }
             catch (error) {
-                console.error('Erreur lors de la suppression du favori:', error); // Pour débogage
-                res.status(500).json({ error: 'Erreur interne du serveur' });
+                console.error("Erreur lors de la suppression du favori:", error); // Pour débogage
+                res.status(500).json({ error: "Erreur interne du serveur" });
             }
         });
     }
@@ -259,14 +314,14 @@ export default class PostController {
             try {
                 // Vérifier si le post existe
                 const postData = yield prisma.posts.findUnique({
-                    where: { id: parseInt(postId) }
+                    where: { id: parseInt(postId) },
                 });
                 if (!postData) {
                     return res.status(404).json({ error: "Post non trouvé." });
                 }
                 // Vérifier si l'utilisateur cible existe
                 const utilisateurCibleData = yield prisma.users.findUnique({
-                    where: { id: utilisateurCible }
+                    where: { id: utilisateurCible },
                 });
                 if (!utilisateurCibleData) {
                     return res.status(404).json({ error: "Utilisateur cible non trouvé." });
@@ -277,20 +332,20 @@ export default class PostController {
                         postId: parseInt(postId),
                         receiverId: utilisateurCible,
                         senderId: utilisateurId,
-                        sharedAt: new Date()
-                    }
+                        sharedAt: new Date(),
+                    },
                 });
                 if (!donneePartage) {
                     return res.status(500).json({ error: "Échec du partage du post." });
                 }
                 res.status(200).json({
                     message: "Post partagé avec succès.",
-                    partage: donneePartage
+                    partage: donneePartage,
                 });
             }
             catch (error) {
-                console.error('Erreur lors du partage du post:', error); // Pour débogage
-                res.status(500).json({ error: 'Erreur interne du serveur' });
+                console.error("Erreur lors du partage du post:", error); // Pour débogage
+                res.status(500).json({ error: "Erreur interne du serveur" });
             }
         });
     }
@@ -303,28 +358,28 @@ export default class PostController {
                     include: {
                         Followers_Followers_userIdToUsers: {
                             include: {
-                                Users_Followers_followerIdToUsers: true
-                            }
-                        }
-                    }
+                                Users_Followers_followerIdToUsers: true,
+                            },
+                        },
+                    },
                 });
                 if (!userData || !userData.Followers_Followers_userIdToUsers) {
-                    console.error('Utilisateur ou abonnés non trouvés pour la notification');
+                    console.error("Utilisateur ou abonnés non trouvés pour la notification");
                     return;
                 }
                 // Créer des notifications pour chaque abonné
-                const notifications = userData.Followers_Followers_userIdToUsers.map(followerRelation => ({
+                const notifications = userData.Followers_Followers_userIdToUsers.map((followerRelation) => ({
                     userId: followerRelation.followerId,
                     message: `L'utilisateur ${userData.nom} a créé un nouveau post.`,
-                    postId: postId
+                    postId: postId,
                 }));
                 // Enregistrer les notifications dans la base de données
                 yield prisma.usersNotifications.createMany({
-                    data: notifications
+                    data: notifications,
                 });
             }
             catch (error) {
-                console.error('Erreur lors de la notification des abonnés:', error);
+                console.error("Erreur lors de la notification des abonnés:", error);
             }
         });
     }
@@ -335,23 +390,27 @@ export default class PostController {
             try {
                 // Vérifier si la notification existe et appartient à l'utilisateur connecté
                 const notification = yield prisma.usersNotifications.findUnique({
-                    where: { id: parseInt(notificationId) }
+                    where: { id: parseInt(notificationId) },
                 });
                 if (!notification) {
                     return res.status(404).json({ error: "Notification non trouvée." });
                 }
                 if (notification.userId !== utilisateurId) {
-                    return res.status(403).json({ error: "Vous n'avez pas la permission de supprimer cette notification." });
+                    return res
+                        .status(403)
+                        .json({
+                        error: "Vous n'avez pas la permission de supprimer cette notification.",
+                    });
                 }
                 // Supprimer la notification
                 yield prisma.usersNotifications.delete({
-                    where: { id: parseInt(notificationId) }
+                    where: { id: parseInt(notificationId) },
                 });
                 res.status(200).json({ message: "Notification supprimée avec succès." });
             }
             catch (error) {
-                console.error('Erreur lors de la suppression de la notification:', error);
-                res.status(500).json({ error: 'Erreur interne du serveur' });
+                console.error("Erreur lors de la suppression de la notification:", error);
+                res.status(500).json({ error: "Erreur interne du serveur" });
             }
         });
     }
@@ -362,16 +421,20 @@ export default class PostController {
                 // Récupérer toutes les notifications de l'utilisateur
                 const notifications = yield prisma.usersNotifications.findMany({
                     where: { userId: utilisateurId },
-                    orderBy: { createdAt: 'desc' } // Ordre décroissant par date de création
+                    orderBy: { createdAt: "desc" }, // Ordre décroissant par date de création
                 });
                 if (notifications.length === 0) {
-                    return res.status(404).json({ message: "Aucune notification trouvée pour cet utilisateur." });
+                    return res
+                        .status(404)
+                        .json({
+                        message: "Aucune notification trouvée pour cet utilisateur.",
+                    });
                 }
                 res.status(200).json({ notifications });
             }
             catch (error) {
-                console.error('Erreur lors de la récupération des notifications:', error);
-                res.status(500).json({ error: 'Erreur interne du serveur' });
+                console.error("Erreur lors de la récupération des notifications:", error);
+                res.status(500).json({ error: "Erreur interne du serveur" });
             }
         });
     }

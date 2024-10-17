@@ -7,7 +7,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 export default class MessagesDiscussionController {
     static createDiscussion(req, res) {
@@ -16,7 +16,7 @@ export default class MessagesDiscussionController {
                 const { receiverId } = req.body;
                 const userId = req.user.userID; // Assurez-vous que req.user.userID est correctement défini
                 if (!receiverId) {
-                    return res.status(400).json({ message: 'L\'ID du receveur est requis' });
+                    return res.status(400).json({ message: "L'ID du receveur est requis" });
                 }
                 const receiverIdNumber = parseInt(receiverId);
                 if (receiverIdNumber === userId) {
@@ -34,7 +34,7 @@ export default class MessagesDiscussionController {
                 });
                 if (existingDiscussion) {
                     return res
-                        .status(403)
+                        .status(409)
                         .json({ message: "Une discussion avec cet utilisateur existe déjà" });
                 }
                 const discussion = yield prisma.usersDiscussions.create({
@@ -43,11 +43,13 @@ export default class MessagesDiscussionController {
                         receiverId: receiverIdNumber,
                     },
                 });
-                res.status(201).json({ message: "Discussion créée avec succès", discussion });
+                res
+                    .status(201)
+                    .json({ message: "Discussion créée avec succès", discussion });
             }
             catch (error) {
                 console.error(error);
-                res.status(500).json({ error: error });
+                res.status(500).json({ message: "Erreur serveur : " });
             }
         });
     }
@@ -59,12 +61,40 @@ export default class MessagesDiscussionController {
                     where: {
                         OR: [{ userId }, { receiverId: userId }],
                     },
-                    // include: {
-                    //   Users_UsersDiscussions_receiverIdToUsers: true,
-                    //   Users_UsersDiscussions_userIdToUsers: true,
-                    // },
+                    include: {
+                        Users_UsersDiscussions_receiverIdToUsers: true,
+                        UsersDiscussionsMessages: true,
+                        Users_UsersDiscussions_userIdToUsers: true,
+                    },
                 });
+                console.log(discussions);
                 res.status(200).json(discussions);
+            }
+            catch (error) {
+                console.error(error);
+                res.status(500).json({ error: error });
+            }
+        });
+    }
+    static getDiscussionById(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const discussionId = parseInt(req.params.discussionId);
+                console.log(discussionId);
+                const discussion = yield prisma.usersDiscussions.findFirst({
+                    where: {
+                        id: discussionId,
+                    },
+                    include: {
+                        Users_UsersDiscussions_receiverIdToUsers: true,
+                        Users_UsersDiscussions_userIdToUsers: true,
+                        UsersDiscussionsMessages: true,
+                    },
+                });
+                if (!discussion) {
+                    return res.status(404).json({ message: "Discussion introuvable" });
+                }
+                res.status(200).json(discussion);
             }
             catch (error) {
                 console.error(error);
@@ -102,17 +132,16 @@ export default class MessagesDiscussionController {
             try {
                 const discussionUserId = parseInt(req.params.discussionUser);
                 const userId = req.user.userID;
-                const { messageContent } = req.body;
+                const { messageContent, file } = req.body;
                 // Vérifier si le message est vide ou ne contient que des espaces
                 if (!messageContent || messageContent.trim() === "") {
-                    return res.status(400).json({ message: "Le message ne peut pas être vide" });
+                    return res
+                        .status(400)
+                        .json({ message: "Le message ne peut pas être vide" });
                 }
                 const discussion = yield prisma.usersDiscussions.findFirst({
                     where: {
-                        OR: [
-                            { userId, receiverId: discussionUserId },
-                            { userId: discussionUserId, receiverId: userId },
-                        ],
+                        id: discussionUserId
                     },
                 });
                 if (!discussion) {
@@ -123,6 +152,7 @@ export default class MessagesDiscussionController {
                         content: messageContent,
                         senderId: userId,
                         discussionId: discussion.id,
+                        file: file
                     },
                 });
                 res.status(201).json({ message: "Message envoyé avec succès" });
@@ -168,7 +198,9 @@ export default class MessagesDiscussionController {
                 const newContent = req.body.newContent;
                 // Vérifier si le nouveau contenu est vide ou ne contient que des espaces
                 if (!newContent || newContent.trim() === "") {
-                    return res.status(400).json({ message: "Aucune modification enregistrée" });
+                    return res
+                        .status(400)
+                        .json({ message: "Aucune modification enregistrée" });
                 }
                 const discussion = yield prisma.usersDiscussions.findFirst({
                     where: { id: discussionId, OR: [{ userId }, { receiverId: userId }] },

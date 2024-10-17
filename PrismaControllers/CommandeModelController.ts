@@ -15,6 +15,7 @@ export default class CommandeModelController {
       let ownerId: number | null = null;
       let post = null;
       let story = null;
+      let article = articles ?? []
 
       // Vérifier si c'est un post ou une story
       if (postId && !storyId) {
@@ -150,6 +151,8 @@ export default class CommandeModelController {
         });
       }
 
+
+
       // Créer la commande
       const commande = await prisma.commandeModels.create({
         data: {
@@ -160,7 +163,7 @@ export default class CommandeModelController {
           adresseLivraison: adresseLivraison,
           dateLivraison: new Date(dateLivraison),
           articles: {
-            connect: articles.map((article: any) => ({
+            connect: article.map((article: any) => ({
               id: parseInt(article.id), // Ensure that the ID is parsed as an integer
             })),
           },
@@ -169,7 +172,7 @@ export default class CommandeModelController {
 
 
       let montant = 0;
-      if (articles.length > 0) {
+      if (articles && articles.length > 0) {
         const articlesPrices = await Promise.all(
           articles.map(async (article: any) => {
             const data = await prisma.articles.findUnique({
