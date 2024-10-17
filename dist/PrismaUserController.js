@@ -336,6 +336,7 @@ export default class PrismaUserController {
     //     res.status(500).json({ error: "Erreur interne du serveur" });
     //   }
     // }
+
     // Report User version1
     // static async reportUser(req: Request, res: Response) {
     //   const userId = req.user!.userID;
@@ -548,7 +549,8 @@ export default class PrismaUserController {
                     select: {
                         id: true,
                         // afichier les informations du user
-                        Users_Followers_userIdToUsers: {
+                        Users_Followers_followerIdToUsers: {
+
                             select: {
                                 id: true,
                                 nom: true,
@@ -569,6 +571,7 @@ export default class PrismaUserController {
                     message: "Erreur lors de la récupération des followers",
                     error: error,
                 });
+
             }
         });
     }
@@ -1045,11 +1048,12 @@ export default class PrismaUserController {
                 const connectedUser = yield prisma.users.findUnique({
                     where: { id: connectedUserId },
                 });
-                if (!connectedUser || connectedUser.role !== "tailleur") {
+                if (!connectedUser || connectedUser.role !== 'tailleur') {
                     return res.status(403).json({
                         error: "Vous n'êtes pas autorisé à effectuer cette action.",
                     });
                 }
+
                 // Vérifier que l'utilisateur cible existe
                 const user = yield prisma.users.findUnique({
                     where: { id: Number(userId) },
@@ -1109,7 +1113,8 @@ export default class PrismaUserController {
                 const connectedUser = yield prisma.users.findUnique({
                     where: { id: connectedUserId },
                 });
-                if (!connectedUser || connectedUser.role !== "tailleur") {
+                if (!connectedUser || connectedUser.role !== 'tailleur') {
+
                     return res.status(403).json({
                         error: "Vous n'êtes pas autorisé à effectuer cette action.",
                     });
@@ -1572,15 +1577,17 @@ export default class PrismaUserController {
     }
     static getConnectedUser(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
+            var _a;
             try {
-                const userId = req.user.userID;
-                console.log(userId);
+                const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
+
                 if (!userId) {
                     return res.status(401).json({
                         message: "Vous devez vous connecter pour effectuer cette action",
                     });
                 }
-                res.status(200).json(userId);
+                return res.status(200).json(userId);
+
             }
             catch (err) {
                 console.error(err);
