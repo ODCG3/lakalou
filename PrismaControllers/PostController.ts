@@ -213,7 +213,7 @@ export default class PostController {
       if (favorisExists) {
         return res
           .status(400)
-          .json({ error: "Ce post est déjà dans vos favoris." });
+          .send("Ce post est déjà dans vos favoris.");
       }
 
       // Ajouter le post aux favoris
@@ -225,12 +225,44 @@ export default class PostController {
         },
       });
 
-      res.status(201).json({ message: "Post ajouté aux favoris" });
-    } catch (error) {
+      return res
+        .status(201)
+        .send("Post ajouté aux favoris");
+    }
+     catch (error) {
       res.status(500).json({ error: "Erreur interne du serveur" });
     }
   }
 
+  static async getUserFavorites(req: Request, res: Response) {
+    const userId = req.user!.userID; // Assuming you have middleware that sets req.user
+    
+    try {
+      const favorites = await prisma.favoris.findMany({
+        where: {
+          userId: userId
+        },
+        include: {
+          Posts: {
+            select: {
+              id: true,
+              description: true,
+              datePublication: true,
+              // Add any other post fields you want to include
+            }
+          }
+        }, 
+        orderBy: {
+          createDate: 'desc'
+        }
+      });
+  
+      res.status(200).json(favorites);
+    } catch (error) {
+      console.error('Error fetching user favorites:', error);
+      res.status(500).send('Une erreur est survenue lors de la récupération des favoris.');
+    }
+  }
   // static async getAllFavoris(req: Request, res: Response) {
   //     const utilisateurId = req.user!.userID; // Assurez-vous que req.user est défini
   //     console.log(utilisateurId);

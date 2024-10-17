@@ -336,38 +336,82 @@ export default class PrismaUserController {
     //     res.status(500).json({ error: "Erreur interne du serveur" });
     //   }
     // }
-    //reportUser
+    // Report User version1
+    // static async reportUser(req: Request, res: Response) {
+    //   const userId = req.user!.userID;
+    //   const { reason } = req.body;
+    //   if (!reason || typeof reason !== "string") {
+    //     return res
+    //       .status(400)
+    //       .json({ error: "La raison du signalement est requise" });
+    //   }
+    //   console.log(reason);
+    //   console.log(userId);
+    //   try {
+    //     const userToReport = await prisma.users.findUnique({
+    //       where: { id: userId },
+    //       include: { UsersSignals_UsersSignals_reporterIdToUsers: true },
+    //     });
+    //     /* console.log(userToReport);  */
+    //     if (!userToReport) {
+    //       return res.status(402).json({ error: "Utilisateur non trouvé" });
+    //     }
+    //     const reporterId = req.user?.userID;
+    //     if (!reporterId) {
+    //       return res
+    //         .status(403)
+    //         .json({ error: "Connectez-vous d'abord pour signaler" });
+    //     }
+    //     if (!(userToReport.id === reporterId)) {
+    //       return res
+    //         .status(403)
+    //         .json({ error: "Vous ne pouvez pas vous signaler vous-même" });
+    //     }
+    //     const alreadyReported =
+    //       userToReport.UsersSignals_UsersSignals_reporterIdToUsers.some(
+    //         (signal) => signal.reporterId === reporterId
+    //       );
+    //     if (alreadyReported) {
+    //       return res
+    //         .status(405)
+    //         .json({ error: "Vous avez déjà signalé cet utilisateur" });
+    //     }
+    //     const signal = await prisma.usersSignals.create({
+    //       data: {
+    //         reason,
+    //         reporterId: reporterId,
+    //         userId: userToReport.id,
+    //       },
+    //     });
+    //     res
+    //       .status(200)
+    //       .json({ message: "Signalement ajouté avec succès", signal });
+    //   } catch (error) {
+    //     res.status(500).json({ error: "Erreur interne du serveur" });
+    //   }
+    // }
+    // Report User version2
     static reportUser(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a;
-            const userId = req.user.userID;
-            const { reason } = req.body;
+            const reporterId = req.user.userID; // ID du reporter
+            const { userId, reason } = req.body; // Récupérer l'ID de l'utilisateur à signaler et la raison
             if (!reason || typeof reason !== "string") {
                 return res
                     .status(400)
                     .json({ error: "La raison du signalement est requise" });
             }
-            console.log(reason);
-            console.log(userId);
+            if (userId === reporterId) {
+                return res
+                    .status(403)
+                    .json({ error: "Vous ne pouvez pas vous signaler vous-même" });
+            }
             try {
                 const userToReport = yield prisma.users.findUnique({
                     where: { id: userId },
                     include: { UsersSignals_UsersSignals_reporterIdToUsers: true },
                 });
-                /* console.log(userToReport);  */
                 if (!userToReport) {
-                    return res.status(402).json({ error: "Utilisateur non trouvé" });
-                }
-                const reporterId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
-                if (!reporterId) {
-                    return res
-                        .status(403)
-                        .json({ error: "Connectez-vous d'abord pour signaler" });
-                }
-                if (!(userToReport.id === reporterId)) {
-                    return res
-                        .status(403)
-                        .json({ error: "Vous ne pouvez pas vous signaler vous-même" });
+                    return res.status(404).json({ error: "Utilisateur non trouvé" });
                 }
                 const alreadyReported = userToReport.UsersSignals_UsersSignals_reporterIdToUsers.some((signal) => signal.reporterId === reporterId);
                 if (alreadyReported) {
@@ -378,11 +422,11 @@ export default class PrismaUserController {
                 const signal = yield prisma.usersSignals.create({
                     data: {
                         reason,
-                        reporterId: reporterId,
-                        userId: userToReport.id,
+                        reporterId,
+                        userId,
                     },
                 });
-                res
+                return res
                     .status(200)
                     .json({ message: "Signalement ajouté avec succès", signal });
             }
@@ -499,7 +543,8 @@ export default class PrismaUserController {
             }
             try {
                 const followers = yield prisma.followers.findMany({
-                    where: { followerId: (_b = req.user) === null || _b === void 0 ? void 0 : _b.userID },
+                    // where: { followerId: req.user?.userID },
+                    where: { userId: (_b = req.user) === null || _b === void 0 ? void 0 : _b.userID },
                     select: {
                         id: true,
                         // afichier les informations du user
@@ -621,22 +666,32 @@ export default class PrismaUserController {
             try {
                 const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
                 if (!userId) {
-                    return res.status(401).json({
-                        message: "Vous devez vous connecter pour effectuer cette action",
-                    });
+                    return res
+                        .status(401)
+                        .send("Vous devez vous connecter pour effectuer cette action");
                 }
                 const user = yield prisma.users.findUnique({
                     where: { id: userId },
                 });
                 if (!user) {
-                    return res.status(404).json({ message: "Utilisateur non trouvé" });
+                    return res.status(404).send("Utilisateur non trouvé");
                 }
                 if (((_b = user === null || user === void 0 ? void 0 : user.credits) !== null && _b !== void 0 ? _b : 0) <= 1) {
-                    return res.status(402).json({
-                        message: "Vous n'avez pas assez de crédits pour changer de rôle",
-                    });
+                    return res
+                        .status(402)
+                        .send("Vous n'avez pas assez de crédits pour changer de rôle");
                 }
-                const newRole = user.role === "visiteur" ? "tailleur" : "visiteur";
+                // const newRole = user.role === "visiteur" ? "tailleur" : "visiteur";
+                const newRole = req.body.newRole;
+                if (newRole === user.role) {
+                    return res.status(400).send(`Votre profil est dèjas sur: : ${newRole}`);
+                }
+                const validRoles = ["tailleur", "vendeur", "visiteur"];
+                if (!validRoles.includes(newRole)) {
+                    return res
+                        .status(400)
+                        .send("Rôle invalide, choisir parmi tailleur, vendeur ou visiteur");
+                }
                 const updatedUser = yield prisma.users.update({
                     where: { id: userId },
                     data: {
@@ -644,15 +699,11 @@ export default class PrismaUserController {
                         credits: { decrement: 1 },
                     },
                 });
-                return res
-                    .status(200)
-                    .json({ message: "Rôle mis à jour avec succès", user: updatedUser });
+                return res.status(200).send("Rôle mis à jour avec succès");
             }
             catch (error) {
                 console.error(error);
-                return res
-                    .status(500)
-                    .json({ message: "Erreur lors du changement de rôle", error: error });
+                return res.status(500).send("Erreur lors du changement de rôle");
             }
         });
     }
@@ -994,7 +1045,7 @@ export default class PrismaUserController {
                 const connectedUser = yield prisma.users.findUnique({
                     where: { id: connectedUserId },
                 });
-                if (!connectedUser || connectedUser.role !== 'tailleur') {
+                if (!connectedUser || connectedUser.role !== "tailleur") {
                     return res.status(403).json({
                         error: "Vous n'êtes pas autorisé à effectuer cette action.",
                     });
@@ -1058,7 +1109,7 @@ export default class PrismaUserController {
                 const connectedUser = yield prisma.users.findUnique({
                     where: { id: connectedUserId },
                 });
-                if (!connectedUser || connectedUser.role !== 'tailleur') {
+                if (!connectedUser || connectedUser.role !== "tailleur") {
                     return res.status(403).json({
                         error: "Vous n'êtes pas autorisé à effectuer cette action.",
                     });
