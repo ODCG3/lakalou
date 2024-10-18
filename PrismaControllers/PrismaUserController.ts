@@ -495,45 +495,53 @@ export default class PrismaUserController {
   static async unfollowUser(req: Request, res: Response) {
     const userId = req.user!.userID;
     const followerId = Number(req.body.followerId);
-    console.log(followerId);
-    console.log(userId);
+    
     if (!userId) {
-      return res
-        .status(400)
-        .json({ error: "L'id de l'utilisateur à désabonner est obligatoire" });
+      return res.status(400).json({
+        error: "L'id de l'utilisateur à désabonner est obligatoire",
+      });
     }
-
+  
     try {
       if (!followerId) {
         return res.status(401).json({
           message: "Vous devez vous connecter pour effectuer cette action",
         });
       }
-
+  
       const userToUnfollow = await prisma.users.findFirst({
         where: { id: followerId },
       });
-
+  
       if (!userToUnfollow) {
         return res.status(404).json({ message: "Utilisateur non trouvé" });
       }
-
+  
       if (userToUnfollow.id === userId) {
         return res
           .status(400)
           .json({ message: "Vous ne pouvez pas vous désabonner de vous-même" });
       }
-
+  
+      // Vérifier si l'utilisateur connecté suit bien l'utilisateur ciblé
+      const followRelation = await prisma.followers.findFirst({
+        where: {
+          followerId: followerId,
+        },
+      });
+  
+      if (!followRelation) {
+        return res.status(404).json({
+          message: "Relation de suivi introuvable, vous ne suivez pas cet utilisateur",
+        });
+      }
+  
       // Retirer l'utilisateur connecté de la liste des followers de l'utilisateur ciblé
       await prisma.followers.delete({
-        where: { id: followerId },
+        where: { id: followRelation.id },
       });
-
-      // Retirer l'utilisateur ciblé de la liste des followings de l'utilisateur connecté
-
-      return res
-        .status(200)
-        .json({ message: "Désabonnement effectué avec succès" });
+  
+      return res.status(200).json({ message: "Désabonnement effectué avec succès" });
     } catch (err) {
       console.error(err);
       return res
@@ -541,6 +549,7 @@ export default class PrismaUserController {
         .json({ message: "Erreur lors du désabonnement", error: err });
     }
   }
+  
 
   // Méthode followUser
   static async followUser(req: Request, res: Response) {

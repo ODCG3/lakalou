@@ -403,12 +403,10 @@ export default class PrismaUserController {
         return __awaiter(this, void 0, void 0, function* () {
             const userId = req.user.userID;
             const followerId = Number(req.body.followerId);
-            console.log(followerId);
-            console.log(userId);
             if (!userId) {
-                return res
-                    .status(400)
-                    .json({ error: "L'id de l'utilisateur à désabonner est obligatoire" });
+                return res.status(400).json({
+                    error: "L'id de l'utilisateur à désabonner est obligatoire",
+                });
             }
             try {
                 if (!followerId) {
@@ -427,14 +425,22 @@ export default class PrismaUserController {
                         .status(400)
                         .json({ message: "Vous ne pouvez pas vous désabonner de vous-même" });
                 }
+                // Vérifier si l'utilisateur connecté suit bien l'utilisateur ciblé
+                const followRelation = yield prisma.followers.findFirst({
+                    where: {
+                        followerId: followerId,
+                    },
+                });
+                if (!followRelation) {
+                    return res.status(404).json({
+                        message: "Relation de suivi introuvable, vous ne suivez pas cet utilisateur",
+                    });
+                }
                 // Retirer l'utilisateur connecté de la liste des followers de l'utilisateur ciblé
                 yield prisma.followers.delete({
-                    where: { id: followerId },
+                    where: { id: followRelation.id },
                 });
-                // Retirer l'utilisateur ciblé de la liste des followings de l'utilisateur connecté
-                return res
-                    .status(200)
-                    .json({ message: "Désabonnement effectué avec succès" });
+                return res.status(200).json({ message: "Désabonnement effectué avec succès" });
             }
             catch (err) {
                 console.error(err);
