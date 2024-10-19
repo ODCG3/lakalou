@@ -316,4 +316,8 @@ router
   .route("/acheterBadgeVandeur/:id")
   .post(auth, (req, res) => PrismaUserController.acheterBadgeVandeur(req, res));
 
+router
+  .route("/user/abonnementPremium")
+  .post(auth, (req, res) => PrismaUserController.abonnementPremium(req, res));
+
 export default router;

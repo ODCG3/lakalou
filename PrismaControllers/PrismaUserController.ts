@@ -1795,4 +1795,64 @@ static async findByName(req: Request, res: Response) {
       console.error(err);
     }
   }
+
+  static async abonnementPremium(req: Request, res: Response) {
+    const userId = req.user?.userID;// ID de l'utilisateur connecté via token/session
+
+    try {
+      // Récupérer l'utilisateur et ses followers
+      const user = await prisma.users.findUnique({
+        where: { id: userId},
+        include: {
+          Followers_Followers_userIdToUsers: true, // Inclure les followers de l'utilisateur
+        },
+      });
+
+      // Vérifier si l'utilisateur existe
+      if (!user) {
+        return res.status(404).json({ message: "Utilisateur non trouvé." });
+      }
+
+      // Vérifier si l'utilisateur est un tailleur
+      if (user.role !== 'tailleur') {
+        return res.status(403).json({ message: "Seuls les tailleurs peuvent s'abonner au service premium." });
+      }
+
+      // Vérifier si l'utilisateur est déjà premium
+      if (user.status === 'premium') {
+        return res.status(400).json({ message: "Vous êtes déjà abonné au service premium." });
+      }
+
+      // Vérifier le nombre de followers
+      const followerCount = user.Followers_Followers_userIdToUsers.length;
+      if (followerCount < 1) {
+        return res.status(400).json({ message: "Vous devez avoir au moins 10 followers pour vous abonner au service premium." });
+      }
+
+      // Gérer le cas où user.credits est null
+      const userCredits = user.credits ?? 0; // Utilise 0 si user.credits est null
+
+      // Vérifier les crédits
+      if (userCredits < 5) {
+        return res.status(400).json({ message: "Vous n'avez pas assez de crédits. Il vous faut au moins 5 crédits pour vous abonner." });
+      }
+
+      // Si les conditions sont remplies, déduire 5 crédits et mettre à jour le statut à "premium"
+      const updatedUser = await prisma.users.update({
+        where: { id: userId },
+        data: {
+          credits: userCredits - 5,
+          status: 'premium',
+        },
+      });
+
+      return res.status(200).json({
+        message: "L'abonnement premium a été réussi avec succès.",
+        user: updatedUser,
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: "Erreur lors de l'abonnement premium." });
+    }
+  }
 }

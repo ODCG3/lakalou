@@ -42,5 +42,6 @@ export default class PrismaUserController {
     static filterByName(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
     static filterTailleurByCertificat(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static getConnectedUser(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+    static abonnementPremium(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
 }
 export {};
