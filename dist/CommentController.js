@@ -85,8 +85,6 @@ export default class CommentController {
             }
         });
     }
-
-    // Récupérer les commentaires d'un post
     // Ajouter une réponse à un commentaire
     static addReply(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -119,11 +117,10 @@ export default class CommentController {
         });
     }
     // Récupérer les commentaires d'un post avec les réponses imbriquées
-
     static getPostComments(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const postId = parseInt(req.params.postId);
+                const postId = parseInt(req.params.postId, 10);
                 const post = yield prisma.posts.findUnique({
                     where: { id: postId },
                     include: {
@@ -141,8 +138,7 @@ export default class CommentController {
                     },
                 });
                 if (!post) {
-                    res.status(404).json({ msg: "Post non trouvé" });
-                    return;
+                    return res.status(404).json({ msg: "Post non trouvé" });
                 }
                 const commentsWithReplies = post.Comments.map((comment) => {
                     var _a, _b, _c;
@@ -169,10 +165,10 @@ export default class CommentController {
                     });
                 });
                 return res.json({ comments: commentsWithReplies });
-
             }
             catch (err) {
-                res.status(500).send("Erreur serveur");
+                console.error("Erreur lors de la récupération des commentaires :", err);
+                return res.status(500).json({ msg: "Erreur serveur", error: err });
             }
         });
     }

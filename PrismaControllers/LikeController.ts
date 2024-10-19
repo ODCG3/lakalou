@@ -8,8 +8,17 @@ export default class LikeController {
   static async likePost(req: Request, res: Response): Promise<void> {
     try {
       const { postId } = req.params;
-      const userId = req.user!.userID; // Récupérer l'utilisateur depuis le token
-      
+      const userId = req.user!.userID;
+  
+      // Vérifier si le post existe
+      const post = await prisma.posts.findUnique({
+        where: { id: parseInt(postId, 10) },
+      });
+  
+      if (!post) {
+        res.status(404).json({ message: "Le post n'existe pas." });
+      }
+  
       // Vérifier si le like existe déjà
       const existingLike = await prisma.likes.findFirst({
         where: {
@@ -17,36 +26,25 @@ export default class LikeController {
           postId: parseInt(postId, 10),
         },
       });
-
-    if (existingLike) {
-      res.status(400).json({ message: "Vous avez déjà aimé ce post." });
-      return;
-    }
-
-    // Créer un nouveau like
-    const like = await prisma.likes.create({
-      data: {
-        userId: userId,
-        postId: parseInt(postId),
-      },
-    });
-
-    // Mettre à jour le nombre de likes sur le post
-    const post = await prisma.posts.update({
-      where: { id: parseInt(postId, 10) },
-      data: {
-        Likes: {
-          connect: { id: userId },
+  
+      if (existingLike) {
+        res.status(400).json({ message: "Vous avez déjà aimé ce post." });
+      }
+  
+      // Créer un nouveau like
+      const like = await prisma.likes.create({
+        data: {
+          userId: userId,
+          postId: parseInt(postId, 10),
         },
-      },
-    });
-
-    // Envoyer un message de succès
-    res.status(200).json({ message: "Post aimé avec succès.", like });
-  } catch (error) {
-    res.status(500).json({ message: "Erreur du serveur.", error });
+      });
+  
+      res.status(201).json({ message: "Post aimé avec succès.", like });
+    } catch (error) {
+      res.status(500).json({ message: "Erreur du serveur.", error });
+    }
   }
-};
+  
 
 // Retirer un like
 static async unlikePost(req: Request,res: Response): Promise<void> {
