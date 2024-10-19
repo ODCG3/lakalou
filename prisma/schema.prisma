@@ -236,9 +236,9 @@ model Users {
 model Mesures {
   id                Int   @id @default(autoincrement())
   cou               Float
-  longueurPantallon  Float
+  longueurPantallon Float
   epaule            Float
-  longueurManche     Float
+  longueurManche    Float
   hanche            Float
   poitrine          Float
   cuisse            Float
@@ -249,7 +249,6 @@ model Mesures {
   UserID            Int   @unique
   Users             Users @relation(fields: [UserID], references: [id])
 }
-
 
 model UsersDiscussions {
   id                                       Int                        @id @default(autoincrement())
@@ -266,9 +265,10 @@ model UsersDiscussions {
 model UsersDiscussionsMessages {
   id               Int              @id @default(autoincrement())
   content          String?          @db.Text
-  createdAt        DateTime?        @default(now()) @db.DateTime(0)
+  createdAt        DateTime?        @default(now()) @db.Time()
   senderId         Int
   discussionId     Int
+  file             String?          @db.VarChar(255)
   Users            Users            @relation(fields: [senderId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "UsersDiscussionsMessages_ibfk_1")
   UsersDiscussions UsersDiscussions @relation(fields: [discussionId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "UsersDiscussionsMessages_ibfk_2")
 

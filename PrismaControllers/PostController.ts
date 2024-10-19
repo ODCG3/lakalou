@@ -77,13 +77,13 @@ export default class PostController {
       res.status(500).json({ error: "Erreur interne du serveur" });
     }
   }
+
   static async getPosts(req: Request, res: Response) {
     try {
       const posts = await prisma.posts.findMany({
         include: {
           Models: true,
           Users: true,
-          Comments: true,  // Inclure les commentaires pour chaque post
         },
       });
 
@@ -104,8 +104,8 @@ export default class PostController {
       );
 
       res.status(200).json(postsWithLikesAndComments);
+
     } catch (error) {
-      console.error("Erreur lors de la récupération des posts :", error);
       res.status(500).json({ error: "Erreur interne du serveur" });
     }
   }
@@ -231,7 +231,7 @@ export default class PostController {
       if (favorisExists) {
         return res
           .status(400)
-          .json({ error: "Ce post est déjà dans vos favoris." });
+          .send("Ce post est déjà dans vos favoris.");
       }
 
       // Ajouter le post aux favoris
@@ -243,12 +243,44 @@ export default class PostController {
         },
       });
 
-      res.status(201).json({ message: "Post ajouté aux favoris" });
-    } catch (error) {
+      return res
+        .status(201)
+        .send("Post ajouté aux favoris");
+    }
+     catch (error) {
       res.status(500).json({ error: "Erreur interne du serveur" });
     }
   }
 
+  static async getUserFavorites(req: Request, res: Response) {
+    const userId = req.user!.userID; // Assuming you have middleware that sets req.user
+    
+    try {
+      const favorites = await prisma.favoris.findMany({
+        where: {
+          userId: userId
+        },
+        include: {
+          Posts: {
+            select: {
+              id: true,
+              description: true,
+              datePublication: true,
+              // Add any other post fields you want to include
+            }
+          }
+        }, 
+        orderBy: {
+          createDate: 'desc'
+        }
+      });
+  
+      res.status(200).json(favorites);
+    } catch (error) {
+      console.error('Error fetching user favorites:', error);
+      res.status(500).send('Une erreur est survenue lors de la récupération des favoris.');
+    }
+  }
   // static async getAllFavoris(req: Request, res: Response) {
   //     const utilisateurId = req.user!.userID; // Assurez-vous que req.user est défini
   //     console.log(utilisateurId);
@@ -312,50 +344,53 @@ export default class PostController {
     }
   }
 
-  
-    static async partagerPost(req: Request, res: Response): Promise<Response> {
-      const { postId } = req.params;
-      const utilisateurId = req.user!.userID; // L'utilisateur qui partage
-      const { utilisateurCible } = req.body; // L'utilisateur destinataire
-  
-      try {
-        // Vérifier si le post existe
-        const postData = await prisma.posts.findUnique({
-          where: { id: parseInt(postId, 10) },
-        });
-  
-        if (!postData) {
-          return res.status(404).json({ error: "Post non trouvé." });
-        }
-  
-        // Vérifier si l'utilisateur cible existe
-        const utilisateurCibleData = await prisma.users.findUnique({
-          where: { id: utilisateurCible },
-        });
-  
-        if (!utilisateurCibleData) {
-          return res.status(404).json({ error: "Utilisateur cible non trouvé." });
-        }
-  
-        // Créer un enregistrement de partage
-        const donneePartage = await prisma.partages.create({
-          data: {
-            postId: parseInt(postId, 10),
-            receiverId: utilisateurCible, // L'utilisateur qui reçoit le partage
-            senderId: utilisateurId, // L'utilisateur qui envoie le partage
-            sharedAt: new Date(),
-          },
-        });
-  
-        return res.status(200).json({
-          message: "Post partagé avec succès.",
-          partage: donneePartage,
-        });
-      } catch (error) {
-        console.error("Erreur lors du partage du post:", error); // Log du serveur
-        return res.status(500).json({ error: "Erreur interne du serveur." });
+  static async partagerPost(req: Request, res: Response) {
+    const { postId } = req.params;
+    const utilisateurId = req.user!.userID;
+    const { utilisateurCible } = req.body;
+
+    try {
+      // Vérifier si le post existe
+      const postData = await prisma.posts.findUnique({
+        where: { id: parseInt(postId) },
+      });
+
+      if (!postData) {
+        return res.status(404).json({ error: "Post non trouvé." });
       }
+
+      // Vérifier si l'utilisateur cible existe
+      const utilisateurCibleData = await prisma.users.findUnique({
+        where: { id: utilisateurCible },
+      });
+
+      if (!utilisateurCibleData) {
+        return res.status(404).json({ error: "Utilisateur cible non trouvé." });
+      }
+
+      // Créer un enregistrement de partage
+      const donneePartage = await prisma.partages.create({
+        data: {
+          postId: parseInt(postId),
+          receiverId: utilisateurCible,
+          senderId: utilisateurId,
+          sharedAt: new Date(),
+        },
+      });
+
+      if (!donneePartage) {
+        return res.status(500).json({ error: "Échec du partage du post." });
+      }
+
+      res.status(200).json({
+        message: "Post partagé avec succès.",
+        partage: donneePartage,
+      });
+    } catch (error) {
+      console.error("Erreur lors du partage du post:", error); // Pour débogage
+      res.status(500).json({ error: "Erreur interne du serveur" });
     }
+  }
 
   static async notifyFollowers(userId: number, postId: number) {
     try {
