@@ -9,7 +9,7 @@ export default class LikeController {
     try {
       const { postId } = req.params;
       const userId = req.user!.userID; // Récupérer l'utilisateur depuis le token
-
+      console.log(userId);
       // Vérifier si le like existe déjà
       const existingLike = await prisma.likes.findFirst({
         where: {

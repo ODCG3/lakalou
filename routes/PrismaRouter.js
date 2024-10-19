@@ -116,6 +116,15 @@ router.route("/post/:postId/comments/create").post(auth, (req, res) => CommentCo
 router.route("/comment/:commentId").delete(auth, (req, res) => CommentController.deleteComment(req, res));
 router.route("/post/:postId/comments").get(auth, (req, res) => CommentController.getPostComments(req, res));
 
+// Ajouter une réponse à un commentaire
+router.post("/comments/:commentId/reply", auth, CommentController.addReply);
+
+// Récupérer les commentaires d'un post avec les réponses imbriquées
+router.get("/post/:postId/comments", auth, CommentController.getPostComments);
+
+// Supprimer un commentaire
+router.delete("/comments/:commentId", auth, CommentController.deleteComment);
+
 router.route("/post") .get(auth, (req, res) => PostController.getPosts(req, res));
 router
   .route("/post/:postId")
