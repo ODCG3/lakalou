@@ -25,6 +25,17 @@ interface Measurements {
   ceinture?: number;
 }
 
+interface Tailleur {
+  id: number;
+  nom: string | null; // Permettre null si nécessaire
+  prenom: string | null; // Permettre null si nécessaire
+  email: string | null; // Permettre null si nécessaire
+  photoProfile: string | null; // Permettre null si nécessaire
+  role: string | null; // Modifiez ce type si nécessaire
+  averageRate: number;
+  rank: number; // Assurez-vous que rank est ici
+}
+
 export default class PrismaUserController {
   static async create(req: Request, res: Response) {
     const {
@@ -449,62 +460,10 @@ export default class PrismaUserController {
   //   }
   // }
 
-  // Report User version1
-  // static async reportUser(req: Request, res: Response) {
-  //   const userId = req.user!.userID;
-
-  //   const { reason } = req.body;
-
-  //   if (!reason || typeof reason !== "string") {
-  //     return res
-  //       .status(400)
-  //       .json({ error: "La raison du signalement est requise" });
-  //   }
-
-  //   console.log(reason);
-  //   console.log(userId);
-  //   try {
-  //     const userToReport = await prisma.users.findUnique({
-  //       where: { id: userId },
-  //       include: { UsersSignals_UsersSignals_reporterIdToUsers: true },
-  //     });
-  //     /* console.log(userToReport);  */
-  //     if (!userToReport) {
-  //       return res.status(402).json({ error: "Utilisateur non trouvé" });
-  //     }
-
-  //     const reporterId = req.user?.userID;
-
-  //     if (!reporterId) {
-  //       return res
-  //         .status(403)
-  //         .json({ error: "Connectez-vous d'abord pour signaler" });
-  //     }
-
-  //     if (!(userToReport.id === reporterId)) {
-  //       return res
-  //         .status(403)
-  //         .json({ error: "Vous ne pouvez pas vous signaler vous-même" });
-  //     }
-
-  //     const alreadyReported =
-  //       userToReport.UsersSignals_UsersSignals_reporterIdToUsers.some(
-  //         (signal) => signal.reporterId === reporterId
-  //       );
-
-  //     if (alreadyReported) {
-  //       return res
-  //         .status(405)
-  //         .json({ error: "Vous avez déjà signalé cet utilisateur" });
-  //     }
-
-  //     const signal = await prisma.usersSignals.create({
-  //       data: {
-  //         reason,
-  //         reporterId: reporterId,
-  //         userId: userToReport.id,
-  //       },
-  //     });
+  //reportUser
+  static async reportUser(req: Request, res: Response) {
+    // Récupérer l'ID de l'utilisateur à signaler depuis les paramètres
+    const userIdToReport = Number(req.params.userId); // Assurez-vous que c'est un nombre
 
   //     res
   //       .status(200)
@@ -519,52 +478,71 @@ export default class PrismaUserController {
     const reporterId = req.user!.userID; // ID du reporter
     const { userId, reason } = req.body; // Récupérer l'ID de l'utilisateur à signaler et la raison
 
+    // Validation de la raison
     if (!reason || typeof reason !== "string") {
-      return res
-        .status(400)
-        .json({ error: "La raison du signalement est requise" });
+        return res
+            .status(400)
+            .json({ error: "La raison du signalement est requise" });
     }
 
-    if (userId === reporterId) {
-      return res
-        .status(403)
-        .json({ error: "Vous ne pouvez pas vous signaler vous-même" });
-    }
+    console.log("Raison du signalement:", reason);
+    console.log("ID de l'utilisateur à signaler:", userIdToReport);
 
     try {
-      const userToReport = await prisma.users.findUnique({
-        where: { id: userId },
-        include: { UsersSignals_UsersSignals_reporterIdToUsers: true },
-      });
+        // Vérifiez si l'utilisateur à signaler existe
+        const userToReport = await prisma.users.findUnique({
+            where: { id: userIdToReport }, // Utilisez l'ID passé en paramètre
+            include: { UsersSignals_UsersSignals_reporterIdToUsers: true },
+        });
 
-      if (!userToReport) {
-        return res.status(404).json({ error: "Utilisateur non trouvé" });
-      }
+        if (!userToReport) {
+            return res.status(404).json({ error: "Utilisateur non trouvé" });
+        }
 
-      const alreadyReported =
-        userToReport.UsersSignals_UsersSignals_reporterIdToUsers.some(
-          (signal) => signal.reporterId === reporterId
+        const reporterId = req.user?.userID; // L'ID de l'utilisateur connecté
+
+        if (!reporterId) {
+            return res
+                .status(403)
+                .json({ error: "Connectez-vous d'abord pour signaler" });
+        }
+
+        // Vérifiez si l'utilisateur qui signale n'est pas le même que celui qui est signalé
+        if (userIdToReport === reporterId) {
+            return res
+                .status(403)
+                .json({ error: "Vous ne pouvez pas vous signaler vous-même" });
+        }
+
+
+        // Vérifiez si l'utilisateur a déjà été signalé
+        const alreadyReported = userToReport.UsersSignals_UsersSignals_reporterIdToUsers.some(
+            (signal: { reporterId: number }) => signal.reporterId === reporterId
         );
 
-      if (alreadyReported) {
-        return res
-          .status(405)
-          .json({ error: "Vous avez déjà signalé cet utilisateur" });
-      }
+        if (alreadyReported) {
+            return res
+                .status(409) // Utilisez 409 pour conflit
+                .json({ error: "Vous avez déjà signalé cet utilisateur" });
+        }
 
-      const signal = await prisma.usersSignals.create({
-        data: {
-          reason,
-          reporterId,
-          userId,
-        },
-      });
+        // Créez le signalement avec les bons ID
+        const signal = await prisma.usersSignals.create({
+            data: {
+                reason,
+                reporterId: reporterId,   // ID de l'utilisateur qui fait le signalement
+                userId: userToReport.id,   // ID de l'utilisateur à signaler
+            },
+        });
 
-      return res
-        .status(200)
-        .json({ message: "Signalement ajouté avec succès", signal });
+        console.log("Signalement créé:", signal);
+        res
+            .status(200)
+            .json({ message: "Signalement ajouté avec succès", signal });
+
     } catch (error) {
-      res.status(500).json({ error: "Erreur interne du serveur" });
+        console.error("Erreur lors du signalement:", error);
+        res.status(500).json({ error: "Erreur interne du serveur" });
     }
   }
 
@@ -598,6 +576,7 @@ static async unfollowUser(req: Request, res: Response) {
       return res
         .status(400)
         .json({ message: "Vous ne pouvez pas vous désabonner de vous-même" });
+
     }
 
     // Retirer l'utilisateur connecté de la liste des followers de l'utilisateur ciblé
@@ -737,8 +716,9 @@ static async unfollowUser(req: Request, res: Response) {
     }
   }
 
-  static async Followings(req: Request, res: Response) {
+  static async myFollowings(req: Request, res: Response) {
     const userId = req.user?.userID;
+
     if (!userId) {
       return res.status(401).json({
         message: "Vous devez vous connecter pour accéder à ce contenu",
@@ -772,6 +752,7 @@ static async unfollowUser(req: Request, res: Response) {
       });
     }
   }
+
 
   // Méthode profile
   static async profile(req: Request, res: Response) {
@@ -1672,111 +1653,150 @@ static async debloquerUsers(req: Request, res: Response) {
     }
   }
 
-  static async getTailleurRanking(req: Request, res: Response): Promise<void> {
+  static async getTailleurRanking(req?: Request, res?: Response): Promise<Tailleur[]> {
     try {
-      const tailleurs = await prisma.users.findMany({
-        where: { role: "tailleur" },
-        select: {
-          id: true,
-          nom: true,
-          prenom: true,
-          email: true,
-          photoProfile: true,
-          role: true,
-          UsersNotes_UsersNotes_userIdToUsers: {
+        const tailleurs = await prisma.users.findMany({
+            where: { role: "tailleur" },
             select: {
-              rate: true,
+                id: true,
+                nom: true,
+                prenom: true,
+                email: true,
+                photoProfile: true,
+                role: true,
+                UsersNotes_UsersNotes_userIdToUsers: {
+                    select: {
+                        rate: true,
+                    },
+                },
             },
-          },
-        },
-      });
+        });
 
-      const ranking = tailleurs.map((tailleur) => {
-        const averageRate =
-          tailleur.UsersNotes_UsersNotes_userIdToUsers.reduce(
-            (acc, note) => acc + note.rate!,
-            0
-          ) / tailleur.UsersNotes_UsersNotes_userIdToUsers.length || 0;
-        return {
-          id: tailleur.id,
-          nom: tailleur.nom,
-          prenom: tailleur.prenom,
-          email: tailleur.email,
-          photoProfile: tailleur.photoProfile,
-          role: tailleur.role,
-          averageRate,
-        };
-      });
+        const ranking: Tailleur[] = tailleurs.map((tailleur) => {
+            const averageRate =
+                tailleur.UsersNotes_UsersNotes_userIdToUsers.reduce(
+                    (acc, note) => acc + note.rate!,
+                    0
+                ) / tailleur.UsersNotes_UsersNotes_userIdToUsers.length || 0;
 
-      // Trier les tailleurs par note moyenne décroissante
-      ranking.sort((a, b) => b.averageRate - a.averageRate);
+            return {
+                id: tailleur.id,
+                nom: tailleur.nom,
+                prenom: tailleur.prenom,
+                email: tailleur.email,
+                photoProfile: tailleur.photoProfile,
+                role: tailleur.role,
+                averageRate,
+                rank: 0, // Initial value
+            };
+        });
 
-      // Attribuer les rangs
-      let rank = 1;
-      let previousRate: number | null = null;
-      let tiedUsersCount = 0;
+        // Sort by average rate
+        ranking.sort((a, b) => b.averageRate - a.averageRate);
 
-      ranking.forEach((tailleur: any, index) => {
-        if (previousRate === tailleur.averageRate) {
-          tiedUsersCount++;
-        } else {
-          rank += tiedUsersCount;
-          tiedUsersCount = 1;
+        // Assign ranks
+        let rank = 1;
+        let previousRate: number | null = null;
+        let tiedUsersCount = 0;
+
+        ranking.forEach((tailleur, index) => {
+            if (previousRate === tailleur.averageRate) {
+                tiedUsersCount++;
+            } else {
+                rank += tiedUsersCount;
+                tiedUsersCount = 1;
+            }
+
+            tailleur.rank = rank;
+            previousRate = tailleur.averageRate;
+        });
+
+        // If res is defined, send the response (used for direct requests to get ranking)
+        if (res) {
+            res.status(200).json(ranking);
         }
-
-        tailleur["rank"] = rank;
-        previousRate = tailleur.averageRate;
-      });
-
-      res.status(200).json(ranking);
+        
+        return ranking;
     } catch (error) {
-      res.status(500).json({
-        message: `Erreur lors de la récupération du classement des tailleurs: ${
-          (error as Error).message
-        }`,
-      });
+        if (res) {
+            res.status(500).json({
+                message: `Erreur lors de la récupération du classement des tailleurs: ${(error as Error).message}`,
+            });
+        }
+        return []; // Return an empty array in case of an error
     }
   }
 
   static async getStatistiques(req: Request, res: Response) {
     const connectedUser = await prisma.users.findUnique({
-      where: { id: req.user!.userID },
-      include: { UsersMesModels: true, CommandeModels: true },
+        where: { id: req.user!.userID },
+        include: { UsersMesModels: true, CommandeModels: true },
     });
 
     if (!connectedUser || connectedUser.status?.toLowerCase() !== "premium") {
-      return res.status(401).json({
-        message: "Vous devez être premium pour effectuer cette action",
-      });
+        return res.status(401).json({
+            message: "Vous devez être premium pour effectuer cette action",
+        });
     }
 
     try {
-      // Trouver le modèle le plus vendu
-      const mostSoldModel = connectedUser.UsersMesModels.sort(
-        (a, b) => (a.nombreDeCommande ?? 0) - (b.nombreDeCommande ?? 0)
-      );
+        // Get the most sold model
+        const mostSoldModel = connectedUser.UsersMesModels.sort(
+            (a, b) => (b.nombreDeCommande ?? 0) - (a.nombreDeCommande ?? 0)
+        )[0];
 
-      // Trouver les posts les plus vus
-      const mostViewedPosts = await prisma.posts.findMany({
-        where: { utilisateurId: connectedUser.id },
-        orderBy: { vues: "desc" },
-      });
+        // Get the most viewed posts
+        const mostViewedPosts = await prisma.posts.findMany({
+            where: { utilisateurId: connectedUser.id },
+            orderBy: { vues: "desc" },
+        });
 
-      // Calculer le ratio des ventes par rapport aux posts
-      const userSalesCount = connectedUser.CommandeModels.length;
-      const userPostsCount = await prisma.posts.count({
-        where: { utilisateurId: connectedUser.id },
-      });
+        // Calculate the sales to posts ratio
+        const userSalesCount = connectedUser.CommandeModels.length;
+        const userPostsCount = await prisma.posts.count({
+            where: { utilisateurId: connectedUser.id },
+        });
 
-      const salesToPostsRatio = userSalesCount / userPostsCount;
+        const salesToPostsRatio = userPostsCount > 0 ? (userSalesCount / userPostsCount) : 0;
 
-      res.status(200).json({
-        mostSoldModel,
-        mostViewedPosts,
-        salesToPostsRatio: salesToPostsRatio * 100 + "%",
-      });
+        // Get followers and followings count
+        const userFollowersCount = await prisma.followers.count({
+            where: { followerId: connectedUser.id },
+        });
+
+        const userFollowingsCount = await prisma.followers.count({
+            where: { userId: connectedUser.id },
+        });
+
+        const tailleursPostsCount = await prisma.posts.count({
+            where: { utilisateurId: connectedUser.id },
+        });
+
+        // Get total likes
+        const postsWithLikes = await prisma.posts.findMany({
+            where: { utilisateurId: connectedUser.id },
+            include: { Likes: true },
+        });
+
+        const totalLikes = postsWithLikes.reduce((acc, post) => acc + (post.Likes.length || 0), 0);
+
+        // Get tailleur ranking (do not return the response in getTailleurRanking)
+        const tailleurRanking: Tailleur[] = await this.getTailleurRanking();
+        const tailleurRank = tailleurRanking.find((tailleur) => tailleur.id === connectedUser.id)?.rank || null;
+
+        // Send the statistics response
+        res.status(200).json({
+            mostSoldModel,
+            mostViewedPosts,
+            salesToPostsRatio: (salesToPostsRatio * 100).toFixed(2) + "%",
+            tailleursPostsCount,
+            userFollowersCount,
+            userFollowingsCount,
+            totalLikes,
+            tailleurRank,
+        });
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+        res.status(500).json({ message: (err as Error).message });
     }
   }
 
@@ -1877,6 +1897,66 @@ static  getBalance = async (req: Request, res: Response): Promise<void> => {
       res.status(200).json(userId);
     } catch (err) {
       console.error(err);
+    }
+  }
+
+  static async abonnementPremium(req: Request, res: Response) {
+    const userId = req.user?.userID;// ID de l'utilisateur connecté via token/session
+
+    try {
+      // Récupérer l'utilisateur et ses followers
+      const user = await prisma.users.findUnique({
+        where: { id: userId},
+        include: {
+          Followers_Followers_userIdToUsers: true, // Inclure les followers de l'utilisateur
+        },
+      });
+
+      // Vérifier si l'utilisateur existe
+      if (!user) {
+        return res.status(404).json({ message: "Utilisateur non trouvé." });
+      }
+
+      // Vérifier si l'utilisateur est un tailleur
+      if (user.role !== 'tailleur') {
+        return res.status(403).json({ message: "Seuls les tailleurs peuvent s'abonner au service premium." });
+      }
+
+      // Vérifier si l'utilisateur est déjà premium
+      if (user.status === 'premium') {
+        return res.status(400).json({ message: "Vous êtes déjà abonné au service premium." });
+      }
+
+      // Vérifier le nombre de followers
+      const followerCount = user.Followers_Followers_userIdToUsers.length;
+      if (followerCount < 1) {
+        return res.status(400).json({ message: "Vous devez avoir au moins 10 followers pour vous abonner au service premium." });
+      }
+
+      // Gérer le cas où user.credits est null
+      const userCredits = user.credits ?? 0; // Utilise 0 si user.credits est null
+
+      // Vérifier les crédits
+      if (userCredits < 5) {
+        return res.status(400).json({ message: "Vous n'avez pas assez de crédits. Il vous faut au moins 5 crédits pour vous abonner." });
+      }
+
+      // Si les conditions sont remplies, déduire 5 crédits et mettre à jour le statut à "premium"
+      const updatedUser = await prisma.users.update({
+        where: { id: userId },
+        data: {
+          credits: userCredits - 5,
+          status: 'premium',
+        },
+      });
+
+      return res.status(200).json({
+        message: "L'abonnement premium a été réussi avec succès.",
+        user: updatedUser,
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: "Erreur lors de l'abonnement premium." });
     }
   }
 }
