@@ -23,6 +23,7 @@ const getOtherUserStories = (req, res) => __awaiter(void 0, void 0, void 0, func
                 Users: {
                     select: {
                         id: true,
+                        prenom: true, // Ajoutez cette ligne
                     },
                 },
             },

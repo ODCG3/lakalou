@@ -187,6 +187,9 @@ router
   .route("/commandes/:commandeId")
   .get(auth, (req, res) => CommandeModelController.getCommandeById(req, res));
 
+  router
+  .route("/commandes")
+  .get(auth, (req, res) => CommandeModelController.getUserCommandes(req, res));
 router.route('/user/discussions/create').post(auth, (req, res) => MessagesDiscussionController.createDiscussion(req, res));
 router.route('/user/discussions').get(auth, (req, res) => MessagesDiscussionController.getDiscussions(req, res));
 router.route('/user/discussions/:userId').get(auth, (req, res) => MessagesDiscussionController.getDiscussionsByUser(req, res));

@@ -252,4 +252,28 @@ export default class CommandeModelController {
             }
         });
     }
+    static getUserCommandes(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const userId = req.user.userID; // Assurez-vous que req.user.userID est correctement défini
+                const commandes = yield prisma.commandeModels.findMany({
+                    where: { userId: userId },
+                    include: {
+                        Posts: true,
+                        Stories: true,
+                        Models: true,
+                        articles: true,
+                    },
+                });
+                if (commandes.length === 0) {
+                    return res.status(404).json({ message: "Aucune commande trouvée pour cet utilisateur." });
+                }
+                return res.json(commandes);
+            }
+            catch (error) {
+                console.error(error);
+                res.status(500).json({ message: "Erreur serveur : " + error });
+            }
+        });
+    }
 }

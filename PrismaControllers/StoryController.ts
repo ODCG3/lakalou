@@ -18,6 +18,7 @@ const getOtherUserStories = async (req: Request, res: Response) => {
         Users: {
           select: {
             id: true,
+            prenom: true, // Ajoutez cette ligne
           },
         },
       },
