@@ -8,6 +8,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import { PrismaClient } from "@prisma/client";
+// import NotificationController from './NotificationController';
+import NotificationController from './NotificationController.js'; // Notez l'extension .js
 const prisma = new PrismaClient();
 export default class PostController {
     static createPost(req, res) {
@@ -56,8 +58,9 @@ export default class PostController {
                         where: { id: utilisateurId },
                         data: { credits: { decrement: 1 } },
                     });
-                    // Envoyer des notifications aux abonnés du tailleur
-                    yield this.notifyFollowers(utilisateurId, createdPost.id);
+                    // Créer une notification pour l'utilisateur qui a créé le post
+                    const notificationMessage = `Votre post "${titre}" a été créé avec succès.`;
+                    yield NotificationController.createNotification(utilisateurId, 'post_created', notificationMessage, createdPost.id);
                     res
                         .status(201)
                         .json({ message: "Post créé avec succès", post: createdPost });
@@ -75,29 +78,69 @@ export default class PostController {
             }
         });
     }
-    static getPosts(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const posts = yield prisma.posts.findMany({
-                    include: {
-                        Models: true,
-                        Users: true,
-                    },
-                });
-                // Ajout du comptage des likes pour chaque post
-                const postsWithLikesAndComments = yield Promise.all(posts.map((post) => __awaiter(this, void 0, void 0, function* () {
-                    const likeCount = yield prisma.likes.count({
-                        where: { postId: post.id },
-                    });
-                    return Object.assign(Object.assign({}, post), { likeCount, comments: post.Comments });
-                })));
-                res.status(200).json(postsWithLikesAndComments);
-            }
-            catch (error) {
-                res.status(500).json({ error: "Erreur interne du serveur" });
-            }
-        });
-    }
+    // static async notifyFollowers(userId: number, postId: number) {
+    //   try {
+    //     // Récupérer les détails de l'utilisateur et ses abonnés
+    //     const userData = await prisma.users.findUnique({
+    //       where: { id: userId },
+    //       include: {
+    //         Followers_Followers_userIdToUsers: {
+    //           include: {
+    //             Users_Followers_followerIdToUsers: true,
+    //           },
+    //         },
+    //       },
+    //     });
+    //     if (!userData || !userData.Followers_Followers_userIdToUsers) {
+    //       console.error(
+    //         "Utilisateur ou abonnés non trouvés pour la notification"
+    //       );
+    //       return;
+    //     }
+    //     // Créer des notifications pour chaque abonné
+    //     const notifications = userData.Followers_Followers_userIdToUsers.map(
+    //       (followerRelation) => ({
+    //         userId: followerRelation.followerId,
+    //         message: `L'utilisateur ${userData.nom} a créé un nouveau post.`,
+    //         postId: postId,
+    //         read: false, // Notification non lue par défaut
+    //         action: 'post_created', // Indiquer l'action
+    //       })
+    //     );
+    //     // Enregistrer les notifications dans la base de données
+    //     await prisma.usersNotifications.createMany({
+    //       data: notifications,
+    //     });
+    //   } catch (error) {
+    //     console.error("Erreur lors de la notification des abonnés:", error);
+    //   }
+    // }
+    // static async getPosts(req: Request, res: Response) {
+    //   try {
+    //     const posts = await prisma.posts.findMany({
+    //       include: {
+    //         Models: true,
+    //         Users: true,
+    //       },
+    //     });
+    //     // Ajout du comptage des likes pour chaque post
+    //     const postsWithLikesAndComments = await Promise.all(
+    //       posts.map(async (post) => {
+    //         const likeCount = await prisma.likes.count({
+    //           where: { postId: post.id },
+    //         });
+    //         return {
+    //           ...post,
+    //           likeCount,  // Ajoute le nombre de likes au post
+    //           comments: post.Comments,  // Les commentaires sont déjà inclus
+    //         };
+    //       })
+    //     );
+    //     res.status(200).json(postsWithLikesAndComments);
+    //   } catch (error) {
+    //     res.status(500).json({ error: "Erreur interne du serveur" });
+    //   }
+    // }
     static getPostById(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             const { postId } = req.params;
@@ -356,40 +399,43 @@ export default class PostController {
             }
         });
     }
-    static notifyFollowers(userId, postId) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                // Récupérer les détails de l'utilisateur et ses abonnés
-                const userData = yield prisma.users.findUnique({
-                    where: { id: userId },
-                    include: {
-                        Followers_Followers_userIdToUsers: {
-                            include: {
-                                Users_Followers_followerIdToUsers: true,
-                            },
-                        },
-                    },
-                });
-                if (!userData || !userData.Followers_Followers_userIdToUsers) {
-                    console.error("Utilisateur ou abonnés non trouvés pour la notification");
-                    return;
-                }
-                // Créer des notifications pour chaque abonné
-                const notifications = userData.Followers_Followers_userIdToUsers.map((followerRelation) => ({
-                    userId: followerRelation.followerId,
-                    message: `L'utilisateur ${userData.nom} a créé un nouveau post.`,
-                    postId: postId,
-                }));
-                // Enregistrer les notifications dans la base de données
-                yield prisma.usersNotifications.createMany({
-                    data: notifications,
-                });
-            }
-            catch (error) {
-                console.error("Erreur lors de la notification des abonnés:", error);
-            }
-        });
-    }
+    // static async notifyFollowers(userId: number, postId: number) {
+    //   try {
+    //     // Récupérer les détails de l'utilisateur et ses abonnés
+    //     const userData = await prisma.users.findUnique({
+    //       where: { id: userId },
+    //       include: {
+    //         Followers_Followers_userIdToUsers: {
+    //           include: {
+    //             Users_Followers_followerIdToUsers: true,
+    //           },
+    //         },
+    //       },
+    //     });
+    //     if (!userData || !userData.Followers_Followers_userIdToUsers) {
+    //       console.error(
+    //         "Utilisateur ou abonnés non trouvés pour la notification"
+    //       );
+    //       return;
+    //     }
+    //     // Créer des notifications pour chaque abonné
+    //     const notifications = userData.Followers_Followers_userIdToUsers.map(
+    //       (followerRelation) => ({
+    //         userId: followerRelation.followerId,
+    //         message: `L'utilisateur ${userData.nom} a créé un nouveau post.`,
+    //         postId: postId,
+    //         read: false, // Notification non lue par défaut
+    //         action: 'post_created', // Indiquer l'action
+    //       })
+    //     );
+    //     // Enregistrer les notifications dans la base de données
+    //     await prisma.usersNotifications.createMany({
+    //       data: notifications,
+    //     });
+    //   } catch (error) {
+    //     console.error("Erreur lors de la notification des abonnés:", error);
+    //   }
+    // }
     static deleteNotification(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             const { notificationId } = req.params;
@@ -423,6 +469,7 @@ export default class PostController {
     }
     static getNotifications(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
+            console.log("Requête pour récupérer les notifications reçue"); // Log
             const utilisateurId = req.user.userID;
             try {
                 // Récupérer toutes les notifications de l'utilisateur

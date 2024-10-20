@@ -8,6 +8,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import { PrismaClient } from "@prisma/client";
+// Importer NotificationController
+// import NotificationController from './NotificationController'; // Mettez à jour le chemin en fonction de votre structure de projet
+import NotificationController from './NotificationController.js'; // Notez l'extension .js
 const prisma = new PrismaClient();
 const getOtherUserStories = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const userID = req.user.userID;
@@ -75,7 +78,7 @@ const incrementStoryView = (req, res) => __awaiter(void 0, void 0, void 0, funct
 });
 const createStory = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const currentTime = new Date();
-    const expirationTime = new Date(currentTime.getTime() + 24 * 60 * 60 * 1000); // 24 hours later
+    const expirationTime = new Date(currentTime.getTime() + 24 * 60 * 60 * 1000); // 24 heures plus tard
     const userID = req.user.userID;
     try {
         // Vérifiez si l'utilisateur est connecté
@@ -141,6 +144,16 @@ const createStory = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
                 },
             },
         });
+        // Envoyer des notifications aux abonnés du tailleur
+        const followers = yield prisma.followers.findMany({
+            where: { userId: userID },
+            include: { Users_Followers_followerIdToUsers: true },
+        });
+        for (const follower of followers) {
+            yield NotificationController.createNotification(follower.followerId, 'new_story', `Nouvelle story créée par un utilisateur que vous suivez!`);
+        }
+        // Notifiez l'utilisateur que la story a été créée avec succès
+        yield NotificationController.createNotification(userID, 'story_created', `Votre story a été créée avec succès!`);
         res.status(201).json({
             message: "Story créée avec succès!",
         });
@@ -324,5 +337,6 @@ export default {
     viewStory,
     getStoryViews,
     getUserStories,
+    // notifyFollowers,
     getOtherUserStories
 };

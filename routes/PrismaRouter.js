@@ -11,6 +11,9 @@ import StoryController from "../dist/StoryController.js";
 import ArticleController from "../dist/ArticleController.js";
 import PostArticleController from "../dist/PostArticleController.js";
 import CommentController from "../dist/CommentController.js";
+import { addRecharge } from '../dist/rechargeController.js';
+import { likePost, unlikePost } from '../dist/LikeController.js';
+import NotificationController from "../dist/NotificationController.js"; 
 
 router
   .route("/register")
@@ -36,6 +39,33 @@ router
 router
   .route("/posts/:postId/notes")
   .get(auth, (req, res) => PrismaUserController.getUserNotesFromPost(req, res));
+
+  // Route pour liker un post
+router.post('/posts/:postId/like', likePost);
+
+// Route pour retirer un like
+router.delete('/posts/:postId/likes/:likeID', unlikePost);
+
+ // Route pour marquer une notification comme lue
+ router
+ .route("/notifications/:notificationId/read")
+ .patch(auth, (req, res) => NotificationController.markAsRead(req, res));
+ 
+// Route pour créer une notification
+// router
+//   .route("/notifications")
+//   .post(auth, async (req, res) => {
+//     const { action, message, postId } = req.body;
+//     const userId = req.user.userID; // Récupérer l'ID de l'utilisateur à partir du token
+
+//     await NotificationController.createNotification(userId, action, message, postId);
+//     res.status(201).json({ message: "Notification créée avec succès" });
+//   });
+ // Route pour récupérer les notifications d'un utilisateur
+router
+.route("/notifications")
+.get(auth, (req, res) => NotificationController.getNotifications(req, res));
+  
 
 router
   .route("/tailleur/:tailleurId")
@@ -92,7 +122,7 @@ router
 router
   .route("/model/:modelId")
   .get(auth, (req, res) => ModelController.getModelById(req, res));
-
+// create story
 router.route("/story/create").post(auth, StoryController.createStory);
 router
   .route("/stories/:userId")
@@ -160,12 +190,11 @@ router
 router
   .route("/post/:postId/share")
   .post(auth, (req, res) => PostController.partagerPost(req, res));
-router
-  .route("/notifications")
-  .get(auth, (req, res) => PostController.getNotifications(req, res));
+
 router
   .route("/notifications/:notificationId")
   .delete(auth, (req, res) => PostController.deleteNotification(req, res));
+
 
 router
   .route("/commande")
@@ -194,6 +223,8 @@ router.route('/user/discussions/:discussionUser/messages').post(auth, (req, res)
 router.route('/user/discussions/:discussionId/messages/:messageId').delete(auth, (req, res) => MessagesDiscussionController.deleteMessage(req, res));
 router.route('/user/discussions/:discussionId/messages/:messageId').put(auth, (req, res) => MessagesDiscussionController.modifierMessages(req, res));
 router.route('/user/chargeCredit').post(auth, (req, res) => PrismaUserController.chargeCredit(req, res));
+// Route pour recharger les crédits
+router.post('/recharge', addRecharge);
 
 router.route('/user/:userId/modifierMesure').put(auth, (req, res) => PrismaUserController.updateMeasurements(req, res));
 router.route('/user/:userId/addMesure').post(auth, (req, res) => PrismaUserController.addMesure(req, res));
@@ -262,6 +293,9 @@ router
   .get(auth, (req, res) => PrismaUserController.getConnectedUser());
 
 router.get("/signale/:userId", auth, PrismaUserController.reportUser);
+
+// Route pour signaler un utilisateur
+router.post("/users/report", PrismaUserController.reportUser);
 
 router
   .route("/user/discussions/create")

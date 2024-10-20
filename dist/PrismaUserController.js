@@ -7,12 +7,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var _a;
 import { PrismaClient } from "@prisma/client";
+// import NotificationController from './NotificationController'; 
+import NotificationController from './NotificationController.js'; // Notez l'extension .js
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import isEmail from "validator/lib/isEmail.js";
 const prisma = new PrismaClient();
-export default class PrismaUserController {
+class PrismaUserController {
     static create(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             const { nom, prenom, email, password, confirmationPassword, photoProfile, role, } = req.body;
@@ -164,7 +167,7 @@ export default class PrismaUserController {
     //addNote
     static addNotes(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a;
+            var _b;
             const { id } = req.params;
             const { rate } = req.body;
             // Validate rate
@@ -186,7 +189,7 @@ export default class PrismaUserController {
                         .status(402)
                         .json({ error: "Vous ne pouvez pas noter un visiteur" });
                 }
-                const raterId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
+                const raterId = (_b = req.user) === null || _b === void 0 ? void 0 : _b.userID;
                 if (!raterId) {
                     return res
                         .status(403)
@@ -243,7 +246,7 @@ export default class PrismaUserController {
                         error: "Vous ne pouvez pas filtrer par notes pour un tailleur",
                     });
                 }
-                const filteredNotes = userToRate.UsersNotes_UsersNotes_raterIDToUsers.filter((note) => { var _a; return ((_a = note.rate) !== null && _a !== void 0 ? _a : 0) >= rate; });
+                const filteredNotes = userToRate.UsersNotes_UsersNotes_raterIDToUsers.filter((note) => { var _b; return ((_b = note.rate) !== null && _b !== void 0 ? _b : 0) >= rate; });
                 res.status(200).json(filteredNotes);
             }
             catch (error) {
@@ -491,12 +494,13 @@ export default class PrismaUserController {
     // Méthode unfollowUser
     static unfollowUser(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            const userId = req.user.userID;
-            const followerId = Number(req.body.followerId);
+            const userId = req.user.userID; // ID de l'utilisateur connecté
+            const followerId = Number(req.body.followerId); // ID de l'utilisateur à désabonner
             if (!userId) {
-                return res.status(400).json({
-                    error: "L'id de l'utilisateur à désabonner est obligatoire",
-                });
+                return res
+                    .status(400)
+                    .json({ error: "L'id de l'utilisateur connecté est obligatoire" });
+
             }
             try {
                 if (!followerId) {
@@ -530,7 +534,13 @@ export default class PrismaUserController {
                 yield prisma.followers.delete({
                     where: { id: followRelation.id },
                 });
-                return res.status(200).json({ message: "Désabonnement effectué avec succès" });
+                // Utiliser NotificationController pour créer la notification
+                const notificationMessage = `L'utilisateur avec l'ID ${userId} s'est désabonné de vous.`;
+                yield NotificationController.createNotification(followerId, 'unfollowed', notificationMessage);
+                return res
+                    .status(200)
+                    .json({ message: "Désabonnement effectué avec succès" });
+
             }
             catch (err) {
                 console.error(err);
@@ -543,8 +553,8 @@ export default class PrismaUserController {
     // Méthode followUser
     static followUser(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            const userId = req.user.userID;
-            const followerId = Number(req.body.followerId);
+            const userId = req.user.userID; // ID de l'utilisateur connecté
+            const followerId = Number(req.body.followerId); // ID de l'utilisateur à suivre
             if (!followerId) {
                 return res
                     .status(400)
@@ -553,7 +563,7 @@ export default class PrismaUserController {
             if (!userId) {
                 return res
                     .status(400)
-                    .json({ error: "L'id de l'utilisateur à suivre est obligatoire" });
+                    .json({ error: "L'id de l'utilisateur connecté est obligatoire" });
             }
             try {
                 const followerExists = yield prisma.users.findUnique({
@@ -568,16 +578,30 @@ export default class PrismaUserController {
                 if (Number(followerId) === userId) {
                     return res
                         .status(400)
-                        .json({ message: "Vous ne pouvez pas vous abonner de vous-même" });
+                        .json({ message: "Vous ne pouvez pas vous abonner à vous-même" });
                 }
-                // Connectez l'utilisateur à l'utilisateur que vous essayez de suivre
+                // Vérifier si l'utilisateur suit déjà cette personne
+                const alreadyFollowing = yield prisma.followers.findFirst({
+                    where: {
+                        userId: userId,
+                        followerId: followerId,
+                    },
+                });
+                if (alreadyFollowing) {
+                    return res
+                        .status(400)
+                        .json({ message: "Vous suivez déjà cet utilisateur" });
+                }
+                // Connecter l'utilisateur à l'utilisateur qu'il souhaite suivre
                 yield prisma.followers.create({
                     data: {
                         userId: userId,
                         followerId: followerId,
                     },
                 });
-                // Connectez l'utilisateur que vous essayez de suivre à l'utilisateur connecté
+                // Utiliser NotificationController pour créer la notification
+                const notificationMessage = `L'utilisateur avec l'ID ${userId} vous suit maintenant.`;
+                yield NotificationController.createNotification(followerId, 'followed', notificationMessage);
                 return res
                     .status(200)
                     .json({ message: "Abonnement effectué avec succès" });
@@ -593,8 +617,8 @@ export default class PrismaUserController {
     // Méthode myFollowers
     static myFollowers(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a, _b;
-            const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
+            var _b, _c;
+            const userId = (_b = req.user) === null || _b === void 0 ? void 0 : _b.userID;
             if (!userId) {
                 return res.status(401).json({
                     message: "Vous devez vous connecter pour accéder à ce contenu",
@@ -603,7 +627,7 @@ export default class PrismaUserController {
             try {
                 const followers = yield prisma.followers.findMany({
                     // where: { followerId: req.user?.userID },
-                    where: { userId: (_b = req.user) === null || _b === void 0 ? void 0 : _b.userID },
+                    where: { userId: (_c = req.user) === null || _c === void 0 ? void 0 : _c.userID },
                     select: {
                         id: true,
                         // afichier les informations du user
@@ -634,8 +658,8 @@ export default class PrismaUserController {
     static myFollowings(req, res) {
 
         return __awaiter(this, void 0, void 0, function* () {
-            var _a, _b;
-            const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
+            var _b, _c;
+            const userId = (_b = req.user) === null || _b === void 0 ? void 0 : _b.userID;
             if (!userId) {
                 return res.status(401).json({
                     message: "Vous devez vous connecter pour accéder à ce contenu",
@@ -643,7 +667,7 @@ export default class PrismaUserController {
             }
             try {
                 const followings = yield prisma.followers.findMany({
-                    where: { userId: (_b = req.user) === null || _b === void 0 ? void 0 : _b.userID },
+                    where: { userId: (_c = req.user) === null || _c === void 0 ? void 0 : _c.userID },
                     select: {
                         id: true,
                         // afichier les informations du user
@@ -674,8 +698,8 @@ export default class PrismaUserController {
     // Méthode profile
     static profile(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a;
-            const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
+            var _b;
+            const userId = (_b = req.user) === null || _b === void 0 ? void 0 : _b.userID;
             const utilisateurId = Number(req.body.utilisateurId);
             if (!userId) {
                 return res.status(401).json({
@@ -722,9 +746,9 @@ export default class PrismaUserController {
     // Méthode changeRole
     static changeRole(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a, _b;
+            var _b, _c;
             try {
-                const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
+                const userId = (_b = req.user) === null || _b === void 0 ? void 0 : _b.userID;
                 if (!userId) {
                     return res
                         .status(401)
@@ -736,7 +760,7 @@ export default class PrismaUserController {
                 if (!user) {
                     return res.status(404).send("Utilisateur non trouvé");
                 }
-                if (((_b = user === null || user === void 0 ? void 0 : user.credits) !== null && _b !== void 0 ? _b : 0) <= 1) {
+                if (((_c = user === null || user === void 0 ? void 0 : user.credits) !== null && _c !== void 0 ? _c : 0) <= 1) {
                     return res
                         .status(402)
                         .send("Vous n'avez pas assez de crédits pour changer de rôle");
@@ -768,76 +792,74 @@ export default class PrismaUserController {
         });
     }
     // Méthode bloquerUsers
+    // Méthode bloquerUsers
     static bloquerUsers(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a;
-            /* const { userID } = req.params; */
-            const utilisateurId = Number(req.body.utilisateurId);
-            const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
-            const storyId = req.body.storyId;
-            console.log(utilisateurId);
-            console.log(userId);
+            var _b;
+            const utilisateurId = Number(req.body.utilisateurId); // ID de l'utilisateur à bloquer
+            const userId = (_b = req.user) === null || _b === void 0 ? void 0 : _b.userID; // ID de l'utilisateur connecté
+            const storyId = req.body.storyId; // ID de la story associée
+            // Vérification si l'utilisateur est connecté
             if (!userId) {
                 return res.status(401).json({
                     message: "Vous devez vous connecter pour effectuer cette action",
                 });
             }
-            if (!utilisateurId || isNaN(Number(utilisateurId))) {
+            // Validation de l'ID de l'utilisateur à bloquer
+            if (!utilisateurId || isNaN(utilisateurId)) {
                 return res.status(400).json({ error: "ID utilisateur invalide" });
             }
+            // Validation de l'ID de la story
             if (!storyId) {
                 return res.status(400).json({ error: "ID de la story obligatoire" });
             }
             try {
+                // Vérifier si la story existe
                 const story = yield prisma.stories.findUnique({
                     where: { id: Number(storyId) },
                 });
                 if (!story) {
                     return res.status(404).json({ error: "Story non trouvée" });
                 }
-                if (Number(utilisateurId) === userId) {
+                // Vérifier si l'utilisateur ne se bloque pas lui-même
+                if (utilisateurId === userId) {
                     return res
                         .status(400)
                         .json({ error: "Vous ne pouvez pas vous bloquer vous-même" });
                 }
+                // Vérifier si l'utilisateur à bloquer existe
                 const userToBlock = yield prisma.users.findUnique({
-                    where: { id: Number(utilisateurId) },
+                    where: { id: utilisateurId },
                 });
                 if (!userToBlock) {
-                    return res
-                        .status(404)
-                        .json({ error: "Utilisateur à bloquer non trouvé" });
+                    return res.status(404).json({ error: "Utilisateur à bloquer non trouvé" });
                 }
+                // Récupérer l'utilisateur courant avec les utilisateurs déjà bloqués
                 const currentUser = yield prisma.users.findUnique({
                     where: { id: userId },
                     include: { BlockedUsers: true },
                 });
                 if (!currentUser) {
-                    return res
-                        .status(404)
-                        .json({ error: "Utilisateur courant non trouvé" });
+                    return res.status(404).json({ error: "Utilisateur courant non trouvé" });
                 }
-                const alreadyBlocked = currentUser.BlockedUsers.some((BlockedUsers) => BlockedUsers.id === Number(utilisateurId));
+                // Vérifier si l'utilisateur est déjà bloqué
+                const alreadyBlocked = currentUser.BlockedUsers.some((BlockedUsers) => BlockedUsers.id === utilisateurId);
                 if (alreadyBlocked) {
                     return res
                         .status(400)
                         .json({ error: "Vous avez déjà bloqué cet utilisateur" });
                 }
+                // Créer une entrée dans la table blockedUsers
                 yield prisma.blockedUsers.create({
                     data: {
                         storyId: Number(storyId),
-                        blockedUserId: Number(utilisateurId),
+                        blockedUserId: utilisateurId,
                     },
                 });
-                currentUser.BlockedUsers.push({
-                    id: utilisateurId,
-                    storyId: Number(storyId),
-                    blockedUserId: Number(utilisateurId),
-                });
-                console.log(currentUser.BlockedUsers);
-                return res
-                    .status(200)
-                    .json({ message: "Utilisateur bloqué avec succès" });
+                // Utiliser NotificationController pour créer la notification
+                const notificationMessage = `Vous avez été bloqué par l'utilisateur avec l'ID ${userId}.`;
+                yield NotificationController.createNotification(utilisateurId, 'blocked', notificationMessage);
+                return res.status(200).json({ message: "Utilisateur bloqué avec succès" });
             }
             catch (error) {
                 console.error(error);
@@ -848,60 +870,51 @@ export default class PrismaUserController {
         });
     }
     // Méthode debloquerUsers
+    // Méthode debloquerUsers
     static debloquerUsers(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a;
-            const utilisateurId = Number(req.body.utilisateurId);
-            const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
-            const storyId = req.body.storyId;
-            //console.log(userId);
-            //console.log(utilisateurId);
-            //console.log(storyId);
+            var _b;
+            const utilisateurId = Number(req.body.utilisateurId); // ID de l'utilisateur à débloquer
+            const userId = (_b = req.user) === null || _b === void 0 ? void 0 : _b.userID; // ID de l'utilisateur connecté
+            const storyId = req.body.storyId; // ID de la story associée
+            // Vérification si l'utilisateur est connecté
             if (!userId) {
                 return res.status(401).json({
                     message: "Vous devez vous connecter pour effectuer cette action",
                 });
             }
-            if (!utilisateurId || isNaN(Number(utilisateurId))) {
+            // Validation de l'ID de l'utilisateur à débloquer
+            if (!utilisateurId || isNaN(utilisateurId)) {
                 return res.status(400).json({ error: "ID utilisateur invalide" });
             }
+            // Validation de l'ID de la story
             if (!storyId) {
                 return res.status(400).json({ error: "ID de la story obligatoire" });
             }
             try {
+                // Vérifier si la story existe
                 const story = yield prisma.stories.findUnique({
                     where: { id: Number(storyId) },
                 });
                 if (!story) {
                     return res.status(404).json({ error: "Story non trouvée" });
                 }
-                if (Number(utilisateurId) === userId) {
+                // Vérifier si l'utilisateur ne se débloque pas lui-même
+                if (utilisateurId === userId) {
                     return res
                         .status(400)
                         .json({ error: "Vous ne pouvez pas vous débloquer vous-même" });
                 }
+                // Vérifier si l'utilisateur à débloquer existe
                 const userToUnblock = yield prisma.users.findUnique({
-                    where: { id: Number(utilisateurId) },
+                    where: { id: utilisateurId },
                 });
                 if (!userToUnblock) {
                     return res
                         .status(404)
                         .json({ error: "Utilisateur à débloquer non trouvé" });
                 }
-                const currentUser = yield prisma.users.findUnique({
-                    where: { id: userId },
-                    include: { BlockedUsers: true },
-                });
-                if (!currentUser) {
-                    return res
-                        .status(404)
-                        .json({ error: "Utilisateur courant non trouvé" });
-                }
-                console.log(currentUser.BlockedUsers);
-                /* const isBlocked = currentUser.BlockedUsers.some(
-                  (blockedUser) => blockedUser.id === Number(utilisateurId)
-                ); */
-                //on n'a pas accée a  currentUser.BlockedUsers donc on va directent verifier si l'utilisateur est bloqué dans la base de données dans la table BlockedUsers
+                // Vérifier si l'utilisateur est bloqué dans la base de données
                 const isBlocked = yield prisma.blockedUsers.findMany({
                     where: {
                         AND: [
@@ -910,20 +923,22 @@ export default class PrismaUserController {
                         ],
                     },
                 });
-                if (!isBlocked) {
+                if (!isBlocked || isBlocked.length === 0) {
                     return res
                         .status(400)
                         .json({ error: "Cet utilisateur n'est pas bloqué" });
                 }
+                // Supprimer l'utilisateur de la table blockedUsers
                 yield prisma.blockedUsers.deleteMany({
                     where: {
                         storyId: Number(storyId),
                         blockedUserId: Number(utilisateurId),
                     },
                 });
-                return res
-                    .status(200)
-                    .json({ message: "Utilisateur débloqué avec succès" });
+                // Utiliser NotificationController pour créer la notification
+                const notificationMessage = `Vous avez été débloqué par l'utilisateur avec l'ID ${userId}.`;
+                yield NotificationController.createNotification(utilisateurId, 'unblocked', notificationMessage);
+                return res.status(200).json({ message: "Utilisateur débloqué avec succès" });
             }
             catch (error) {
                 console.error(error);
@@ -936,9 +951,9 @@ export default class PrismaUserController {
     // Méthode getUserBloquer
     static getUserBloquer(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a;
+            var _b;
             const utilisateurId = Number(req.body.utilisateurId);
-            const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
+            const userId = (_b = req.user) === null || _b === void 0 ? void 0 : _b.userID;
             console.log(utilisateurId);
             if (!userId) {
                 return res.status(401).json({
@@ -981,7 +996,7 @@ export default class PrismaUserController {
     }
     static updateNote(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a;
+            var _b;
             const { id, noteId } = req.params;
             const { rate } = req.body;
             // Validate rate
@@ -1003,7 +1018,7 @@ export default class PrismaUserController {
                         .status(402)
                         .json({ error: "Vous ne pouvez pas noter un visiteur" });
                 }
-                const raterId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
+                const raterId = (_b = req.user) === null || _b === void 0 ? void 0 : _b.userID;
                 if (!raterId) {
                     return res
                         .status(403)
@@ -1092,10 +1107,10 @@ export default class PrismaUserController {
     }
     static updateMeasurements(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a;
+            var _b;
             try {
                 const userId = req.params.userId; // ID de l'utilisateur cible dans l'URL
-                const connectedUserId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
+                const connectedUserId = (_b = req.user) === null || _b === void 0 ? void 0 : _b.userID;
                 if (!connectedUserId) {
                     return res.status(401).json({
                         error: "Vous devez être connecté pour effectuer cette action.",
@@ -1158,10 +1173,10 @@ export default class PrismaUserController {
     // Add or update measurements
     static addMesure(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a;
+            var _b;
             try {
                 const userId = req.params.userId; // L'ID de l'utilisateur à partir de l'URL
-                const connectedUserId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID; // ID de l'utilisateur connecté
+                const connectedUserId = (_b = req.user) === null || _b === void 0 ? void 0 : _b.userID; // ID de l'utilisateur connecté
                 if (!connectedUserId) {
                     return res.status(401).json({
                         error: "Vous devez être connecté pour effectuer cette action.",
@@ -1260,8 +1275,8 @@ export default class PrismaUserController {
     }
     static acheterBadge(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a;
-            const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
+            var _b;
+            const userId = (_b = req.user) === null || _b === void 0 ? void 0 : _b.userID;
             if (!userId) {
                 return res.status(401).json({ message: "Utilisateur non authentifié" });
             }
@@ -1318,8 +1333,8 @@ export default class PrismaUserController {
     //En tant que vendeur je peut acheter un badge
     static acheterBadgeVandeur(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a;
-            const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
+            var _b;
+            const userId = (_b = req.user) === null || _b === void 0 ? void 0 : _b.userID;
             const VandeurId = req.body.VandeurId;
             console.log(userId);
             console.log(VandeurId);
@@ -1548,20 +1563,22 @@ export default class PrismaUserController {
     }
     static getStatistiques(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a, _b;
+            var _b;
+
             const connectedUser = yield prisma.users.findUnique({
                 where: { id: req.user.userID },
                 include: { UsersMesModels: true, CommandeModels: true },
             });
-            if (!connectedUser || ((_a = connectedUser.status) === null || _a === void 0 ? void 0 : _a.toLowerCase()) !== "premium") {
+            if (!connectedUser || ((_b = connectedUser.status) === null || _b === void 0 ? void 0 : _b.toLowerCase()) !== "premium") {
                 return res.status(401).json({
                     message: "Vous devez être premium pour effectuer cette action",
                 });
             }
             try {
-                // Get the most sold model
-                const mostSoldModel = connectedUser.UsersMesModels.sort((a, b) => { var _a, _b; return ((_a = b.nombreDeCommande) !== null && _a !== void 0 ? _a : 0) - ((_b = a.nombreDeCommande) !== null && _b !== void 0 ? _b : 0); })[0];
-                // Get the most viewed posts
+                // Trouver le modèle le plus vendu
+                const mostSoldModel = connectedUser.UsersMesModels.sort((a, b) => { var _b, _c; return ((_b = a.nombreDeCommande) !== null && _b !== void 0 ? _b : 0) - ((_c = b.nombreDeCommande) !== null && _c !== void 0 ? _c : 0); });
+                // Trouver les posts les plus vus
+
                 const mostViewedPosts = yield prisma.posts.findMany({
                     where: { utilisateurId: connectedUser.id },
                     orderBy: { vues: "desc" },
@@ -1737,3 +1754,28 @@ export default class PrismaUserController {
         });
     }
 }
+_a = PrismaUserController;
+// Fonction pour obtenir le solde (credits) de l'utilisateur connecté
+PrismaUserController.getBalance = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _b;
+    try {
+        const userId = (_b = req.user) === null || _b === void 0 ? void 0 : _b.userID; // Assurez-vous que l'objet `req.user` contient l'ID utilisateur
+        if (!userId) {
+            res.status(401).json({ error: 'Utilisateur non authentifié' });
+            return;
+        }
+        const user = yield prisma.users.findUnique({
+            where: { id: userId },
+            select: { credits: true }, // Récupère uniquement les crédits
+        });
+        if (!user) {
+            res.status(404).json({ error: 'Utilisateur non trouvé' });
+            return;
+        }
+        res.json({ balance: user.credits || 0 });
+    }
+    catch (error) {
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+export default PrismaUserController;
