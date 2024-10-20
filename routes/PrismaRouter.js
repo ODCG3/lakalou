@@ -361,6 +361,10 @@ router
   .get(auth, (req, res) => PrismaUserController.myFollowers(req, res));
 
 router
+  .route("/myFollowings")
+  .get(auth, (req, res) => PrismaUserController.myFollowings(req, res));
+
+router
   .route("/following")
   .get(auth, (req, res) => PrismaUserController.Followings(req, res));
 
@@ -387,5 +391,9 @@ router
 router
   .route("/acheterBadgeVandeur/:id")
   .post(auth, (req, res) => PrismaUserController.acheterBadgeVandeur(req, res));
+
+router
+  .route("/user/abonnementPremium")
+  .post(auth, (req, res) => PrismaUserController.abonnementPremium(req, res));
 
 export default router;

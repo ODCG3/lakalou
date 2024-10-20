@@ -425,44 +425,65 @@ export default class PrismaUserController {
     // Report User version2
     static reportUser(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            const reporterId = req.user.userID; // ID du reporter
-            const { userId, reason } = req.body; // Récupérer l'ID de l'utilisateur à signaler et la raison
+            var _a;
+            // Récupérer l'ID de l'utilisateur à signaler depuis les paramètres
+            const userIdToReport = Number(req.params.userId); // Assurez-vous que c'est un nombre
+            const { reason } = req.body;
+            // Validation de la raison
+
             if (!reason || typeof reason !== "string") {
                 return res
                     .status(400)
                     .json({ error: "La raison du signalement est requise" });
             }
-            if (userId === reporterId) {
-                return res
-                    .status(403)
-                    .json({ error: "Vous ne pouvez pas vous signaler vous-même" });
-            }
+            console.log("Raison du signalement:", reason);
+            console.log("ID de l'utilisateur à signaler:", userIdToReport);
+
             try {
+                // Vérifiez si l'utilisateur à signaler existe
                 const userToReport = yield prisma.users.findUnique({
-                    where: { id: userId },
+                    where: { id: userIdToReport }, // Utilisez l'ID passé en paramètre
                     include: { UsersSignals_UsersSignals_reporterIdToUsers: true },
                 });
                 if (!userToReport) {
                     return res.status(404).json({ error: "Utilisateur non trouvé" });
                 }
+                const reporterId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID; // L'ID de l'utilisateur connecté
+                if (!reporterId) {
+                    return res
+                        .status(403)
+                        .json({ error: "Connectez-vous d'abord pour signaler" });
+                }
+                // Vérifiez si l'utilisateur qui signale n'est pas le même que celui qui est signalé
+                if (userIdToReport === reporterId) {
+                    return res
+                        .status(403)
+                        .json({ error: "Vous ne pouvez pas vous signaler vous-même" });
+
+                }
+                // Vérifiez si l'utilisateur a déjà été signalé
                 const alreadyReported = userToReport.UsersSignals_UsersSignals_reporterIdToUsers.some((signal) => signal.reporterId === reporterId);
                 if (alreadyReported) {
                     return res
-                        .status(405)
+                        .status(409) // Utilisez 409 pour conflit
                         .json({ error: "Vous avez déjà signalé cet utilisateur" });
                 }
+                // Créez le signalement avec les bons ID
                 const signal = yield prisma.usersSignals.create({
                     data: {
                         reason,
-                        reporterId,
-                        userId,
+                        reporterId: reporterId, // ID de l'utilisateur qui fait le signalement
+                        userId: userToReport.id, // ID de l'utilisateur à signaler
                     },
                 });
-                return res
+                console.log("Signalement créé:", signal);
+                res
+
                     .status(200)
                     .json({ message: "Signalement ajouté avec succès", signal });
             }
             catch (error) {
+                console.error("Erreur lors du signalement:", error);
                 res.status(500).json({ error: "Erreur interne du serveur" });
             }
         });
@@ -472,12 +493,10 @@ export default class PrismaUserController {
         return __awaiter(this, void 0, void 0, function* () {
             const userId = req.user.userID;
             const followerId = Number(req.body.followerId);
-            console.log(followerId);
-            console.log(userId);
             if (!userId) {
-                return res
-                    .status(400)
-                    .json({ error: "L'id de l'utilisateur à désabonner est obligatoire" });
+                return res.status(400).json({
+                    error: "L'id de l'utilisateur à désabonner est obligatoire",
+                });
             }
             try {
                 if (!followerId) {
@@ -496,14 +515,22 @@ export default class PrismaUserController {
                         .status(400)
                         .json({ message: "Vous ne pouvez pas vous désabonner de vous-même" });
                 }
+                // Vérifier si l'utilisateur connecté suit bien l'utilisateur ciblé
+                const followRelation = yield prisma.followers.findFirst({
+                    where: {
+                        followerId: followerId,
+                    },
+                });
+                if (!followRelation) {
+                    return res.status(404).json({
+                        message: "Relation de suivi introuvable, vous ne suivez pas cet utilisateur",
+                    });
+                }
                 // Retirer l'utilisateur connecté de la liste des followers de l'utilisateur ciblé
                 yield prisma.followers.delete({
-                    where: { id: followerId },
+                    where: { id: followRelation.id },
                 });
-                // Retirer l'utilisateur ciblé de la liste des followings de l'utilisateur connecté
-                return res
-                    .status(200)
-                    .json({ message: "Désabonnement effectué avec succès" });
+                return res.status(200).json({ message: "Désabonnement effectué avec succès" });
             }
             catch (err) {
                 console.error(err);
@@ -604,7 +631,8 @@ export default class PrismaUserController {
             }
         });
     }
-    static Followings(req, res) {
+    static myFollowings(req, res) {
+
         return __awaiter(this, void 0, void 0, function* () {
             var _a, _b;
             const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID;
@@ -1482,11 +1510,12 @@ export default class PrismaUserController {
                         photoProfile: tailleur.photoProfile,
                         role: tailleur.role,
                         averageRate,
+                        rank: 0, // Initial value
                     };
                 });
-                // Trier les tailleurs par note moyenne décroissante
+                // Sort by average rate
                 ranking.sort((a, b) => b.averageRate - a.averageRate);
-                // Attribuer les rangs
+                // Assign ranks
                 let rank = 1;
                 let previousRate = null;
                 let tiedUsersCount = 0;
@@ -1498,21 +1527,28 @@ export default class PrismaUserController {
                         rank += tiedUsersCount;
                         tiedUsersCount = 1;
                     }
-                    tailleur["rank"] = rank;
+                    tailleur.rank = rank;
                     previousRate = tailleur.averageRate;
                 });
-                res.status(200).json(ranking);
+                // If res is defined, send the response (used for direct requests to get ranking)
+                if (res) {
+                    res.status(200).json(ranking);
+                }
+                return ranking;
             }
             catch (error) {
-                res.status(500).json({
-                    message: `Erreur lors de la récupération du classement des tailleurs: ${error.message}`,
-                });
+                if (res) {
+                    res.status(500).json({
+                        message: `Erreur lors de la récupération du classement des tailleurs: ${error.message}`,
+                    });
+                }
+                return []; // Return an empty array in case of an error
             }
         });
     }
     static getStatistiques(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a;
+            var _a, _b;
             const connectedUser = yield prisma.users.findUnique({
                 where: { id: req.user.userID },
                 include: { UsersMesModels: true, CommandeModels: true },
@@ -1523,23 +1559,48 @@ export default class PrismaUserController {
                 });
             }
             try {
-                // Trouver le modèle le plus vendu
-                const mostSoldModel = connectedUser.UsersMesModels.sort((a, b) => { var _a, _b; return ((_a = a.nombreDeCommande) !== null && _a !== void 0 ? _a : 0) - ((_b = b.nombreDeCommande) !== null && _b !== void 0 ? _b : 0); });
-                // Trouver les posts les plus vus
+                // Get the most sold model
+                const mostSoldModel = connectedUser.UsersMesModels.sort((a, b) => { var _a, _b; return ((_a = b.nombreDeCommande) !== null && _a !== void 0 ? _a : 0) - ((_b = a.nombreDeCommande) !== null && _b !== void 0 ? _b : 0); })[0];
+                // Get the most viewed posts
                 const mostViewedPosts = yield prisma.posts.findMany({
                     where: { utilisateurId: connectedUser.id },
                     orderBy: { vues: "desc" },
                 });
-                // Calculer le ratio des ventes par rapport aux posts
+                // Calculate the sales to posts ratio
                 const userSalesCount = connectedUser.CommandeModels.length;
                 const userPostsCount = yield prisma.posts.count({
                     where: { utilisateurId: connectedUser.id },
                 });
-                const salesToPostsRatio = userSalesCount / userPostsCount;
+                const salesToPostsRatio = userPostsCount > 0 ? (userSalesCount / userPostsCount) : 0;
+                // Get followers and followings count
+                const userFollowersCount = yield prisma.followers.count({
+                    where: { followerId: connectedUser.id },
+                });
+                const userFollowingsCount = yield prisma.followers.count({
+                    where: { userId: connectedUser.id },
+                });
+                const tailleursPostsCount = yield prisma.posts.count({
+                    where: { utilisateurId: connectedUser.id },
+                });
+                // Get total likes
+                const postsWithLikes = yield prisma.posts.findMany({
+                    where: { utilisateurId: connectedUser.id },
+                    include: { Likes: true },
+                });
+                const totalLikes = postsWithLikes.reduce((acc, post) => acc + (post.Likes.length || 0), 0);
+                // Get tailleur ranking (do not return the response in getTailleurRanking)
+                const tailleurRanking = yield this.getTailleurRanking();
+                const tailleurRank = ((_b = tailleurRanking.find((tailleur) => tailleur.id === connectedUser.id)) === null || _b === void 0 ? void 0 : _b.rank) || null;
+                // Send the statistics response
                 res.status(200).json({
                     mostSoldModel,
                     mostViewedPosts,
-                    salesToPostsRatio: salesToPostsRatio * 100 + "%",
+                    salesToPostsRatio: (salesToPostsRatio * 100).toFixed(2) + "%",
+                    tailleursPostsCount,
+                    userFollowersCount,
+                    userFollowingsCount,
+                    totalLikes,
+                    tailleurRank,
                 });
             }
             catch (err) {
@@ -1618,6 +1679,60 @@ export default class PrismaUserController {
             }
             catch (err) {
                 console.error(err);
+            }
+        });
+    }
+    static abonnementPremium(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a, _b;
+            const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID; // ID de l'utilisateur connecté via token/session
+            try {
+                // Récupérer l'utilisateur et ses followers
+                const user = yield prisma.users.findUnique({
+                    where: { id: userId },
+                    include: {
+                        Followers_Followers_userIdToUsers: true, // Inclure les followers de l'utilisateur
+                    },
+                });
+                // Vérifier si l'utilisateur existe
+                if (!user) {
+                    return res.status(404).json({ message: "Utilisateur non trouvé." });
+                }
+                // Vérifier si l'utilisateur est un tailleur
+                if (user.role !== 'tailleur') {
+                    return res.status(403).json({ message: "Seuls les tailleurs peuvent s'abonner au service premium." });
+                }
+                // Vérifier si l'utilisateur est déjà premium
+                if (user.status === 'premium') {
+                    return res.status(400).json({ message: "Vous êtes déjà abonné au service premium." });
+                }
+                // Vérifier le nombre de followers
+                const followerCount = user.Followers_Followers_userIdToUsers.length;
+                if (followerCount < 1) {
+                    return res.status(400).json({ message: "Vous devez avoir au moins 10 followers pour vous abonner au service premium." });
+                }
+                // Gérer le cas où user.credits est null
+                const userCredits = (_b = user.credits) !== null && _b !== void 0 ? _b : 0; // Utilise 0 si user.credits est null
+                // Vérifier les crédits
+                if (userCredits < 5) {
+                    return res.status(400).json({ message: "Vous n'avez pas assez de crédits. Il vous faut au moins 5 crédits pour vous abonner." });
+                }
+                // Si les conditions sont remplies, déduire 5 crédits et mettre à jour le statut à "premium"
+                const updatedUser = yield prisma.users.update({
+                    where: { id: userId },
+                    data: {
+                        credits: userCredits - 5,
+                        status: 'premium',
+                    },
+                });
+                return res.status(200).json({
+                    message: "L'abonnement premium a été réussi avec succès.",
+                    user: updatedUser,
+                });
+            }
+            catch (error) {
+                console.error(error);
+                return res.status(500).json({ message: "Erreur lors de l'abonnement premium." });
             }
         });
     }
