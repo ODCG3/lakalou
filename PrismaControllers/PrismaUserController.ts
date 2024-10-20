@@ -340,6 +340,46 @@ export default class PrismaUserController {
     }
   }
 
+  
+
+  //getTotalNotes pour retourner la somme des notes de l'utilisateur par ID
+  // static async getTotalNotesForPostUser(req: Request, res: Response) {
+  //   const postId = parseInt(req.params.postId, 10);
+  //   try {
+  //     // Récupérer le post et l'utilisateurId associé
+  //     const post = await prisma.posts.findUnique({
+  //       where: { id: postId },
+  //       select: { utilisateurId: true },
+  //     });
+
+  //     if (!post) {
+  //       return res.status(404).json({ error: "Post non trouvé" });
+  //     }
+
+  //     // Récupérer toutes les notes de l'utilisateur
+  //     const userNotes = await prisma.usersNotes.findMany({
+  //       where: { userId: post.utilisateurId },
+  //       select: { rate: true },
+  //     });
+
+  //     // Calculer le total des notes
+  //     const totalNotes = userNotes.reduce(
+  //       (sum, note) => sum + (note.rate || 0),
+  //       0
+  //     );
+
+  //     res.status(200).json({
+  //       utilisateurId: post.utilisateurId,
+  //       totalNotes: totalNotes,
+  //     });
+  //   } catch (error) {
+  //     console.error("Erreur lors de la récupération des notes:", error);
+  //     res.status(500).json({ error: "Erreur interne du serveur" });
+  //   }
+  // }
+
+  //reportUser
+  
   static async getUserNotesFromPost(req: Request, res: Response) {
     const { postId } = req.params; // On récupère le postId des paramètres
 
@@ -423,7 +463,18 @@ export default class PrismaUserController {
     // Récupérer l'ID de l'utilisateur à signaler depuis les paramètres
     const userIdToReport = Number(req.params.userId); // Assurez-vous que c'est un nombre
 
-    const { reason } = req.body;
+  //     res
+  //       .status(200)
+  //       .json({ message: "Signalement ajouté avec succès", signal });
+  //   } catch (error) {
+  //     res.status(500).json({ error: "Erreur interne du serveur" });
+  //   }
+  // }
+
+  // Report User version2
+  static async reportUser(req: Request, res: Response) {
+    const reporterId = req.user!.userID; // ID du reporter
+    const { userId, reason } = req.body; // Récupérer l'ID de l'utilisateur à signaler et la raison
 
     // Validation de la raison
     if (!reason || typeof reason !== "string") {
@@ -461,6 +512,7 @@ export default class PrismaUserController {
                 .json({ error: "Vous ne pouvez pas vous signaler vous-même" });
         }
 
+
         // Vérifiez si l'utilisateur a déjà été signalé
         const alreadyReported = userToReport.UsersSignals_UsersSignals_reporterIdToUsers.some(
             (signal: { reporterId: number }) => signal.reporterId === reporterId
@@ -485,6 +537,7 @@ export default class PrismaUserController {
         res
             .status(200)
             .json({ message: "Signalement ajouté avec succès", signal });
+
     } catch (error) {
         console.error("Erreur lors du signalement:", error);
         res.status(500).json({ error: "Erreur interne du serveur" });
@@ -617,10 +670,12 @@ export default class PrismaUserController {
 
     try {
       const followers = await prisma.followers.findMany({
-        where: { followerId: req.user?.userID },
+        // where: { followerId: req.user?.userID },
+        where: { userId: req.user?.userID },
         select: {
           id: true,
           // afichier les informations du user
+
           Users_Followers_userIdToUsers: {
             select: {
               id: true,
@@ -672,7 +727,6 @@ export default class PrismaUserController {
           },
         },
       });
-
       return res.status(200).json({ followings });
     } catch (error) {
       console.error(error);
@@ -739,9 +793,9 @@ export default class PrismaUserController {
       const userId = req.user?.userID;
 
       if (!userId) {
-        return res.status(401).json({
-          message: "Vous devez vous connecter pour effectuer cette action",
-        });
+        return res
+          .status(401)
+          .send("Vous devez vous connecter pour effectuer cette action");
       }
 
       const user = await prisma.users.findUnique({
@@ -749,16 +803,27 @@ export default class PrismaUserController {
       });
 
       if (!user) {
-        return res.status(404).json({ message: "Utilisateur non trouvé" });
+        return res.status(404).send("Utilisateur non trouvé");
       }
 
       if ((user?.credits ?? 0) <= 1) {
-        return res.status(402).json({
-          message: "Vous n'avez pas assez de crédits pour changer de rôle",
-        });
+        return res
+          .status(402)
+          .send("Vous n'avez pas assez de crédits pour changer de rôle");
       }
 
-      const newRole = user.role === "visiteur" ? "tailleur" : "visiteur";
+      // const newRole = user.role === "visiteur" ? "tailleur" : "visiteur";
+      const newRole = req.body.newRole;
+      if (newRole === user.role) {
+        return res.status(400).send(`Votre profil est dèjas sur: : ${newRole}`);
+      }
+
+      const validRoles = ["tailleur", "vendeur", "visiteur"];
+      if (!validRoles.includes(newRole)) {
+        return res
+          .status(400)
+          .send("Rôle invalide, choisir parmi tailleur, vendeur ou visiteur");
+      }
 
       const updatedUser = await prisma.users.update({
         where: { id: userId },
@@ -768,14 +833,10 @@ export default class PrismaUserController {
         },
       });
 
-      return res
-        .status(200)
-        .json({ message: "Rôle mis à jour avec succès", user: updatedUser });
+      return res.status(200).send("Rôle mis à jour avec succès");
     } catch (error) {
       console.error(error);
-      return res
-        .status(500)
-        .json({ message: "Erreur lors du changement de rôle", error: error });
+      return res.status(500).send("Erreur lors du changement de rôle");
     }
   }
 
@@ -1137,11 +1198,14 @@ export default class PrismaUserController {
     }
   }
 
-  static async updateMeasurements(req: Request, res: Response): Promise<Response> {
+  static async updateMeasurements(
+    req: Request,
+    res: Response
+  ): Promise<Response> {
     try {
       const userId = req.params.userId; // ID de l'utilisateur cible dans l'URL
       const connectedUserId = req.user?.userID;
-  
+
       if (!connectedUserId) {
         return res.status(401).json({
           error: "Vous devez être connecté pour effectuer cette action.",
@@ -1208,125 +1272,128 @@ export default class PrismaUserController {
   //addMesure
  //addMesure
 // Add or update measurements
-static async addMesure(req: Request, res: Response) {
-  try {
-    const userId = req.params.userId; // L'ID de l'utilisateur à partir de l'URL
-    const connectedUserId = req.user?.userID; // ID de l'utilisateur connecté
 
-    if (!connectedUserId) {
-      return res.status(401).json({
-        error: "Vous devez être connecté pour effectuer cette action.",
-      });
-    }
+  //addMesure
+  // Add or update measurements
+  static async addMesure(req: Request, res: Response) {
+    try {
+      const userId = req.params.userId; // L'ID de l'utilisateur à partir de l'URL
+      const connectedUserId = req.user?.userID; // ID de l'utilisateur connecté
 
-    // Vérifier que l'utilisateur connecté est un tailleur
-    const connectedUser = await prisma.users.findUnique({
-      where: { id: connectedUserId },
-    });
-
-    if (!connectedUser || connectedUser.role !== 'tailleur') {
-      return res.status(403).json({
-        error: "Vous n'êtes pas autorisé à effectuer cette action.",
-      });
-    }
-
-    // Vérifier que l'utilisateur cible existe
-    const user = await prisma.users.findUnique({
-      where: { id: Number(userId) },
-    });
-
-    if (!user) {
-      return res.status(404).json({ error: "Utilisateur non trouvé." });
-    }
-
-    // Vérification des mesures envoyées
-    const measurements = req.body;
-
-    const fieldsToFloat = [
-      "cou",
-      "longueurPantallon",
-      "epaule",
-      "longueurManche",
-      "hanche",
-      "poitrine",
-      "cuisse",
-      "longueur",
-      "tourBras",
-      "tourPoignet",
-      "ceinture",
-    ];
-    
-    for (const field of fieldsToFloat) {
-      if (measurements[field]) {
-        measurements[field] = parseFloat(measurements[field]);
+      if (!connectedUserId) {
+        return res.status(401).json({
+          error: "Vous devez être connecté pour effectuer cette action.",
+        });
       }
-    }
 
-    // Check if measurements already exist for this user
-    const existingMeasurements = await prisma.mesures.findUnique({
-      where: { UserID: Number(userId) },
-    });
+      // Vérifier que l'utilisateur connecté est un tailleur
+      const connectedUser = await prisma.users.findUnique({
+        where: { id: connectedUserId },
+      });
 
-    let result;
+      if (!connectedUser || connectedUser.role !== "tailleur") {
+        return res.status(403).json({
+          error: "Vous n'êtes pas autorisé à effectuer cette action.",
+        });
+      }
 
-    if (existingMeasurements) {
-      // If measurements exist, update them
-      result = await prisma.mesures.update({
+      // Vérifier que l'utilisateur cible existe
+      const user = await prisma.users.findUnique({
+        where: { id: Number(userId) },
+      });
+
+      if (!user) {
+        return res.status(404).json({ error: "Utilisateur non trouvé." });
+      }
+
+      // Vérification des mesures envoyées
+      const measurements = req.body;
+
+      const fieldsToFloat = [
+        "cou",
+        "longueurPantallon",
+        "epaule",
+        "longueurManche",
+        "hanche",
+        "poitrine",
+        "cuisse",
+        "longueur",
+        "tourBras",
+        "tourPoignet",
+        "ceinture",
+      ];
+
+      for (const field of fieldsToFloat) {
+        if (measurements[field]) {
+          measurements[field] = parseFloat(measurements[field]);
+        }
+      }
+
+      // Check if measurements already exist for this user
+      const existingMeasurements = await prisma.mesures.findUnique({
         where: { UserID: Number(userId) },
-        data: measurements,
       });
 
-      return res.status(200).json({
-        message: "Mesures mises à jour avec succès.",
-        data: result,
-      });
-    } else {
-      // Otherwise, create new measurements
-      result = await prisma.mesures.create({
-        data: {
-          ...measurements,
-          UserID: Number(userId),
-        },
-      });
+      let result;
 
-      return res.status(201).json({
-        message: "Mesures ajoutées avec succès.",
-        data: result,
-      });
+      if (existingMeasurements) {
+        // If measurements exist, update them
+        result = await prisma.mesures.update({
+          where: { UserID: Number(userId) },
+          data: measurements,
+        });
+
+        return res.status(200).json({
+          message: "Mesures mises à jour avec succès.",
+          data: result,
+        });
+      } else {
+        // Otherwise, create new measurements
+        result = await prisma.mesures.create({
+          data: {
+            ...measurements,
+            UserID: Number(userId),
+          },
+        });
+
+        return res.status(201).json({
+          message: "Mesures ajoutées avec succès.",
+          data: result,
+        });
+      }
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: "Erreur interne du serveur." });
     }
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: "Erreur interne du serveur." });
   }
-}
 
-
-  
   // Find user by name
-static async findByName(req: Request, res: Response) {
-  try {
-    const name = req.query.name;
+  static async findByName(req: Request, res: Response) {
+    try {
+      const name = req.query.name;
 
-    if (!name) {
-      return res.status(400).json({ error: "Nom d'utilisateur requis." });
+      if (!name) {
+        return res.status(400).json({ error: "Nom d'utilisateur requis." });
+      }
+
+      const user = await prisma.users.findFirst({
+        where: { nom: String(name) },
+      });
+
+      if (!user) {
+        return res.status(404).json({ error: "Utilisateur non trouvé." });
+      }
+
+      return res.status(200).json({ user });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: "Erreur interne du serveur." });
     }
+  } 
 
-    const user = await prisma.users.findFirst({
-      where: { nom: String(name) },
-    });
-
-    if (!user) {
-      return res.status(404).json({ error: "Utilisateur non trouvé." });
-    }
-
-    return res.status(200).json({ user });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: "Erreur interne du serveur." });
-  }
-}
 
   
+
   static async acheterBadge(req: Request, res: Response) {
     const userId = req.user?.userID;
 
@@ -1780,6 +1847,7 @@ static async findByName(req: Request, res: Response) {
 
   static async getConnectedUser(req: Request, res: Response) {
     try {
+
       const userId = req.user!.userID;
 
       console.log(userId);
@@ -1789,6 +1857,7 @@ static async findByName(req: Request, res: Response) {
           message: "Vous devez vous connecter pour effectuer cette action",
         });
       }
+
 
       res.status(200).json(userId);
     } catch (err) {

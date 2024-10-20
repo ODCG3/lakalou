@@ -22,6 +22,7 @@ export default class CommandeModelController {
                 let ownerId = null;
                 let post = null;
                 let story = null;
+                let article = articles !== null && articles !== void 0 ? articles : [];
                 // Vérifier si c'est un post ou une story
                 if (postId && !storyId) {
                     // Gérer la commande à partir d'un post
@@ -153,14 +154,14 @@ export default class CommandeModelController {
                         adresseLivraison: adresseLivraison,
                         dateLivraison: new Date(dateLivraison),
                         articles: {
-                            connect: articles.map((article) => ({
+                            connect: article.map((article) => ({
                                 id: parseInt(article.id), // Ensure that the ID is parsed as an integer
                             })),
                         },
                     },
                 });
                 let montant = 0;
-                if (articles.length > 0) {
+                if (articles && articles.length > 0) {
                     const articlesPrices = yield Promise.all(articles.map((article) => __awaiter(this, void 0, void 0, function* () {
                         const data = yield prisma.articles.findUnique({
                             where: { id: article.id },

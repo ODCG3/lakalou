@@ -182,10 +182,22 @@ model Stories {
   article        Articles?        @relation(fields: [articleId], references: [id])
   Models         Models?          @relation(fields: [modelId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Stories_ibfk_1")
   Users          Users            @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "Stories_ibfk_2")
+  StoryViews StoryViews[]
 
   @@index([modelId], map: "modelId")
   @@index([userId], map: "userId")
   @@index([articleId], map: "Stories_articleId_fkey")
+}
+
+model StoryViews {
+  id        Int      @id @default(autoincrement())
+  storyId   Int
+  viewerId  Int
+  viewedAt  DateTime @default(now())
+  story     Stories  @relation(fields: [storyId], references: [id])
+  viewer    Users    @relation(fields: [viewerId], references: [id])
+
+  @@unique([storyId, viewerId])
 }
 
 model Users {
@@ -225,6 +237,7 @@ model Users {
   UsersNotifications                                  UsersNotifications[]
   UsersSignals_UsersSignals_reporterIdToUsers         UsersSignals[]             @relation("UsersSignals_reporterIdToUsers")
   UsersSignals_UsersSignals_userIdToUsers             UsersSignals[]             @relation("UsersSignals_userIdToUsers")
+  ViewedStories StoryViews[]
 }
 
 model Mesures {
@@ -263,6 +276,7 @@ model UsersDiscussionsMessages {
   createdAt        DateTime?        @default(now()) @db.DateTime(0)
   senderId         Int
   discussionId     Int
+  file             String?          @db.VarChar(255)
   Users            Users            @relation(fields: [senderId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "UsersDiscussionsMessages_ibfk_1")
   UsersDiscussions UsersDiscussions @relation(fields: [discussionId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "UsersDiscussionsMessages_ibfk_2")
 
