@@ -8,6 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import { PrismaClient } from "@prisma/client";
+import NotificationController from './NotificationController';
 const prisma = new PrismaClient();
 // Ajouter un like
 export const likePost = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -41,6 +42,12 @@ export const likePost = (req, res) => __awaiter(void 0, void 0, void 0, function
                 },
             },
         });
+        // Récupérer l'ID de l'utilisateur qui a publié le post
+        const postAuthorId = post.utilisateurId;
+        // Créer la notification pour l'auteur du post
+        const notificationMessage = `L'utilisateur avec l'ID ${userId} a aimé votre post.`;
+        yield NotificationController.createNotification(postAuthorId, 'post_liked', notificationMessage, parseInt(postId) // ID du post associé
+        );
         // Envoyer un message de succès
         res.status(200).json({ message: "Post aimé avec succès.", like });
     }
@@ -60,6 +67,7 @@ export const unlikePost = (req, res) => __awaiter(void 0, void 0, void 0, functi
             res.status(400).json({ message: "Vous n'avez pas aimé ce post." });
             return;
         }
+        // Supprimer le like
         const like = yield prisma.likes.delete({
             where: { id: parseInt(likeID, 10) },
         });
@@ -72,6 +80,12 @@ export const unlikePost = (req, res) => __awaiter(void 0, void 0, void 0, functi
                 },
             },
         });
+        // Récupérer l'ID de l'utilisateur qui a publié le post
+        const postAuthorId = post.utilisateurId;
+        // Créer la notification pour l'auteur du post
+        const notificationMessage = `L'utilisateur avec l'ID ${userId} a retiré son like de votre post.`;
+        yield NotificationController.createNotification(postAuthorId, 'post_unliked', notificationMessage, parseInt(postId) // ID du post associé
+        );
         res
             .status(200)
             .json({ message: "Like retiré avec succès.", data: { like, post } });

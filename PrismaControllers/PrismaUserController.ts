@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import NotificationController from './NotificationController'; 
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import isEmail from "validator/lib/isEmail.js";
@@ -6,7 +7,6 @@ import { validateImageExtension, validateName } from "../utils/Validator.js";
 import { Request, Response } from "express";
 import { Error } from "mongoose";
 import validator from "validator";
-
 const prisma = new PrismaClient();
 
 interface Measurements {
@@ -566,62 +566,65 @@ export default class PrismaUserController {
     }
   }
 
-  // Méthode unfollowUser
-  static async unfollowUser(req: Request, res: Response) {
-    const userId = req.user!.userID;
-    const followerId = Number(req.body.followerId);
-    console.log(followerId);
-    console.log(userId);
-    if (!userId) {
+// Méthode unfollowUser
+static async unfollowUser(req: Request, res: Response) {
+  const userId = req.user!.userID; // ID de l'utilisateur connecté
+  const followerId = Number(req.body.followerId); // ID de l'utilisateur à désabonner
+
+  if (!userId) {
+    return res
+      .status(400)
+      .json({ error: "L'id de l'utilisateur connecté est obligatoire" });
+  }
+
+  try {
+    if (!followerId) {
+      return res.status(401).json({
+        message: "Vous devez vous connecter pour effectuer cette action",
+      });
+    }
+
+    const userToUnfollow = await prisma.users.findFirst({
+      where: { id: followerId },
+    });
+
+    if (!userToUnfollow) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    if (userToUnfollow.id === userId) {
       return res
         .status(400)
-        .json({ error: "L'id de l'utilisateur à désabonner est obligatoire" });
+        .json({ message: "Vous ne pouvez pas vous désabonner de vous-même" });
     }
 
-    try {
-      if (!followerId) {
-        return res.status(401).json({
-          message: "Vous devez vous connecter pour effectuer cette action",
-        });
-      }
+    // Retirer l'utilisateur connecté de la liste des followers de l'utilisateur ciblé
+    await prisma.followers.delete({
+      where: { id: followerId },
+    });
 
-      const userToUnfollow = await prisma.users.findFirst({
-        where: { id: followerId },
-      });
+    // Utiliser NotificationController pour créer la notification
+    const notificationMessage = `L'utilisateur avec l'ID ${userId} s'est désabonné de vous.`;
+    await NotificationController.createNotification(followerId, 'unfollowed', notificationMessage);
 
-      if (!userToUnfollow) {
-        return res.status(404).json({ message: "Utilisateur non trouvé" });
-      }
-
-      if (userToUnfollow.id === userId) {
-        return res
-          .status(400)
-          .json({ message: "Vous ne pouvez pas vous désabonner de vous-même" });
-      }
-
-      // Retirer l'utilisateur connecté de la liste des followers de l'utilisateur ciblé
-      await prisma.followers.delete({
-        where: { id: followerId },
-      });
-
-      // Retirer l'utilisateur ciblé de la liste des followings de l'utilisateur connecté
-
-      return res
-        .status(200)
-        .json({ message: "Désabonnement effectué avec succès" });
-    } catch (err) {
-      console.error(err);
-      return res
-        .status(500)
-        .json({ message: "Erreur lors du désabonnement", error: err });
-    }
+    return res
+      .status(200)
+      .json({ message: "Désabonnement effectué avec succès" });
+  } catch (err) {
+    console.error(err);
+    return res
+      .status(500)
+      .json({ message: "Erreur lors du désabonnement", error: err });
   }
+}
+
+
 
   // Méthode followUser
   static async followUser(req: Request, res: Response) {
-    const userId = req.user!.userID;
-    const followerId = Number(req.body.followerId);
-
+    const userId = req.user!.userID; // ID de l'utilisateur connecté
+    const followerId = Number(req.body.followerId); // ID de l'utilisateur à suivre
+  
     if (!followerId) {
       return res
         .status(400)
@@ -630,9 +633,9 @@ export default class PrismaUserController {
     if (!userId) {
       return res
         .status(400)
-        .json({ error: "L'id de l'utilisateur à suivre est obligatoire" });
+        .json({ error: "L'id de l'utilisateur connecté est obligatoire" });
     }
-
+  
     try {
       const followerExists = await prisma.users.findUnique({
         where: { id: followerId },
@@ -640,27 +643,43 @@ export default class PrismaUserController {
       const followingExists = await prisma.users.findUnique({
         where: { id: userId },
       });
-
+  
       if (!followerExists || !followingExists) {
         return res.status(404).json({ message: "Utilisateur non trouvé" });
       }
-
+  
       if (Number(followerId) === userId) {
         return res
           .status(400)
-          .json({ message: "Vous ne pouvez pas vous abonner de vous-même" });
+          .json({ message: "Vous ne pouvez pas vous abonner à vous-même" });
       }
-
-      // Connectez l'utilisateur à l'utilisateur que vous essayez de suivre
+  
+      // Vérifier si l'utilisateur suit déjà cette personne
+      const alreadyFollowing = await prisma.followers.findFirst({
+        where: {
+          userId: userId,
+          followerId: followerId,
+        },
+      });
+  
+      if (alreadyFollowing) {
+        return res
+          .status(400)
+          .json({ message: "Vous suivez déjà cet utilisateur" });
+      }
+  
+      // Connecter l'utilisateur à l'utilisateur qu'il souhaite suivre
       await prisma.followers.create({
         data: {
           userId: userId,
           followerId: followerId,
         },
       });
-
-      // Connectez l'utilisateur que vous essayez de suivre à l'utilisateur connecté
-
+  
+      // Utiliser NotificationController pour créer la notification
+      const notificationMessage = `L'utilisateur avec l'ID ${userId} vous suit maintenant.`;
+      await NotificationController.createNotification(followerId, 'followed', notificationMessage);
+  
       return res
         .status(200)
         .json({ message: "Abonnement effectué avec succès" });
@@ -671,6 +690,9 @@ export default class PrismaUserController {
         .json({ message: "Erreur lors de l'abonnement", error: err });
     }
   }
+  
+  
+  
   // Méthode myFollowers
   static async myFollowers(req: Request, res: Response) {
     const userId = req.user?.userID;
@@ -852,193 +874,188 @@ export default class PrismaUserController {
   }
 
   // Méthode bloquerUsers
-  static async bloquerUsers(req: Request, res: Response) {
-    /* const { userID } = req.params; */
-    const utilisateurId = Number(req.body.utilisateurId);
-    const userId = req.user?.userID;
-    const storyId = req.body.storyId;
+// Méthode bloquerUsers
+static async bloquerUsers(req: Request, res: Response) {
+  const utilisateurId = Number(req.body.utilisateurId); // ID de l'utilisateur à bloquer
+  const userId = req.user?.userID; // ID de l'utilisateur connecté
+  const storyId = req.body.storyId; // ID de la story associée
 
-    console.log(utilisateurId);
-    console.log(userId);
-    if (!userId) {
-      return res.status(401).json({
-        message: "Vous devez vous connecter pour effectuer cette action",
-      });
-    }
-
-    if (!utilisateurId || isNaN(Number(utilisateurId))) {
-      return res.status(400).json({ error: "ID utilisateur invalide" });
-    }
-
-    if (!storyId) {
-      return res.status(400).json({ error: "ID de la story obligatoire" });
-    }
-
-    try {
-      const story = await prisma.stories.findUnique({
-        where: { id: Number(storyId) },
-      });
-
-      if (!story) {
-        return res.status(404).json({ error: "Story non trouvée" });
-      }
-
-      if (Number(utilisateurId) === userId) {
-        return res
-          .status(400)
-          .json({ error: "Vous ne pouvez pas vous bloquer vous-même" });
-      }
-
-      const userToBlock = await prisma.users.findUnique({
-        where: { id: Number(utilisateurId) },
-      });
-
-      if (!userToBlock) {
-        return res
-          .status(404)
-          .json({ error: "Utilisateur à bloquer non trouvé" });
-      }
-
-      const currentUser = await prisma.users.findUnique({
-        where: { id: userId },
-        include: { BlockedUsers: true },
-      });
-
-      if (!currentUser) {
-        return res
-          .status(404)
-          .json({ error: "Utilisateur courant non trouvé" });
-      }
-
-      const alreadyBlocked = currentUser.BlockedUsers.some(
-        (BlockedUsers) => BlockedUsers.id === Number(utilisateurId)
-      );
-
-      if (alreadyBlocked) {
-        return res
-          .status(400)
-          .json({ error: "Vous avez déjà bloqué cet utilisateur" });
-      }
-
-      await prisma.blockedUsers.create({
-        data: {
-          storyId: Number(storyId),
-          blockedUserId: Number(utilisateurId),
-        },
-      });
-      currentUser.BlockedUsers.push({
-        id: utilisateurId,
-        storyId: Number(storyId),
-        blockedUserId: Number(utilisateurId),
-      });
-      console.log(currentUser.BlockedUsers);
-      return res
-        .status(200)
-        .json({ message: "Utilisateur bloqué avec succès" });
-    } catch (error) {
-      console.error(error);
-      return res
-        .status(500)
-        .json({ error: "Erreur interne du serveur", details: error });
-    }
+  // Vérification si l'utilisateur est connecté
+  if (!userId) {
+    return res.status(401).json({
+      message: "Vous devez vous connecter pour effectuer cette action",
+    });
   }
+
+  // Validation de l'ID de l'utilisateur à bloquer
+  if (!utilisateurId || isNaN(utilisateurId)) {
+    return res.status(400).json({ error: "ID utilisateur invalide" });
+  }
+
+  // Validation de l'ID de la story
+  if (!storyId) {
+    return res.status(400).json({ error: "ID de la story obligatoire" });
+  }
+
+  try {
+    // Vérifier si la story existe
+    const story = await prisma.stories.findUnique({
+      where: { id: Number(storyId) },
+    });
+
+    if (!story) {
+      return res.status(404).json({ error: "Story non trouvée" });
+    }
+
+    // Vérifier si l'utilisateur ne se bloque pas lui-même
+    if (utilisateurId === userId) {
+      return res
+        .status(400)
+        .json({ error: "Vous ne pouvez pas vous bloquer vous-même" });
+    }
+
+    // Vérifier si l'utilisateur à bloquer existe
+    const userToBlock = await prisma.users.findUnique({
+      where: { id: utilisateurId },
+    });
+
+    if (!userToBlock) {
+      return res.status(404).json({ error: "Utilisateur à bloquer non trouvé" });
+    }
+
+    // Récupérer l'utilisateur courant avec les utilisateurs déjà bloqués
+    const currentUser = await prisma.users.findUnique({
+      where: { id: userId },
+      include: { BlockedUsers: true },
+    });
+
+    if (!currentUser) {
+      return res.status(404).json({ error: "Utilisateur courant non trouvé" });
+    }
+
+    // Vérifier si l'utilisateur est déjà bloqué
+    const alreadyBlocked = currentUser.BlockedUsers.some(
+      (BlockedUsers) => BlockedUsers.id === utilisateurId
+    );
+
+    if (alreadyBlocked) {
+      return res
+        .status(400)
+        .json({ error: "Vous avez déjà bloqué cet utilisateur" });
+    }
+
+    // Créer une entrée dans la table blockedUsers
+    await prisma.blockedUsers.create({
+      data: {
+        storyId: Number(storyId),
+        blockedUserId: utilisateurId,
+      },
+    });
+
+    // Utiliser NotificationController pour créer la notification
+    const notificationMessage = `Vous avez été bloqué par l'utilisateur avec l'ID ${userId}.`;
+    await NotificationController.createNotification(utilisateurId, 'blocked', notificationMessage);
+
+    return res.status(200).json({ message: "Utilisateur bloqué avec succès" });
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(500)
+      .json({ error: "Erreur interne du serveur", details: error });
+  }
+}
+
+
 
   // Méthode debloquerUsers
-  static async debloquerUsers(req: Request, res: Response) {
-    const utilisateurId = Number(req.body.utilisateurId);
-    const userId = req.user?.userID;
-    const storyId = req.body.storyId;
+// Méthode debloquerUsers
+static async debloquerUsers(req: Request, res: Response) {
+  const utilisateurId = Number(req.body.utilisateurId); // ID de l'utilisateur à débloquer
+  const userId = req.user?.userID; // ID de l'utilisateur connecté
+  const storyId = req.body.storyId; // ID de la story associée
 
-    //console.log(userId);
-    //console.log(utilisateurId);
-    //console.log(storyId);
-
-    if (!userId) {
-      return res.status(401).json({
-        message: "Vous devez vous connecter pour effectuer cette action",
-      });
-    }
-
-    if (!utilisateurId || isNaN(Number(utilisateurId))) {
-      return res.status(400).json({ error: "ID utilisateur invalide" });
-    }
-
-    if (!storyId) {
-      return res.status(400).json({ error: "ID de la story obligatoire" });
-    }
-
-    try {
-      const story = await prisma.stories.findUnique({
-        where: { id: Number(storyId) },
-      });
-
-      if (!story) {
-        return res.status(404).json({ error: "Story non trouvée" });
-      }
-
-      if (Number(utilisateurId) === userId) {
-        return res
-          .status(400)
-          .json({ error: "Vous ne pouvez pas vous débloquer vous-même" });
-      }
-
-      const userToUnblock = await prisma.users.findUnique({
-        where: { id: Number(utilisateurId) },
-      });
-
-      if (!userToUnblock) {
-        return res
-          .status(404)
-          .json({ error: "Utilisateur à débloquer non trouvé" });
-      }
-
-      const currentUser = await prisma.users.findUnique({
-        where: { id: userId },
-        include: { BlockedUsers: true },
-      });
-
-      if (!currentUser) {
-        return res
-          .status(404)
-          .json({ error: "Utilisateur courant non trouvé" });
-      }
-      console.log(currentUser.BlockedUsers);
-      /* const isBlocked = currentUser.BlockedUsers.some(
-        (blockedUser) => blockedUser.id === Number(utilisateurId)
-      ); */
-      //on n'a pas accée a  currentUser.BlockedUsers donc on va directent verifier si l'utilisateur est bloqué dans la base de données dans la table BlockedUsers
-      const isBlocked = await prisma.blockedUsers.findMany({
-        where: {
-          AND: [
-            { storyId: Number(storyId) },
-            { blockedUserId: Number(utilisateurId) },
-          ],
-        },
-      });
-
-      if (!isBlocked) {
-        return res
-          .status(400)
-          .json({ error: "Cet utilisateur n'est pas bloqué" });
-      }
-
-      await prisma.blockedUsers.deleteMany({
-        where: {
-          storyId: Number(storyId),
-          blockedUserId: Number(utilisateurId),
-        },
-      });
-
-      return res
-        .status(200)
-        .json({ message: "Utilisateur débloqué avec succès" });
-    } catch (error) {
-      console.error(error);
-      return res
-        .status(500)
-        .json({ error: "Erreur interne du serveur", details: error });
-    }
+  // Vérification si l'utilisateur est connecté
+  if (!userId) {
+    return res.status(401).json({
+      message: "Vous devez vous connecter pour effectuer cette action",
+    });
   }
+
+  // Validation de l'ID de l'utilisateur à débloquer
+  if (!utilisateurId || isNaN(utilisateurId)) {
+    return res.status(400).json({ error: "ID utilisateur invalide" });
+  }
+
+  // Validation de l'ID de la story
+  if (!storyId) {
+    return res.status(400).json({ error: "ID de la story obligatoire" });
+  }
+
+  try {
+    // Vérifier si la story existe
+    const story = await prisma.stories.findUnique({
+      where: { id: Number(storyId) },
+    });
+
+    if (!story) {
+      return res.status(404).json({ error: "Story non trouvée" });
+    }
+
+    // Vérifier si l'utilisateur ne se débloque pas lui-même
+    if (utilisateurId === userId) {
+      return res
+        .status(400)
+        .json({ error: "Vous ne pouvez pas vous débloquer vous-même" });
+    }
+
+    // Vérifier si l'utilisateur à débloquer existe
+    const userToUnblock = await prisma.users.findUnique({
+      where: { id: utilisateurId },
+    });
+
+    if (!userToUnblock) {
+      return res
+        .status(404)
+        .json({ error: "Utilisateur à débloquer non trouvé" });
+    }
+
+    // Vérifier si l'utilisateur est bloqué dans la base de données
+    const isBlocked = await prisma.blockedUsers.findMany({
+      where: {
+        AND: [
+          { storyId: Number(storyId) },
+          { blockedUserId: Number(utilisateurId) },
+        ],
+      },
+    });
+
+    if (!isBlocked || isBlocked.length === 0) {
+      return res
+        .status(400)
+        .json({ error: "Cet utilisateur n'est pas bloqué" });
+    }
+
+    // Supprimer l'utilisateur de la table blockedUsers
+    await prisma.blockedUsers.deleteMany({
+      where: {
+        storyId: Number(storyId),
+        blockedUserId: Number(utilisateurId),
+      },
+    });
+
+    // Utiliser NotificationController pour créer la notification
+    const notificationMessage = `Vous avez été débloqué par l'utilisateur avec l'ID ${userId}.`;
+    await NotificationController.createNotification(utilisateurId, 'unblocked', notificationMessage);
+
+    return res.status(200).json({ message: "Utilisateur débloqué avec succès" });
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(500)
+      .json({ error: "Erreur interne du serveur", details: error });
+  }
+}
+
   // Méthode getUserBloquer
   static async getUserBloquer(req: Request, res: Response) {
     const utilisateurId = Number(req.body.utilisateurId);
@@ -1816,6 +1833,30 @@ export default class PrismaUserController {
       res.status(500).json({ error: "Erreur interne du serveur" });
     }
   }
+  // Fonction pour obtenir le solde (credits) de l'utilisateur connecté
+static  getBalance = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.userID; // Assurez-vous que l'objet `req.user` contient l'ID utilisateur
+    if (!userId) {
+      res.status(401).json({ error: 'Utilisateur non authentifié' });
+      return;
+    }
+
+    const user = await prisma.users.findUnique({
+      where: { id: userId },
+      select: { credits: true }, // Récupère uniquement les crédits
+    });
+
+    if (!user) {
+      res.status(404).json({ error: 'Utilisateur non trouvé' });
+      return;
+    }
+
+    res.json({ balance: user.credits || 0 });
+  } catch (error) {
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+};
 
   static async getConnectedUser(req: Request, res: Response) {
     try {

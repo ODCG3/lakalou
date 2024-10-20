@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
+import NotificationController from './NotificationController';
+
 
 const prisma = new PrismaClient();
 
@@ -40,12 +42,26 @@ export const likePost = async (req: Request, res: Response): Promise<void> => {
       },
     });
 
+    // Récupérer l'ID de l'utilisateur qui a publié le post
+    const postAuthorId = post.utilisateurId;
+
+    // Créer la notification pour l'auteur du post
+    const notificationMessage = `L'utilisateur avec l'ID ${userId} a aimé votre post.`;
+    await NotificationController.createNotification(
+      postAuthorId,
+      'post_liked',
+      notificationMessage,
+      parseInt(postId) // ID du post associé
+    );
+
     // Envoyer un message de succès
     res.status(200).json({ message: "Post aimé avec succès.", like });
   } catch (error) {
     res.status(500).json({ message: "Erreur du serveur.", error });
   }
 };
+
+
 
 // Retirer un like
 export const unlikePost = async (
@@ -65,6 +81,7 @@ export const unlikePost = async (
       return;
     }
 
+    // Supprimer le like
     const like = await prisma.likes.delete({
       where: { id: parseInt(likeID, 10) },
     });
@@ -79,6 +96,18 @@ export const unlikePost = async (
       },
     });
 
+    // Récupérer l'ID de l'utilisateur qui a publié le post
+    const postAuthorId = post.utilisateurId;
+
+    // Créer la notification pour l'auteur du post
+    const notificationMessage = `L'utilisateur avec l'ID ${userId} a retiré son like de votre post.`;
+    await NotificationController.createNotification(
+      postAuthorId,
+      'post_unliked',
+      notificationMessage,
+      parseInt(postId) // ID du post associé
+    );
+
     res
       .status(200)
       .json({ message: "Like retiré avec succès.", data: { like, post } });
@@ -86,6 +115,9 @@ export const unlikePost = async (
     res.status(500).json({ message: "Erreur du serveur.", error });
   }
 };
+
+
+
 
 // Récupérer tous les likes d'un post
 export const getPostLikes = async (

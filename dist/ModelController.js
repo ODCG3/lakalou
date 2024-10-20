@@ -8,6 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import { PrismaClient } from "@prisma/client";
+import NotificationController from './NotificationController'; // Ajustez le chemin selon votre structure de projet
 const prisma = new PrismaClient();
 export default class ModelController {
     static create(req, res) {
@@ -31,7 +32,6 @@ export default class ModelController {
                     }
                 }
                 else if (Array.isArray(contenu)) {
-                    // Directly use `contenu` if it's already an array of strings
                     parsedContenu = contenu;
                 }
                 else {
@@ -43,27 +43,35 @@ export default class ModelController {
                 return;
             }
             try {
+                // Création du modèle
                 const createdModel = yield prisma.models.create({
                     data: {
                         libelle: libelle,
                         prix,
                         quantite,
                         contenu: parsedContenu,
-                        tailleurID: req.user.userID, // Assuming `req.user.userID` is the tailleur ID
-                        // articles:{
-                        //   connect: articles.map((article:any) => ({ id: article.id })),
-                        // }
+                        tailleurID: req.user.userID, // ID de l'utilisateur connecté
                     },
                 });
                 yield prisma.mesModels.create({
                     data: {
                         modelId: createdModel.id,
-                        //   libelle: createdModel.libelle!,
-                        //   nombreDeCommande: 0,
-                        //   note: [],
                         userId: req.user.userID,
                     },
                 });
+                // Récupérer les abonnés de l'utilisateur
+                const followers = yield prisma.followers.findMany({
+                    where: { userId: req.user.userID },
+                    select: { followerId: true },
+                });
+                // Créer une notification pour chaque abonné
+                yield Promise.all(followers.map((follower) => __awaiter(this, void 0, void 0, function* () {
+                    yield NotificationController.createNotification(follower.followerId, 'model_created', `Un nouveau modèle a été créé par : ${libelle}`, createdModel.id // ID du modèle créé
+                    );
+                })));
+                // Créer une notification pour l'utilisateur qui a créé le modèle
+                yield NotificationController.createNotification(req.user.userID, 'model_created', `Votre modèle "${libelle}" a été créé avec succès.`, createdModel.id // ID du modèle créé
+                );
                 res.status(201).json(createdModel);
             }
             catch (error) {
