@@ -1,10 +1,9 @@
-// NotificationController.ts
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-class NotificationController {
+export default class NotificationController {
   // Créer une notification
   static async createNotification(userId: number, action: string, message: string, postId?: number): Promise<void> {
     try {
@@ -97,5 +96,4 @@ class NotificationController {
   }
 }
 
-export default NotificationController;
 

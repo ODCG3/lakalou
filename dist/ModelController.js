@@ -8,7 +8,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import { PrismaClient } from "@prisma/client";
-import NotificationController from './NotificationController'; // Ajustez le chemin selon votre structure de projet
+// import NotificationController from './NotificationController'; // Ajustez le chemin selon votre structure de projet
+import NotificationController from './NotificationController.js'; // Notez l'extension .js
 const prisma = new PrismaClient();
 export default class ModelController {
     static create(req, res) {

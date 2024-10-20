@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
-class NotificationController {
+export default class NotificationController {
     // Créer une notification
     static createNotification(userId, action, message, postId) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -104,4 +104,3 @@ class NotificationController {
         });
     }
 }
-export default NotificationController;

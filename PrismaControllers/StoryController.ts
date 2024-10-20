@@ -1,6 +1,8 @@
 import { PrismaClient, Users } from "@prisma/client";
 // Importer NotificationController
-import NotificationController from './NotificationController'; // Mettez à jour le chemin en fonction de votre structure de projet
+// import NotificationController from './NotificationController'; // Mettez à jour le chemin en fonction de votre structure de projet
+import NotificationController from './NotificationController.js';  // Notez l'extension .js
+
 
 import { Request, Response } from "express";
 

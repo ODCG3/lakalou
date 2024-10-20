@@ -1,5 +1,7 @@
 import { PrismaClient } from "@prisma/client";
-import NotificationController from './NotificationController'; 
+// import NotificationController from './NotificationController'; 
+import NotificationController from './NotificationController.js';  // Notez l'extension .js
+
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import isEmail from "validator/lib/isEmail.js";

@@ -9,7 +9,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 import { PrismaClient } from "@prisma/client";
 // Importer NotificationController
-import NotificationController from './NotificationController'; // Mettez à jour le chemin en fonction de votre structure de projet
+// import NotificationController from './NotificationController'; // Mettez à jour le chemin en fonction de votre structure de projet
+import NotificationController from './NotificationController.js'; // Notez l'extension .js
 const prisma = new PrismaClient();
 const getOtherUserStories = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const userID = req.user.userID;

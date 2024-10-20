@@ -8,7 +8,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import { PrismaClient } from "@prisma/client";
-import NotificationController from './NotificationController';
+// import NotificationController from './NotificationController';
+import NotificationController from './NotificationController.js'; // Notez l'extension .js
 const prisma = new PrismaClient();
 export default class PostController {
     static createPost(req, res) {
@@ -114,29 +115,32 @@ export default class PostController {
     //     console.error("Erreur lors de la notification des abonnés:", error);
     //   }
     // }
-    static getPosts(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const posts = yield prisma.posts.findMany({
-                    include: {
-                        Models: true,
-                        Users: true,
-                    },
-                });
-                // Ajout du comptage des likes pour chaque post
-                const postsWithLikesAndComments = yield Promise.all(posts.map((post) => __awaiter(this, void 0, void 0, function* () {
-                    const likeCount = yield prisma.likes.count({
-                        where: { postId: post.id },
-                    });
-                    return Object.assign(Object.assign({}, post), { likeCount, comments: post.Comments });
-                })));
-                res.status(200).json(postsWithLikesAndComments);
-            }
-            catch (error) {
-                res.status(500).json({ error: "Erreur interne du serveur" });
-            }
-        });
-    }
+    // static async getPosts(req: Request, res: Response) {
+    //   try {
+    //     const posts = await prisma.posts.findMany({
+    //       include: {
+    //         Models: true,
+    //         Users: true,
+    //       },
+    //     });
+    //     // Ajout du comptage des likes pour chaque post
+    //     const postsWithLikesAndComments = await Promise.all(
+    //       posts.map(async (post) => {
+    //         const likeCount = await prisma.likes.count({
+    //           where: { postId: post.id },
+    //         });
+    //         return {
+    //           ...post,
+    //           likeCount,  // Ajoute le nombre de likes au post
+    //           comments: post.Comments,  // Les commentaires sont déjà inclus
+    //         };
+    //       })
+    //     );
+    //     res.status(200).json(postsWithLikesAndComments);
+    //   } catch (error) {
+    //     res.status(500).json({ error: "Erreur interne du serveur" });
+    //   }
+    // }
     static getPostById(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             const { postId } = req.params;

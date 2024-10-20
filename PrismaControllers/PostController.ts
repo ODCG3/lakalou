@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
-import NotificationController from './NotificationController';
+// import NotificationController from './NotificationController';
+import NotificationController from './NotificationController.js';  // Notez l'extension .js
+
 import { log } from "console";
 
 const prisma = new PrismaClient();
@@ -124,37 +126,37 @@ export default class PostController {
   // }
   
 
-  static async getPosts(req: Request, res: Response) {
-    try {
-      const posts = await prisma.posts.findMany({
-        include: {
-          Models: true,
-          Users: true,
-        },
-      });
+  // static async getPosts(req: Request, res: Response) {
+  //   try {
+  //     const posts = await prisma.posts.findMany({
+  //       include: {
+  //         Models: true,
+  //         Users: true,
+  //       },
+  //     });
 
-      // Ajout du comptage des likes pour chaque post
-      const postsWithLikesAndComments = await Promise.all(
-        posts.map(async (post) => {
-          const likeCount = await prisma.likes.count({
-            where: { postId: post.id },
-          });
+  //     // Ajout du comptage des likes pour chaque post
+  //     const postsWithLikesAndComments = await Promise.all(
+  //       posts.map(async (post) => {
+  //         const likeCount = await prisma.likes.count({
+  //           where: { postId: post.id },
+  //         });
 
           
-          return {
-            ...post,
-            likeCount,  // Ajoute le nombre de likes au post
-            comments: post.Comments,  // Les commentaires sont déjà inclus
-          };
-        })
-      );
+  //         return {
+  //           ...post,
+  //           likeCount,  // Ajoute le nombre de likes au post
+  //           comments: post.Comments,  // Les commentaires sont déjà inclus
+  //         };
+  //       })
+  //     );
 
-      res.status(200).json(postsWithLikesAndComments);
+  //     res.status(200).json(postsWithLikesAndComments);
 
-    } catch (error) {
-      res.status(500).json({ error: "Erreur interne du serveur" });
-    }
-  }
+  //   } catch (error) {
+  //     res.status(500).json({ error: "Erreur interne du serveur" });
+  //   }
+  // }
 
   static async getPostById(req: Request, res: Response) {
     const { postId } = req.params;

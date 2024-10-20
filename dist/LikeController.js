@@ -8,7 +8,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import { PrismaClient } from "@prisma/client";
-import NotificationController from './NotificationController';
+// import NotificationController from './NotificationController';
+import NotificationController from './NotificationController.js'; // Notez l'extension .js
 const prisma = new PrismaClient();
 // Ajouter un like
 export const likePost = (req, res) => __awaiter(void 0, void 0, void 0, function* () {

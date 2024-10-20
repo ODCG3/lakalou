@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
-import NotificationController from './NotificationController';
+// import NotificationController from './NotificationController';
+import NotificationController from './NotificationController.js';  // Notez l'extension .js
+
 
 
 const prisma = new PrismaClient();
