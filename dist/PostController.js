@@ -89,7 +89,7 @@ export default class PostController {
                     const likeCount = yield prisma.likes.count({
                         where: { postId: post.id },
                     });
-                    return Object.assign(Object.assign({}, post), { likeCount, comments: post.Comments });
+                    return Object.assign(Object.assign({}, post), { likeCount });
                 })));
                 res.status(200).json(postsWithLikesAndComments);
             }

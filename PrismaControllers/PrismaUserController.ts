@@ -329,8 +329,6 @@ export default class PrismaUserController {
     }
   }
 
-  
-
   //getTotalNotes pour retourner la somme des notes de l'utilisateur par ID
   // static async getTotalNotesForPostUser(req: Request, res: Response) {
   //   const postId = parseInt(req.params.postId, 10);
@@ -368,7 +366,7 @@ export default class PrismaUserController {
   // }
 
   //reportUser
-  
+
   static async getUserNotesFromPost(req: Request, res: Response) {
     const { postId } = req.params; // On récupère le postId des paramètres
 
@@ -570,8 +568,8 @@ export default class PrismaUserController {
   static async unfollowUser(req: Request, res: Response) {
     const userId = req.user!.userID;
     const followerId = Number(req.body.followerId);
-    console.log(followerId);
-    console.log(userId);
+    console.log("FollowerId:", followerId);
+    console.log("UserId:", userId);
     if (!userId) {
       return res
         .status(400)
@@ -599,12 +597,17 @@ export default class PrismaUserController {
           .json({ message: "Vous ne pouvez pas vous désabonner de vous-même" });
       }
 
-      // Retirer l'utilisateur connecté de la liste des followers de l'utilisateur ciblé
-      await prisma.followers.delete({
-        where: { id: followerId },
+      // // Retirer l'utilisateur connecté de la liste des followers de l'utilisateur ciblé
+      // await prisma.followers.delete({
+      //   where: { id: followerId },
+      // });
+      // Modifier cette partie pour supprimer l'enregistrement correct
+      await prisma.followers.deleteMany({
+        where: {
+          userId: userId,
+          followerId: followerId,
+        },
       });
-
-      // Retirer l'utilisateur ciblé de la liste des followings de l'utilisateur connecté
 
       return res
         .status(200)
@@ -683,8 +686,8 @@ export default class PrismaUserController {
 
     try {
       const followers = await prisma.followers.findMany({
-        // where: { followerId: req.user?.userID },
-        where: { userId: req.user?.userID },
+        where: { followerId: req.user?.userID },
+        // where: { userId: req.user?.userID },
         select: {
           id: true,
           // afichier les informations du user
@@ -1222,29 +1225,29 @@ export default class PrismaUserController {
           error: "Vous devez être connecté pour effectuer cette action.",
         });
       }
-  
+
       // Vérifier que l'utilisateur connecté est un tailleur
       const connectedUser = await prisma.users.findUnique({
         where: { id: connectedUserId },
       });
-  
-      if (!connectedUser || connectedUser.role !== 'tailleur') {
+
+      if (!connectedUser || connectedUser.role !== "tailleur") {
         return res.status(403).json({
           error: "Vous n'êtes pas autorisé à effectuer cette action.",
         });
       }
-  
+
       // Vérifier que l'utilisateur cible existe
       const user = await prisma.users.findUnique({
         where: { id: Number(userId) },
       });
-  
+
       if (!user) {
         return res.status(404).json({ error: "Utilisateur non trouvé." });
       }
-  
+
       const measurements = req.body;
-  
+
       const fieldsToFloat = [
         "cou",
         "longueurPantallon",
@@ -1258,19 +1261,19 @@ export default class PrismaUserController {
         "tourPoignet",
         "ceinture",
       ];
-  
+
       for (const field of fieldsToFloat) {
         if (measurements[field]) {
           measurements[field] = parseFloat(measurements[field]);
         }
       }
-  
+
       // Mettre à jour les mesures de l'utilisateur
       const updatedUser = await prisma.mesures.update({
         where: { UserID: Number(userId) },
         data: measurements,
       });
-  
+
       return res.status(200).json({
         message: "Mesures mises à jour avec succès.",
       });
@@ -1279,10 +1282,10 @@ export default class PrismaUserController {
       return res.status(500).json({ error: "Erreur interne du serveur." });
     }
   }
-  
+
   //addMesure
- //addMesure
-// Add or update measurements
+  //addMesure
+  // Add or update measurements
 
   //addMesure
   // Add or update measurements
@@ -1400,10 +1403,7 @@ export default class PrismaUserController {
       console.error(error);
       return res.status(500).json({ error: "Erreur interne du serveur." });
     }
-  } 
-
-
-  
+  }
 
   static async acheterBadge(req: Request, res: Response) {
     const userId = req.user?.userID;
@@ -1819,17 +1819,15 @@ export default class PrismaUserController {
 
   static async getConnectedUser(req: Request, res: Response) {
     try {
-
       const userId = req.user!.userID;
 
       console.log(userId);
-      
+
       if (!userId) {
         return res.status(401).json({
           message: "Vous devez vous connecter pour effectuer cette action",
         });
       }
-
 
       res.status(200).json(userId);
     } catch (err) {

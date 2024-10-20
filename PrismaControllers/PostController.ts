@@ -98,7 +98,7 @@ export default class PostController {
           return {
             ...post,
             likeCount,  // Ajoute le nombre de likes au post
-            comments: post.Comments,  // Les commentaires sont déjà inclus
+            // comments: post.Comments,  // Les commentaires sont déjà inclus
           };
         })
       );

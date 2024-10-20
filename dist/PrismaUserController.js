@@ -472,8 +472,8 @@ export default class PrismaUserController {
         return __awaiter(this, void 0, void 0, function* () {
             const userId = req.user.userID;
             const followerId = Number(req.body.followerId);
-            console.log(followerId);
-            console.log(userId);
+            console.log("FollowerId:", followerId);
+            console.log("UserId:", userId);
             if (!userId) {
                 return res
                     .status(400)
@@ -496,11 +496,17 @@ export default class PrismaUserController {
                         .status(400)
                         .json({ message: "Vous ne pouvez pas vous désabonner de vous-même" });
                 }
-                // Retirer l'utilisateur connecté de la liste des followers de l'utilisateur ciblé
-                yield prisma.followers.delete({
-                    where: { id: followerId },
+                // // Retirer l'utilisateur connecté de la liste des followers de l'utilisateur ciblé
+                // await prisma.followers.delete({
+                //   where: { id: followerId },
+                // });
+                // Modifier cette partie pour supprimer l'enregistrement correct
+                yield prisma.followers.deleteMany({
+                    where: {
+                        userId: userId,
+                        followerId: followerId,
+                    },
                 });
-                // Retirer l'utilisateur ciblé de la liste des followings de l'utilisateur connecté
                 return res
                     .status(200)
                     .json({ message: "Désabonnement effectué avec succès" });
@@ -575,8 +581,8 @@ export default class PrismaUserController {
             }
             try {
                 const followers = yield prisma.followers.findMany({
-                    // where: { followerId: req.user?.userID },
-                    where: { userId: (_b = req.user) === null || _b === void 0 ? void 0 : _b.userID },
+                    where: { followerId: (_b = req.user) === null || _b === void 0 ? void 0 : _b.userID },
+                    // where: { userId: req.user?.userID },
                     select: {
                         id: true,
                         // afichier les informations du user
@@ -1077,7 +1083,7 @@ export default class PrismaUserController {
                 const connectedUser = yield prisma.users.findUnique({
                     where: { id: connectedUserId },
                 });
-                if (!connectedUser || connectedUser.role !== 'tailleur') {
+                if (!connectedUser || connectedUser.role !== "tailleur") {
                     return res.status(403).json({
                         error: "Vous n'êtes pas autorisé à effectuer cette action.",
                     });
