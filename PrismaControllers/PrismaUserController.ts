@@ -465,16 +465,6 @@ export default class PrismaUserController {
     // Récupérer l'ID de l'utilisateur à signaler depuis les paramètres
     const userIdToReport = Number(req.params.userId); // Assurez-vous que c'est un nombre
 
-  //     res
-  //       .status(200)
-  //       .json({ message: "Signalement ajouté avec succès", signal });
-  //   } catch (error) {
-  //     res.status(500).json({ error: "Erreur interne du serveur" });
-  //   }
-  // }
-
-  // Report User version2
-  static async reportUser(req: Request, res: Response) {
     const reporterId = req.user!.userID; // ID du reporter
     const { userId, reason } = req.body; // Récupérer l'ID de l'utilisateur à signaler et la raison
 
