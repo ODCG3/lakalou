@@ -8,10 +8,77 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import { PrismaClient } from "@prisma/client";
+// Importer NotificationController
+// import NotificationController from './NotificationController'; // Mettez à jour le chemin en fonction de votre structure de projet
+import NotificationController from './NotificationController.js'; // Notez l'extension .js
 const prisma = new PrismaClient();
+const getOtherUserStories = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const userID = req.user.userID;
+    try {
+        const stories = yield prisma.stories.findMany({
+            where: {
+                userId: { not: userID },
+                expiresAt: { gt: new Date() },
+                BlockedUsers: { none: { id: userID } },
+            },
+            include: {
+                Models: true,
+                Users: {
+                    select: {
+                        id: true,
+                    },
+                },
+            },
+        });
+        res.status(200).json(stories);
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+const incrementStoryView = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const storyId = parseInt(req.params.id);
+    const viewerId = req.user.userID;
+    try {
+        const story = yield prisma.stories.findUnique({
+            where: { id: storyId },
+        });
+        if (!story) {
+            return res.status(404).json({ message: "Story non trouvée" });
+        }
+        // Vérifier si l'utilisateur a déjà vu cette story
+        const existingView = yield prisma.storyViews.findUnique({
+            where: {
+                storyId_viewerId: {
+                    storyId: storyId,
+                    viewerId: viewerId,
+                },
+            },
+        });
+        if (existingView) {
+            return res.status(400).json({ message: "Vous avez déjà vu cette story" });
+        }
+        // Créer un nouvel enregistrement de vue
+        yield prisma.storyViews.create({
+            data: {
+                storyId: storyId,
+                viewerId: viewerId,
+            },
+        });
+        // Incrémenter le compteur de vues de la story
+        yield prisma.stories.update({
+            where: { id: storyId },
+            data: { Views: { increment: 1 } },
+        });
+        res.status(200).json({ message: "Vue incrémentée avec succès" });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 const createStory = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const currentTime = new Date();
-    const expirationTime = new Date(currentTime.getTime() + 24 * 60 * 60 * 1000); // 24 hours later
+    const expirationTime = new Date(currentTime.getTime() + 24 * 60 * 60 * 1000); // 24 heures plus tard
     const userID = req.user.userID;
     try {
         // Vérifiez si l'utilisateur est connecté
@@ -77,6 +144,16 @@ const createStory = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
                 },
             },
         });
+        // Envoyer des notifications aux abonnés du tailleur
+        const followers = yield prisma.followers.findMany({
+            where: { userId: userID },
+            include: { Users_Followers_followerIdToUsers: true },
+        });
+        for (const follower of followers) {
+            yield NotificationController.createNotification(follower.followerId, 'new_story', `Nouvelle story créée par un utilisateur que vous suivez!`);
+        }
+        // Notifiez l'utilisateur que la story a été créée avec succès
+        yield NotificationController.createNotification(userID, 'story_created', `Votre story a été créée avec succès!`);
         res.status(201).json({
             message: "Story créée avec succès!",
         });
@@ -89,15 +166,23 @@ const createStory = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
 });
 const getStories = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const viewerId = req.user.userID; // User requesting to view the stories
-    const ownerId = req.params.userId; // Owner of the stories
+    const ownerId = parseInt(req.params.userId); // Owner of the stories
     try {
         // Fetch stories of the user while excluding those where the requesting user is blocked
         const stories = yield prisma.stories.findMany({
             where: {
-                userId: parseInt(ownerId),
+                userId: ownerId,
                 expiresAt: { gt: new Date() },
                 BlockedUsers: { none: { id: viewerId } }, // Exclude stories where viewerId is in the blocked users list
             },
+            include: {
+                Models: true,
+                Users: {
+                    select: {
+                        id: true,
+                    },
+                },
+            }
         });
         const storys = yield prisma.stories.findMany({
             where: {
@@ -128,58 +213,76 @@ const deleteStory = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     const storyId = parseInt(req.params.id);
     const userID = req.user.userID;
     try {
-        // First, delete the story if it exists and belongs to the user
-        const result = yield prisma.stories.deleteMany({
-            where: {
-                id: storyId,
-                userId: userID,
+        // Vérifier si la story existe et appartient à l'utilisateur
+        const story = yield prisma.stories.findUnique({
+            where: { id: storyId },
+        });
+        if (!story) {
+            return res.status(404).json({ message: "Story non trouvée" });
+        }
+        if (story.userId !== userID) {
+            return res.status(403).json({ message: "Vous n'êtes pas autorisé à supprimer cette story" });
+        }
+        // Supprimer d'abord les enregistrements liés dans StoryViews
+        yield prisma.storyViews.deleteMany({
+            where: { storyId: storyId },
+        });
+        // Supprimer les relations avec les utilisateurs bloqués
+        yield prisma.stories.update({
+            where: { id: storyId },
+            data: {
+                BlockedUsers: {
+                    set: [], // Ceci supprime toutes les relations avec les utilisateurs bloqués
+                },
             },
         });
-        if (result.count > 0) {
-            res.status(200).json({ message: "Story supprimée avec succès" });
-        }
-        else {
-            res.status(404).json({
-                message: "Story non trouvée ou vous n'êtes pas autorisé à la supprimer",
-            });
-        }
+        // Maintenant, supprimer la story
+        yield prisma.stories.delete({
+            where: { id: storyId },
+        });
+        res.status(200).json({ message: "Story supprimée avec succès" });
     }
     catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error("Erreur lors de la suppression de la story:", error);
+        res.status(500).json({ error: "Une erreur est survenue lors de la suppression de la story" });
     }
 });
 const viewStory = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const storyId = req.params.id;
+    const storyId = parseInt(req.params.id);
+    const viewerId = req.user.userID;
     try {
-        const story = yield prisma.stories.update({
-            where: { id: parseInt(storyId) },
-            data: { Views: { increment: 1 } },
-        });
-        if (story) {
-            res.status(200).json({ views: story.Views });
-        }
-        else {
-            res.status(400).json({ message: "Story non trouvée" });
-        }
-    }
-    catch (error) {
-        res.status(500).json({
-            error: "Une erreur interne est survenue. Veuillez réessayer plus tard.",
-        });
-    }
-});
-const getStoryViews = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const storyId = req.params.id;
-    try {
+        // Vérifier si l'histoire existe
         const story = yield prisma.stories.findUnique({
-            where: { id: parseInt(storyId) },
+            where: { id: storyId },
         });
         if (!story) {
-            res.status(404).json({ message: "La story n'a pas été trouvée." });
+            return res.status(404).json({ message: "Story non trouvée" });
         }
-        else {
-            res.status(200).json({ views: story.Views });
+        // Vérifier si l'utilisateur a déjà vu cette story
+        const existingView = yield prisma.storyViews.findUnique({
+            where: {
+                storyId_viewerId: {
+                    storyId: storyId,
+                    viewerId: viewerId,
+                },
+            },
+        });
+        if (existingView) {
+            return res.status(400).json({ message: "Vous avez déjà vu cette story" });
         }
+        // Créer un nouvel enregistrement de vue
+        yield prisma.storyViews.create({
+            data: {
+                storyId: storyId,
+                viewerId: viewerId,
+            },
+        });
+        // Incrémenter le compteur de vues de la story
+        yield prisma.stories.update({
+            where: { id: storyId },
+            data: { Views: { increment: 1 } },
+        });
+        res.status(200).json({ message: "Story vue avec succès" });
     }
     catch (error) {
         console.error(error);
@@ -188,10 +291,52 @@ const getStoryViews = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         });
     }
 });
+const getUserStories = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const userID = req.user.userID;
+    try {
+        const stories = yield prisma.stories.findMany({
+            where: {
+                userId: userID,
+                expiresAt: { gt: new Date() },
+            },
+            include: {
+                Models: true,
+                StoryViews: true,
+            },
+        });
+        res.status(200).json(stories);
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+const getStoryViews = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const storyId = parseInt(req.params.id);
+    const userID = req.user.userID;
+    try {
+        const story = yield prisma.stories.findUnique({
+            where: { id: storyId },
+            include: { StoryViews: true },
+        });
+        if (!story) {
+            return res.status(404).json({ message: "La story n'a pas été trouvée." });
+        }
+        if (story.userId !== userID) {
+            return res.status(403).json({ message: "Vous n'êtes pas autorisé à voir les vues de cette story" });
+        }
+        res.status(200).json({ views: story.Views, viewDetails: story.StoryViews });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 export default {
     createStory,
     getStories,
     deleteStory,
     viewStory,
     getStoryViews,
+    getUserStories,
+    // notifyFollowers,
+    getOtherUserStories
 };

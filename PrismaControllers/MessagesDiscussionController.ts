@@ -32,7 +32,7 @@ export default class MessagesDiscussionController {
 
       if (existingDiscussion) {
         return res
-          .status(403)
+          .status(409)
           .json({ message: "Une discussion avec cet utilisateur existe déjà" });
       }
 
@@ -48,7 +48,7 @@ export default class MessagesDiscussionController {
         .json({ message: "Discussion créée avec succès", discussion });
     } catch (error) {
       console.error(error);
-      res.status(500).json({ error: error });
+      res.status(500).json({ message: "Erreur serveur : " });
     }
   }
 
@@ -66,8 +66,36 @@ export default class MessagesDiscussionController {
           Users_UsersDiscussions_userIdToUsers: true,
         },
       });
+      console.log(discussions);
 
       res.status(200).json(discussions);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: error });
+    }
+  }
+
+  static async getDiscussionById(req: Request, res: Response) {
+    try {
+      const discussionId = parseInt(req.params.discussionId);
+      console.log(discussionId);
+
+      const discussion = await prisma.usersDiscussions.findFirst({
+        where: {
+          id: discussionId,
+        },
+        include: {
+          Users_UsersDiscussions_receiverIdToUsers: true,
+          Users_UsersDiscussions_userIdToUsers: true,
+          UsersDiscussionsMessages: true,
+        },
+      });
+
+      if (!discussion) {
+        return res.status(404).json({ message: "Discussion introuvable" });
+      }
+
+      res.status(200).json(discussion);
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: error });
@@ -103,7 +131,7 @@ export default class MessagesDiscussionController {
     try {
       const discussionUserId = parseInt(req.params.discussionUser);
       const userId = req.user!.userID;
-      const { messageContent } = req.body;
+      const { messageContent,file } = req.body;
 
       // Vérifier si le message est vide ou ne contient que des espaces
       if (!messageContent || messageContent.trim() === "") {
@@ -114,10 +142,8 @@ export default class MessagesDiscussionController {
 
       const discussion = await prisma.usersDiscussions.findFirst({
         where: {
-          OR: [
-            { userId, receiverId: discussionUserId },
-            { userId: discussionUserId, receiverId: userId },
-          ],
+          id: discussionUserId
+          
         },
       });
 
@@ -130,6 +156,7 @@ export default class MessagesDiscussionController {
           content: messageContent,
           senderId: userId,
           discussionId: discussion.id,
+          file: file
         },
       });
 
