@@ -441,11 +441,10 @@ class PrismaUserController {
             const followerId = Number(req.body.followerId);
             console.log("FollowerId:", followerId);
             console.log("UserId:", userId);
-
             if (!userId) {
                 return res
                     .status(400)
-                    .json({ error: "L'id de l'utilisateur connecté est obligatoire" });
+                    .json({ error: "L'id de l'utilisateur à désabonner est obligatoire" });
             }
             try {
                 if (!followerId) {
@@ -464,7 +463,6 @@ class PrismaUserController {
                         .status(400)
                         .json({ message: "Vous ne pouvez pas vous désabonner de vous-même" });
                 }
-
                 // Retirer l'utilisateur connecté de la liste des followers de l'utilisateur ciblé
                 yield prisma.followers.deleteMany({
                     where: {
@@ -551,6 +549,45 @@ class PrismaUserController {
             }
         });
     }
+    static Followings(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _b, _c;
+            const userId = (_b = req.user) === null || _b === void 0 ? void 0 : _b.userID;
+            if (!userId) {
+                return res.status(401).json({
+                    message: "Vous devez vous connecter pour accéder à ce contenu",
+                });
+            }
+            try {
+                const followings = yield prisma.followers.findMany({
+                    where: { userId: (_c = req.user) === null || _c === void 0 ? void 0 : _c.userID },
+                    select: {
+                        id: true,
+                        // afichier les informations du user
+                        Users_Followers_followerIdToUsers: {
+                            select: {
+                                id: true,
+                                nom: true,
+                                prenom: true,
+                                photoProfile: true,
+                                role: true,
+                                badges: true,
+                                credits: true,
+                            },
+                        },
+                    },
+                });
+                return res.status(200).json({ followings });
+            }
+            catch (error) {
+                console.error(error);
+                return res.status(500).json({
+                    message: "Erreur lors de la récupération des followers",
+                    error: error,
+                });
+            }
+        });
+    }
     // Méthode myFollowers
     static myFollowers(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -563,9 +600,8 @@ class PrismaUserController {
             }
             try {
                 const followers = yield prisma.followers.findMany({
-                    where: { followerId: (_b = req.user) === null || _b === void 0 ? void 0 : _b.userID },
+                    where: { followerId: (_c = req.user) === null || _c === void 0 ? void 0 : _c.userID },
                     // where: { userId: req.user?.userID },
-
                     select: {
                         id: true,
                         // afichier les informations du user
