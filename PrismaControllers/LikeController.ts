@@ -7,44 +7,43 @@ import NotificationController from './NotificationController.js';  // Notez l'ex
 
 const prisma = new PrismaClient();
 
-// Ajouter un like
-export const likePost = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { postId } = req.params; // Récupérer l'ID du post
-    const userId = req.user!.userID; // Récupérer l'ID de l'utilisateur depuis le token
-
-    // Vérifier si l'utilisateur a déjà liké le post
-    const existingLike = await prisma.likes.findFirst({
-      where: {
-        userId: userId,
-        postId: parseInt(postId, 10),
-      },
-    });
-
-    if (existingLike) {
-      res.status(400).json({ message: "Vous avez déjà aimé ce post." });
-      return;
-    }
-
-    // Créer un nouveau like
-    const like = await prisma.likes.create({
-      data: {
-        userId: userId,
-        postId: parseInt(postId),
-      },
-    });
-
-    // Mettre à jour le nombre de likes sur le post
-    const post = await prisma.posts.update({
-      where: { id: parseInt(postId, 10) },
-      data: {
-        Likes: {
-          connect: { id: userId },
+export default class LikeController {
+  // Ajouter un like
+  static async likePost(req: Request, res: Response): Promise<void> {
+    try {
+      const { postId } = req.params;
+      const userId = req.user!.userID;
+  
+      // Vérifier si le post existe
+      const post = await prisma.posts.findUnique({
+        where: { id: parseInt(postId, 10) },
+      });
+  
+      if (!post) {
+        res.status(404).json({ message: "Le post n'existe pas." });
+      }
+  
+      // Vérifier si le like existe déjà
+      const existingLike = await prisma.likes.findFirst({
+        where: {
+          userId: userId,
+          postId: parseInt(postId, 10),
         },
-      },
-    });
-
-    // Récupérer l'ID de l'utilisateur qui a publié le post
+      });
+  
+      if (existingLike) {
+        res.status(400).json({ message: "Vous avez déjà aimé ce post." });
+      }
+  
+      // Créer un nouveau like
+      const like = await prisma.likes.create({
+        data: {
+          userId: userId,
+          postId: parseInt(postId, 10),
+        },
+      });
+      
+       // Récupérer l'ID de l'utilisateur qui a publié le post
     const postAuthorId = post.utilisateurId;
 
     // Créer la notification pour l'auteur du post
@@ -55,21 +54,18 @@ export const likePost = async (req: Request, res: Response): Promise<void> => {
       notificationMessage,
       parseInt(postId) // ID du post associé
     );
-
-    // Envoyer un message de succès
-    res.status(200).json({ message: "Post aimé avec succès.", like });
-  } catch (error) {
-    res.status(500).json({ message: "Erreur du serveur.", error });
+  
+      res.status(201).json({ message: "Post aimé avec succès.", like });
+    } catch (error) {
+      res.status(500).json({ message: "Erreur du serveur.", error });
+    }
   }
-};
+  
 
 
 
 // Retirer un like
-export const unlikePost = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+static async unlikePost(req: Request,res: Response): Promise<void> {
   try {
     const { postId, likeID } = req.params;
     const userId = req.user!.userID;
@@ -122,10 +118,10 @@ export const unlikePost = async (
 
 
 // Récupérer tous les likes d'un post
-export const getPostLikes = async (
+static   async getPostLikes(
   req: Request,
   res: Response
-): Promise<void> => {
+): Promise<void> {
   try {
     const { postId } = req.params;
 
@@ -138,3 +134,4 @@ export const getPostLikes = async (
     res.status(500).json({ message: "Erreur du serveur.", error });
   }
 };
+}

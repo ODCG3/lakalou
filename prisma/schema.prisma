@@ -48,6 +48,7 @@ model Comments {
   @@index([parentId])
 }
 
+
 model Dislikes {
   id     Int   @id @default(autoincrement())
   userId Int
@@ -84,7 +85,8 @@ model Followers {
 
 model Likes {
   id        Int       @id @default(autoincrement())
-  createdAt DateTime? @default(now()) @db.DateTime(0)
+ createdAt DateTime? @default(now()) @db.DateTime(0)
+
   postId    Int
   userId    Int
   Posts     Posts     @relation(fields: [postId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Likes_ibfk_1")

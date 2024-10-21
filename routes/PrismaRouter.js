@@ -11,8 +11,8 @@ import StoryController from "../dist/StoryController.js";
 import ArticleController from "../dist/ArticleController.js";
 import PostArticleController from "../dist/PostArticleController.js";
 import CommentController from "../dist/CommentController.js";
-import { addRecharge } from '../dist/rechargeController.js';
-import { likePost, unlikePost } from '../dist/LikeController.js';
+import LikeController from "../dist/LikeController.js"; // Assurez-vous que LikeController est bien compilé dans dist
+import DislikeController from '../dist/DislikeController.js'; // Import par défaut
 import NotificationController from "../dist/NotificationController.js"; 
 
 router
@@ -159,9 +159,35 @@ router
   .route("/post/:postId/comments")
   .get(auth, (req, res) => CommentController.getPostComments(req, res));
 
-router
-  .route("/post")
-  .get(auth, (req, res) => PostController.getPosts(req, res));
+// Endpoint pour liker un post
+router.post("/post/:postId/like", auth, (req, res) => LikeController.likePost(req, res));
+
+// Endpoint pour unliker un post
+router.post("/post/:postId/like/:likeID/unlike", auth, (req, res) => LikeController.unlikePost(req, res));
+
+// Endpoint pour disliker un post
+router.post("/post/:postId/dislike", auth, (req, res) => DislikeController.dislikePost(req, res));
+
+// Endpoint pour retirer un dislike
+router.post("/post/:postId/dislike/:dislikeID/undislike", auth, (req, res) => DislikeController.undislikePost(req, res));
+
+// Endpoint pour récupérer les likes d'un post
+router.get("/post/:postId/likes", auth, (req, res) => LikeController.getPostLikes(req, res));
+
+// Endpoint pour récupérer les dislikes d'un post
+router.get("/post/:postId/dislike", auth, (req, res) => DislikeController.getPostDislike(req, res));
+
+// Ajouter une réponse à un commentaire
+router.post("/comments/:commentId/reply", auth, CommentController.addReply);
+
+// Récupérer les commentaires d'un post avec les réponses imbriquées
+router.get("/post/:postId/comments", auth, CommentController.getPostComments);
+
+// Supprimer un commentaire
+router.delete("/comments/:commentId", auth, CommentController.deleteComment);
+
+router.route("/post") .get(auth, (req, res) => PostController.getPosts(req, res));
+
 router
   .route("/post/:postId")
   .get(auth, (req, res) => PostController.getPostById(req, res));
