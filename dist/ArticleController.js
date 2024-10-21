@@ -71,7 +71,26 @@ export default class ArticleController {
     static getArticles(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const articles = yield prisma.articles.findMany();
+                // Extraire les filtres des paramètres de requête
+                const { type, libelle, prix } = req.query;
+                // Construire l'objet de filtre dynamiquement
+                const filters = {};
+                if (type) {
+                    filters.type = type;
+                }
+                if (libelle) {
+                    filters.libelle = { contains: libelle }; // Filtrage partiel du libellé
+                }
+                if (prix) {
+                    const parsedPrix = parseFloat(prix);
+                    if (!isNaN(parsedPrix)) {
+                        filters.prix = { lte: parsedPrix }; // Filtrer les articles dont le prix est inférieur ou égal à la valeur fournie
+                    }
+                }
+                // Requête pour obtenir les articles avec les filtres
+                const articles = yield prisma.articles.findMany({
+                    where: filters,
+                });
                 res.status(200).json(articles);
             }
             catch (error) {

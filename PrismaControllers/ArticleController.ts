@@ -77,12 +77,39 @@ export default class ArticleController{
             res.status(500).json({error: (error as Error).message});
         }
     }
+    
     static async getArticles(req: Request, res: Response) {
         try {
-            const articles = await prisma.articles.findMany();
+            // Extraire les filtres des paramètres de requête
+            const { type, libelle, prix } = req.query;
+            
+            // Construire l'objet de filtre dynamiquement
+            const filters: any = {};
+    
+            if (type) {
+                filters.type = type;
+            }
+    
+            if (libelle) {
+                filters.libelle = { contains: libelle };  // Filtrage partiel du libellé
+            }
+    
+            if (prix) {
+                const parsedPrix = parseFloat(prix as string);
+                if (!isNaN(parsedPrix)) {
+                    filters.prix = { lte: parsedPrix };  // Filtrer les articles dont le prix est inférieur ou égal à la valeur fournie
+                }
+            }
+    
+            // Requête pour obtenir les articles avec les filtres
+            const articles = await prisma.articles.findMany({
+                where: filters,
+            });
+    
             res.status(200).json(articles);
         } catch (error) {
             res.status(500).json({ error: (error as Error).message });
         }
     }
+    
 }
