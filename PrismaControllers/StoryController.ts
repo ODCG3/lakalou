@@ -1,4 +1,9 @@
 import { PrismaClient, Users } from "@prisma/client";
+// Importer NotificationController
+// import NotificationController from './NotificationController'; // Mettez à jour le chemin en fonction de votre structure de projet
+import NotificationController from './NotificationController.js';  // Notez l'extension .js
+
+
 import { Request, Response } from "express";
 
 const prisma = new PrismaClient();
@@ -78,7 +83,7 @@ const incrementStoryView = async (req: Request, res: Response) => {
 
 const createStory = async (req: Request, res: Response) => {
   const currentTime = new Date();
-  const expirationTime = new Date(currentTime.getTime() + 24 * 60 * 60 * 1000); // 24 hours later
+  const expirationTime = new Date(currentTime.getTime() + 24 * 60 * 60 * 1000); // 24 heures plus tard
   const userID = req.user!.userID;
 
   try {
@@ -158,6 +163,19 @@ const createStory = async (req: Request, res: Response) => {
       },
     });
 
+    // Envoyer des notifications aux abonnés du tailleur
+    const followers = await prisma.followers.findMany({
+      where: { userId: userID },
+      include: { Users_Followers_followerIdToUsers: true },
+    });
+
+    for (const follower of followers) {
+      await NotificationController.createNotification(follower.followerId, 'new_story', `Nouvelle story créée par un utilisateur que vous suivez!`,);
+    }
+
+    // Notifiez l'utilisateur que la story a été créée avec succès
+    await NotificationController.createNotification(userID, 'story_created', `Votre story a été créée avec succès!`);
+
     res.status(201).json({
       message: "Story créée avec succès!",
     });
@@ -167,6 +185,9 @@ const createStory = async (req: Request, res: Response) => {
     });
   }
 };
+
+
+
 
 
 
@@ -371,5 +392,6 @@ export default {
   viewStory,
   getStoryViews,
   getUserStories,
+  // notifyFollowers,
   getOtherUserStories
 };

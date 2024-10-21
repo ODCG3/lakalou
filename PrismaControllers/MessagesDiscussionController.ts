@@ -143,6 +143,7 @@ export default class MessagesDiscussionController {
       const discussion = await prisma.usersDiscussions.findFirst({
         where: {
           id: discussionUserId
+          
         },
       });
 

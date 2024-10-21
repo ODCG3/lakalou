@@ -238,6 +238,15 @@ model Users {
   UsersSignals_UsersSignals_reporterIdToUsers         UsersSignals[]             @relation("UsersSignals_reporterIdToUsers")
   UsersSignals_UsersSignals_userIdToUsers             UsersSignals[]             @relation("UsersSignals_userIdToUsers")
   ViewedStories StoryViews[]
+  recharges Recharge[] // Lié aux recharges
+}
+model Recharge {
+  id             Int      @id @default(autoincrement())
+  amount         Int
+  paymentMethod  String
+  userId         Int
+  user           Users     @relation(fields: [userId], references: [id])
+  createdAt      DateTime @default(now())
 }
 
 model Mesures {
