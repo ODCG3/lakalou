@@ -84,69 +84,69 @@ export default class PostController {
     }
   }
 
-  // static async notifyFollowers(userId: number, postId: number) {
-  //   try {
-  //     // Récupérer les détails de l'utilisateur et ses abonnés
-  //     const userData = await prisma.users.findUnique({
-  //       where: { id: userId },
-  //       include: {
-  //         Followers_Followers_userIdToUsers: {
-  //           include: {
-  //             Users_Followers_followerIdToUsers: true,
-  //           },
-  //         },
-  //       },
-  //     });
+  static async notifyFollowers(userId: number, postId: number) {
+    try {
+      // Récupérer les détails de l'utilisateur et ses abonnés
+      const userData = await prisma.users.findUnique({
+        where: { id: userId },
+        include: {
+          Followers_Followers_userIdToUsers: {
+            include: {
+              Users_Followers_followerIdToUsers: true,
+            },
+          },
+        },
+      });
   
-  //     if (!userData || !userData.Followers_Followers_userIdToUsers) {
-  //       console.error(
-  //         "Utilisateur ou abonnés non trouvés pour la notification"
-  //       );
-  //       return;
-  //     }
+      if (!userData || !userData.Followers_Followers_userIdToUsers) {
+        console.error(
+          "Utilisateur ou abonnés non trouvés pour la notification"
+        );
+        return;
+      }
   
-  //     // Créer des notifications pour chaque abonné
-  //     const notifications = userData.Followers_Followers_userIdToUsers.map(
-  //       (followerRelation) => ({
-  //         userId: followerRelation.followerId,
-  //         message: `L'utilisateur ${userData.nom} a créé un nouveau post.`,
-  //         postId: postId,
-  //         read: false, // Notification non lue par défaut
-  //         action: 'post_created', // Indiquer l'action
-  //       })
-  //     );
+      // Créer des notifications pour chaque abonné
+      const notifications = userData.Followers_Followers_userIdToUsers.map(
+        (followerRelation) => ({
+          userId: followerRelation.followerId,
+          message: `L'utilisateur ${userData.nom} a créé un nouveau post.`,
+          postId: postId,
+          read: false, // Notification non lue par défaut
+          action: 'post_created', // Indiquer l'action
+        })
+      );
   
-  //     // Enregistrer les notifications dans la base de données
-  //     await prisma.usersNotifications.createMany({
-  //       data: notifications,
-  //     });
-  //   } catch (error) {
-  //     console.error("Erreur lors de la notification des abonnés:", error);
-  //   }
-  // }
+      // Enregistrer les notifications dans la base de données
+      await prisma.usersNotifications.createMany({
+        data: notifications,
+      });
+    } catch (error) {
+      console.error("Erreur lors de la notification des abonnés:", error);
+    }
+  }
   
 
-  // static async getPosts(req: Request, res: Response) {
-  //   try {
-  //     const posts = await prisma.posts.findMany({
-  //       include: {
-  //         Models: true,
-  //         Users: true,
-  //       },
-  //     });
+  static async getPosts(req: Request, res: Response) {
+    try {
+      const posts = await prisma.posts.findMany({
+        include: {
+          Models: true,
+          Users: true,
+        },
+      });
 
-  //     // Ajout du comptage des likes pour chaque post
-  //     const postsWithLikesAndComments = await Promise.all(
-  //       posts.map(async (post) => {
-  //         const likeCount = await prisma.likes.count({
-  //           where: { postId: post.id },
-  //         });
+      // Ajout du comptage des likes pour chaque post
+      const postsWithLikesAndComments = await Promise.all(
+        posts.map(async (post) => {
+          const likeCount = await prisma.likes.count({
+            where: { postId: post.id },
+          });
 
           
           return {
             ...post,
             likeCount,  // Ajoute le nombre de likes au post
-            // comments: post.Comments,  // Les commentaires sont déjà inclus
+            comments: post.Comments,  // Les commentaires sont déjà inclus
           };
         })
       );
@@ -157,7 +157,6 @@ export default class PostController {
       res.status(500).json({ error: "Erreur interne du serveur" });
     }
   }
-
 
   static async getPostById(req: Request, res: Response) {
     const { postId } = req.params;

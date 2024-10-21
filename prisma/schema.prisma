@@ -34,13 +34,18 @@ model Comments {
   id        Int       @id @default(autoincrement())
   content   String?   @db.Text
   createdAt DateTime? @default(now()) @db.DateTime(0)
-  postId    Int
+  postId    Int?
   userId    Int
-  Posts     Posts     @relation(fields: [postId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Comments_ibfk_1")
-  Users     Users     @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Comments_ibfk_2")
+  parentId  Int?      // Permet d’associer une réponse à un commentaire parent
 
-  @@index([postId], map: "postId")
-  @@index([userId], map: "userId")
+  Posts     Posts?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  Users     Users     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Parent    Comments? @relation("CommentReplies", fields: [parentId], references: [id])
+  Replies   Comments[] @relation("CommentReplies")
+
+  @@index([postId])
+  @@index([userId])
+  @@index([parentId])
 }
 
 model Dislikes {

@@ -78,6 +78,42 @@ export default class PostController {
             }
         });
     }
+    static notifyFollowers(userId, postId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                // Récupérer les détails de l'utilisateur et ses abonnés
+                const userData = yield prisma.users.findUnique({
+                    where: { id: userId },
+                    include: {
+                        Followers_Followers_userIdToUsers: {
+                            include: {
+                                Users_Followers_followerIdToUsers: true,
+                            },
+                        },
+                    },
+                });
+                if (!userData || !userData.Followers_Followers_userIdToUsers) {
+                    console.error("Utilisateur ou abonnés non trouvés pour la notification");
+                    return;
+                }
+                // Créer des notifications pour chaque abonné
+                const notifications = userData.Followers_Followers_userIdToUsers.map((followerRelation) => ({
+                    userId: followerRelation.followerId,
+                    message: `L'utilisateur ${userData.nom} a créé un nouveau post.`,
+                    postId: postId,
+                    read: false, // Notification non lue par défaut
+                    action: 'post_created', // Indiquer l'action
+                }));
+                // Enregistrer les notifications dans la base de données
+                yield prisma.usersNotifications.createMany({
+                    data: notifications,
+                });
+            }
+            catch (error) {
+                console.error("Erreur lors de la notification des abonnés:", error);
+            }
+        });
+    }
     static getPosts(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -92,7 +128,7 @@ export default class PostController {
                     const likeCount = yield prisma.likes.count({
                         where: { postId: post.id },
                     });
-                    return Object.assign(Object.assign({}, post), { likeCount });
+                    return Object.assign(Object.assign({}, post), { likeCount, comments: post.Comments });
                 })));
                 res.status(200).json(postsWithLikesAndComments);
             }
@@ -101,7 +137,6 @@ export default class PostController {
             }
         });
     }
-
     static getPostById(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             const { postId } = req.params;
