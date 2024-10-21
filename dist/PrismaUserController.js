@@ -371,69 +371,15 @@ class PrismaUserController {
     //     res.status(500).json({ error: "Erreur interne du serveur" });
     //   }
     // }
-    // Report User version1
-    // static async reportUser(req: Request, res: Response) {
-    //   const userId = req.user!.userID;
-    //   const { reason } = req.body;
-    //   if (!reason || typeof reason !== "string") {
-    //     return res
-    //       .status(400)
-    //       .json({ error: "La raison du signalement est requise" });
-    //   }
-    //   console.log(reason);
-    //   console.log(userId);
-    //   try {
-    //     const userToReport = await prisma.users.findUnique({
-    //       where: { id: userId },
-    //       include: { UsersSignals_UsersSignals_reporterIdToUsers: true },
-    //     });
-    //     /* console.log(userToReport);  */
-    //     if (!userToReport) {
-    //       return res.status(402).json({ error: "Utilisateur non trouvé" });
-    //     }
-    //     const reporterId = req.user?.userID;
-    //     if (!reporterId) {
-    //       return res
-    //         .status(403)
-    //         .json({ error: "Connectez-vous d'abord pour signaler" });
-    //     }
-    //     if (!(userToReport.id === reporterId)) {
-    //       return res
-    //         .status(403)
-    //         .json({ error: "Vous ne pouvez pas vous signaler vous-même" });
-    //     }
-    //     const alreadyReported =
-    //       userToReport.UsersSignals_UsersSignals_reporterIdToUsers.some(
-    //         (signal) => signal.reporterId === reporterId
-    //       );
-    //     if (alreadyReported) {
-    //       return res
-    //         .status(405)
-    //         .json({ error: "Vous avez déjà signalé cet utilisateur" });
-    //     }
-    //     const signal = await prisma.usersSignals.create({
-    //       data: {
-    //         reason,
-    //         reporterId: reporterId,
-    //         userId: userToReport.id,
-    //       },
-    //     });
-    //     res
-    //       .status(200)
-    //       .json({ message: "Signalement ajouté avec succès", signal });
-    //   } catch (error) {
-    //     res.status(500).json({ error: "Erreur interne du serveur" });
-    //   }
-    // }
-    // Report User version2
+    //reportUser
     static reportUser(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a;
+            var _b;
             // Récupérer l'ID de l'utilisateur à signaler depuis les paramètres
             const userIdToReport = Number(req.params.userId); // Assurez-vous que c'est un nombre
-            const { reason } = req.body;
+            const reporterId = req.user.userID; // ID du reporter
+            const { userId, reason } = req.body; // Récupérer l'ID de l'utilisateur à signaler et la raison
             // Validation de la raison
-
             if (!reason || typeof reason !== "string") {
                 return res
                     .status(400)
@@ -441,7 +387,6 @@ class PrismaUserController {
             }
             console.log("Raison du signalement:", reason);
             console.log("ID de l'utilisateur à signaler:", userIdToReport);
-
             try {
                 // Vérifiez si l'utilisateur à signaler existe
                 const userToReport = yield prisma.users.findUnique({
@@ -451,7 +396,7 @@ class PrismaUserController {
                 if (!userToReport) {
                     return res.status(404).json({ error: "Utilisateur non trouvé" });
                 }
-                const reporterId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID; // L'ID de l'utilisateur connecté
+                const reporterId = (_b = req.user) === null || _b === void 0 ? void 0 : _b.userID; // L'ID de l'utilisateur connecté
                 if (!reporterId) {
                     return res
                         .status(403)
@@ -462,7 +407,6 @@ class PrismaUserController {
                     return res
                         .status(403)
                         .json({ error: "Vous ne pouvez pas vous signaler vous-même" });
-
                 }
                 // Vérifiez si l'utilisateur a déjà été signalé
                 const alreadyReported = userToReport.UsersSignals_UsersSignals_reporterIdToUsers.some((signal) => signal.reporterId === reporterId);
@@ -481,7 +425,6 @@ class PrismaUserController {
                 });
                 console.log("Signalement créé:", signal);
                 res
-
                     .status(200)
                     .json({ message: "Signalement ajouté avec succès", signal });
             }
@@ -500,7 +443,6 @@ class PrismaUserController {
                 return res
                     .status(400)
                     .json({ error: "L'id de l'utilisateur connecté est obligatoire" });
-
             }
             try {
                 if (!followerId) {
@@ -519,20 +461,9 @@ class PrismaUserController {
                         .status(400)
                         .json({ message: "Vous ne pouvez pas vous désabonner de vous-même" });
                 }
-                // Vérifier si l'utilisateur connecté suit bien l'utilisateur ciblé
-                const followRelation = yield prisma.followers.findFirst({
-                    where: {
-                        followerId: followerId,
-                    },
-                });
-                if (!followRelation) {
-                    return res.status(404).json({
-                        message: "Relation de suivi introuvable, vous ne suivez pas cet utilisateur",
-                    });
-                }
                 // Retirer l'utilisateur connecté de la liste des followers de l'utilisateur ciblé
                 yield prisma.followers.delete({
-                    where: { id: followRelation.id },
+                    where: { id: followerId },
                 });
                 // Utiliser NotificationController pour créer la notification
                 const notificationMessage = `L'utilisateur avec l'ID ${userId} s'est désabonné de vous.`;
@@ -540,7 +471,6 @@ class PrismaUserController {
                 return res
                     .status(200)
                     .json({ message: "Désabonnement effectué avec succès" });
-
             }
             catch (err) {
                 console.error(err);
@@ -656,7 +586,6 @@ class PrismaUserController {
         });
     }
     static myFollowings(req, res) {
-
         return __awaiter(this, void 0, void 0, function* () {
             var _b, _c;
             const userId = (_b = req.user) === null || _b === void 0 ? void 0 : _b.userID;
@@ -1563,8 +1492,7 @@ class PrismaUserController {
     }
     static getStatistiques(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _b;
-
+            var _b, _c;
             const connectedUser = yield prisma.users.findUnique({
                 where: { id: req.user.userID },
                 include: { UsersMesModels: true, CommandeModels: true },
@@ -1575,10 +1503,9 @@ class PrismaUserController {
                 });
             }
             try {
-                // Trouver le modèle le plus vendu
-                const mostSoldModel = connectedUser.UsersMesModels.sort((a, b) => { var _b, _c; return ((_b = a.nombreDeCommande) !== null && _b !== void 0 ? _b : 0) - ((_c = b.nombreDeCommande) !== null && _c !== void 0 ? _c : 0); });
-                // Trouver les posts les plus vus
-
+                // Get the most sold model
+                const mostSoldModel = connectedUser.UsersMesModels.sort((a, b) => { var _b, _c; return ((_b = b.nombreDeCommande) !== null && _b !== void 0 ? _b : 0) - ((_c = a.nombreDeCommande) !== null && _c !== void 0 ? _c : 0); })[0];
+                // Get the most viewed posts
                 const mostViewedPosts = yield prisma.posts.findMany({
                     where: { utilisateurId: connectedUser.id },
                     orderBy: { vues: "desc" },
@@ -1607,7 +1534,7 @@ class PrismaUserController {
                 const totalLikes = postsWithLikes.reduce((acc, post) => acc + (post.Likes.length || 0), 0);
                 // Get tailleur ranking (do not return the response in getTailleurRanking)
                 const tailleurRanking = yield this.getTailleurRanking();
-                const tailleurRank = ((_b = tailleurRanking.find((tailleur) => tailleur.id === connectedUser.id)) === null || _b === void 0 ? void 0 : _b.rank) || null;
+                const tailleurRank = ((_c = tailleurRanking.find((tailleur) => tailleur.id === connectedUser.id)) === null || _c === void 0 ? void 0 : _c.rank) || null;
                 // Send the statistics response
                 res.status(200).json({
                     mostSoldModel,
@@ -1701,8 +1628,8 @@ class PrismaUserController {
     }
     static abonnementPremium(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a, _b;
-            const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userID; // ID de l'utilisateur connecté via token/session
+            var _b, _c;
+            const userId = (_b = req.user) === null || _b === void 0 ? void 0 : _b.userID; // ID de l'utilisateur connecté via token/session
             try {
                 // Récupérer l'utilisateur et ses followers
                 const user = yield prisma.users.findUnique({
@@ -1729,7 +1656,7 @@ class PrismaUserController {
                     return res.status(400).json({ message: "Vous devez avoir au moins 10 followers pour vous abonner au service premium." });
                 }
                 // Gérer le cas où user.credits est null
-                const userCredits = (_b = user.credits) !== null && _b !== void 0 ? _b : 0; // Utilise 0 si user.credits est null
+                const userCredits = (_c = user.credits) !== null && _c !== void 0 ? _c : 0; // Utilise 0 si user.credits est null
                 // Vérifier les crédits
                 if (userCredits < 5) {
                     return res.status(400).json({ message: "Vous n'avez pas assez de crédits. Il vous faut au moins 5 crédits pour vous abonner." });
