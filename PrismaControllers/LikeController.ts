@@ -1,5 +1,9 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
+// import NotificationController from './NotificationController';
+import NotificationController from './NotificationController.js';  // Notez l'extension .js
+
+
 
 const prisma = new PrismaClient();
 
@@ -38,6 +42,18 @@ export default class LikeController {
           postId: parseInt(postId, 10),
         },
       });
+      
+       // Récupérer l'ID de l'utilisateur qui a publié le post
+    const postAuthorId = post.utilisateurId;
+
+    // Créer la notification pour l'auteur du post
+    const notificationMessage = `L'utilisateur avec l'ID ${userId} a aimé votre post.`;
+    await NotificationController.createNotification(
+      postAuthorId,
+      'post_liked',
+      notificationMessage,
+      parseInt(postId) // ID du post associé
+    );
   
       res.status(201).json({ message: "Post aimé avec succès.", like });
     } catch (error) {
@@ -45,6 +61,8 @@ export default class LikeController {
     }
   }
   
+
+
 
 // Retirer un like
 static async unlikePost(req: Request,res: Response): Promise<void> {
@@ -61,6 +79,7 @@ static async unlikePost(req: Request,res: Response): Promise<void> {
       return;
     }
 
+    // Supprimer le like
     const like = await prisma.likes.delete({
       where: { id: parseInt(likeID, 10) },
     });
@@ -75,6 +94,18 @@ static async unlikePost(req: Request,res: Response): Promise<void> {
       },
     });
 
+    // Récupérer l'ID de l'utilisateur qui a publié le post
+    const postAuthorId = post.utilisateurId;
+
+    // Créer la notification pour l'auteur du post
+    const notificationMessage = `L'utilisateur avec l'ID ${userId} a retiré son like de votre post.`;
+    await NotificationController.createNotification(
+      postAuthorId,
+      'post_unliked',
+      notificationMessage,
+      parseInt(postId) // ID du post associé
+    );
+
     res
       .status(200)
       .json({ message: "Like retiré avec succès.", data: { like, post } });
@@ -82,6 +113,9 @@ static async unlikePost(req: Request,res: Response): Promise<void> {
     res.status(500).json({ message: "Erreur du serveur.", error });
   }
 };
+
+
+
 
 // Récupérer tous les likes d'un post
 static   async getPostLikes(

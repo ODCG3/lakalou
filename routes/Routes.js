@@ -5,6 +5,8 @@ import ModelController from "../controllers/ModelController.js";
 import PostController from "../controllers/PostController.js";
 
 import StoryController from '../controllers/StoryController.js';
+// import NotificationController from "../NotificationController.js"; 
+
 
 
 import { likePost, unlikePost, getPostLikes } from '../controllers/LikeController.js';
@@ -207,6 +209,27 @@ router.get('/notifications', auth, PostController.getNotifications);
 router.delete('/notifications/:notificationId', auth, PostController.deleteNotification);
 
 router.post('/acheter-badge', auth, UserController.acheterBadge);
+
+ // Route pour marquer une notification comme lue
+ router
+ .route("/notifications/:notificationId/read")
+ .patch(auth, (req, res) => NotificationController.markAsRead(req, res));
+ 
+// Route pour créer une notification
+// router
+//   .route("/notifications")
+//   .post(auth, async (req, res) => {
+//     const { action, message, postId } = req.body;
+//     const userId = req.user.userID; // Récupérer l'ID de l'utilisateur à partir du token
+
+//     await NotificationController.createNotification(userId, action, message, postId);
+//     res.status(201).json({ message: "Notification créée avec succès" });
+//   });
+ // Route pour récupérer les notifications d'un utilisateur
+router
+.route("/notifications")
+.get(auth, (req, res) => NotificationController.getNotifications(req, res));
+ 
 
 
 router.get('/tailleurs', auth, UserController.getTailleurs);

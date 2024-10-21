@@ -13,6 +13,7 @@ import PostArticleController from "../dist/PostArticleController.js";
 import CommentController from "../dist/CommentController.js";
 import LikeController from "../dist/LikeController.js"; // Assurez-vous que LikeController est bien compilé dans dist
 import DislikeController from '../dist/DislikeController.js'; // Import par défaut
+import NotificationController from "../dist/NotificationController.js"; 
 
 router
   .route("/register")
@@ -38,6 +39,33 @@ router
 router
   .route("/posts/:postId/notes")
   .get(auth, (req, res) => PrismaUserController.getUserNotesFromPost(req, res));
+
+  // Route pour liker un post
+router.post('/posts/:postId/like', likePost);
+
+// Route pour retirer un like
+router.delete('/posts/:postId/likes/:likeID', unlikePost);
+
+ // Route pour marquer une notification comme lue
+ router
+ .route("/notifications/:notificationId/read")
+ .patch(auth, (req, res) => NotificationController.markAsRead(req, res));
+ 
+// Route pour créer une notification
+// router
+//   .route("/notifications")
+//   .post(auth, async (req, res) => {
+//     const { action, message, postId } = req.body;
+//     const userId = req.user.userID; // Récupérer l'ID de l'utilisateur à partir du token
+
+//     await NotificationController.createNotification(userId, action, message, postId);
+//     res.status(201).json({ message: "Notification créée avec succès" });
+//   });
+ // Route pour récupérer les notifications d'un utilisateur
+router
+.route("/notifications")
+.get(auth, (req, res) => NotificationController.getNotifications(req, res));
+  
 
 router
   .route("/tailleur/:tailleurId")
@@ -94,14 +122,19 @@ router
 router
   .route("/model/:modelId")
   .get(auth, (req, res) => ModelController.getModelById(req, res));
-
+// create story
 router.route("/story/create").post(auth, StoryController.createStory);
 router
   .route("/stories/:userId")
   .get(auth, (req, res) => StoryController.getStories(req, res));
-// Route pour supprimer une story
+
 router
-  .route("/story/:id/delete")
+  .route("/story/other-user-stories")
+  .get(auth, (req, res) => StoryController.getOtherUserStories(req, res));
+
+
+router
+  .route("/story/:id")
   .delete(auth, (req, res) => StoryController.deleteStory(req, res));
 router
   .route("/story/:id/view")
@@ -109,7 +142,9 @@ router
 router
   .route("/story/:id/views")
   .get(auth, (req, res) => StoryController.getStoryViews(req, res)); // Obtenir le nombre de vues
-
+router
+  .route("/story/user-stories")
+  .get(auth, (req, res) => StoryController.getUserStories(req, res)); // Obtenir le nombre de vues
 router
   .route("/post/create")
   .post(auth, (req, res) => PostController.createPost(req, res));
@@ -172,7 +207,7 @@ router
 router
   .route("/user/favorites")
   .get(auth, (req, res) => PostController.getUserFavorites(req, res));
-  
+
 router
   .route("/post/favorite/remove/:postId")
   .delete(auth, (req, res) => PostController.deleteFavoris(req, res));
@@ -181,16 +216,16 @@ router
 router
   .route("/post/:postId/share")
   .post(auth, (req, res) => PostController.partagerPost(req, res));
-router
-  .route("/notifications")
-  .get(auth, (req, res) => PostController.getNotifications(req, res));
+
 router
   .route("/notifications/:notificationId")
   .delete(auth, (req, res) => PostController.deleteNotification(req, res));
 
+
 router
   .route("/commande")
   .post(auth, (req, res) => CommandeModelController.createCommande(req, res));
+
 router
   .route("/commandes/post/:postId")
   .post(auth, (req, res) => CommandeModelController.createCommande(req, res));
@@ -206,6 +241,25 @@ router
 router
   .route("/commandes/:commandeId")
   .get(auth, (req, res) => CommandeModelController.getCommandeById(req, res));
+
+router.route('/user/discussions/create').post(auth, (req, res) => MessagesDiscussionController.createDiscussion(req, res));
+router.route('/user/discussions').get(auth, (req, res) => MessagesDiscussionController.getDiscussions(req, res));
+router.route('/user/discussions/:userId').get(auth, (req, res) => MessagesDiscussionController.getDiscussionsByUser(req, res));
+router.route('/user/discussions/:discussionUser/messages').post(auth, (req, res) => MessagesDiscussionController.sendMessageToDiscussion(req, res));
+router.route('/user/discussions/:discussionId/messages/:messageId').delete(auth, (req, res) => MessagesDiscussionController.deleteMessage(req, res));
+router.route('/user/discussions/:discussionId/messages/:messageId').put(auth, (req, res) => MessagesDiscussionController.modifierMessages(req, res));
+router.route('/user/chargeCredit').post(auth, (req, res) => PrismaUserController.chargeCredit(req, res));
+// Route pour recharger les crédits
+router.post('/recharge', addRecharge);
+
+router.route('/user/:userId/modifierMesure').put(auth, (req, res) => PrismaUserController.updateMeasurements(req, res));
+router.route('/user/:userId/addMesure').post(auth, (req, res) => PrismaUserController.addMesure(req, res));
+router.get('/user/findByName', auth, PrismaUserController.findByName);
+
+router.route('/user/getMesure/:userId').get(auth, (req, res) => PrismaUserController.getMesureByUserId(req, res));
+router.route('/user/acheterBadge').post(auth, (req, res) => PrismaUserController.acheterBadge(req, res));
+router.route('/user/listeSouhaits/:id').post(auth, (req, res) => ListeSouhaitsController.listeSouhaits(req, res));
+router.route('/user/listeSouhaits').get(auth, (req, res) => ListeSouhaitsController.voirListeSouhaits(req, res));
 
 router
   .route("/user/discussions/create")
@@ -240,18 +294,10 @@ router
 router
   .route("/user/chargeCredit")
   .post(auth, (req, res) => PrismaUserController.chargeCredit(req, res));
-
 router
-  .route("/user/:userId/modifierMesure")
+  .route("/user/modifierMesure")
   .put(auth, (req, res) => PrismaUserController.updateMeasurements(req, res));
-router
-  .route("/user/:userId/addMesure")
-  .post(auth, (req, res) => PrismaUserController.addMesure(req, res));
-router.get("/user/findByName", auth, PrismaUserController.findByName);
 
-router
-  .route("/user/getMesure/:userId")
-  .get(auth, (req, res) => PrismaUserController.getMesureByUserId(req, res));
 router
   .route("/user/acheterBadge")
   .post(auth, (req, res) => PrismaUserController.acheterBadge(req, res));
@@ -261,6 +307,21 @@ router
 router
   .route("/user/listeSouhaits")
   .get(auth, (req, res) => ListeSouhaitsController.voirListeSouhaits(req, res));
+
+router
+  .route("/souhaits/:id")
+  .delete(auth, (req, res) =>
+    ListeSouhaitsController.supprimerSouhait(req, res)
+  );
+
+router
+  .route("/getConnectedUser")
+  .get(auth, (req, res) => PrismaUserController.getConnectedUser());
+
+router.get("/signale/:userId", auth, PrismaUserController.reportUser);
+
+// Route pour signaler un utilisateur
+router.post("/users/report", PrismaUserController.reportUser);
 
 router
   .route("/user/discussions/create")
@@ -332,7 +393,7 @@ router
   .post(auth, (req, res) => PrismaUserController.followUser(req, res));
 
 router
-  .route("/unfollowUser") 
+  .route("/unfollowUser")
   .post(auth, (req, res) => PrismaUserController.unfollowUser(req, res));
 
 router
@@ -358,6 +419,10 @@ router
 router
   .route("/myFollowers")
   .get(auth, (req, res) => PrismaUserController.myFollowers(req, res));
+
+router
+  .route("/myFollowings")
+  .get(auth, (req, res) => PrismaUserController.myFollowings(req, res));
 
 router
   .route("/following")
@@ -386,5 +451,9 @@ router
 router
   .route("/acheterBadgeVandeur/:id")
   .post(auth, (req, res) => PrismaUserController.acheterBadgeVandeur(req, res));
+
+router
+  .route("/user/abonnementPremium")
+  .post(auth, (req, res) => PrismaUserController.abonnementPremium(req, res));
 
 export default router;
