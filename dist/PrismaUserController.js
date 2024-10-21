@@ -494,8 +494,11 @@ class PrismaUserController {
     // Méthode unfollowUser
     static unfollowUser(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            const userId = req.user.userID; // ID de l'utilisateur connecté
-            const followerId = Number(req.body.followerId); // ID de l'utilisateur à désabonner
+            const userId = req.user.userID;
+            const followerId = Number(req.body.followerId);
+            console.log("FollowerId:", followerId);
+            console.log("UserId:", userId);
+
             if (!userId) {
                 return res
                     .status(400)
@@ -519,6 +522,7 @@ class PrismaUserController {
                         .status(400)
                         .json({ message: "Vous ne pouvez pas vous désabonner de vous-même" });
                 }
+
                 // Vérifier si l'utilisateur connecté suit bien l'utilisateur ciblé
                 const followRelation = yield prisma.followers.findFirst({
                     where: {
@@ -531,8 +535,11 @@ class PrismaUserController {
                     });
                 }
                 // Retirer l'utilisateur connecté de la liste des followers de l'utilisateur ciblé
-                yield prisma.followers.delete({
-                    where: { id: followRelation.id },
+                yield prisma.followers.deleteMany({
+                    where: {
+                        userId: userId,
+                        followerId: followerId,
+                    },
                 });
                 // Utiliser NotificationController pour créer la notification
                 const notificationMessage = `L'utilisateur avec l'ID ${userId} s'est désabonné de vous.`;
@@ -626,8 +633,9 @@ class PrismaUserController {
             }
             try {
                 const followers = yield prisma.followers.findMany({
-                    // where: { followerId: req.user?.userID },
-                    where: { userId: (_c = req.user) === null || _c === void 0 ? void 0 : _c.userID },
+                    where: { followerId: (_b = req.user) === null || _b === void 0 ? void 0 : _b.userID },
+                    // where: { userId: req.user?.userID },
+
                     select: {
                         id: true,
                         // afichier les informations du user
@@ -1120,7 +1128,7 @@ class PrismaUserController {
                 const connectedUser = yield prisma.users.findUnique({
                     where: { id: connectedUserId },
                 });
-                if (!connectedUser || connectedUser.role !== 'tailleur') {
+                if (!connectedUser || connectedUser.role !== "tailleur") {
                     return res.status(403).json({
                         error: "Vous n'êtes pas autorisé à effectuer cette action.",
                     });

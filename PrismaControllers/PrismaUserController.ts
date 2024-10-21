@@ -342,8 +342,6 @@ export default class PrismaUserController {
     }
   }
 
-  
-
   //getTotalNotes pour retourner la somme des notes de l'utilisateur par ID
   // static async getTotalNotesForPostUser(req: Request, res: Response) {
   //   const postId = parseInt(req.params.postId, 10);
@@ -381,7 +379,7 @@ export default class PrismaUserController {
   // }
 
   //reportUser
-  
+
   static async getUserNotesFromPost(req: Request, res: Response) {
     const { postId } = req.params; // On récupère le postId des paramètres
 
@@ -536,16 +534,18 @@ export default class PrismaUserController {
     }
   }
 
-// Méthode unfollowUser
-static async unfollowUser(req: Request, res: Response) {
-  const userId = req.user!.userID; // ID de l'utilisateur connecté
-  const followerId = Number(req.body.followerId); // ID de l'utilisateur à désabonner
+  // Méthode unfollowUser
+  static async unfollowUser(req: Request, res: Response) {
+    const userId = req.user!.userID;
+    const followerId = Number(req.body.followerId);
+    console.log("FollowerId:", followerId);
+    console.log("UserId:", userId);
+    if (!userId) {
+      return res
+        .status(400)
+        .json({ error: "L'id de l'utilisateur à désabonner est obligatoire" });
+    }
 
-  if (!userId) {
-    return res
-      .status(400)
-      .json({ error: "L'id de l'utilisateur connecté est obligatoire" });
-  }
 
   try {
     if (!followerId) {
@@ -570,9 +570,12 @@ static async unfollowUser(req: Request, res: Response) {
     }
 
     // Retirer l'utilisateur connecté de la liste des followers de l'utilisateur ciblé
-    await prisma.followers.delete({
-      where: { id: followerId },
-    });
+    await prisma.followers.deleteMany({
+        where: {
+          userId: userId,
+          followerId: followerId,
+        },
+      });
 
     // Utiliser NotificationController pour créer la notification
     const notificationMessage = `L'utilisateur avec l'ID ${userId} s'est désabonné de vous.`;
@@ -676,8 +679,8 @@ static async unfollowUser(req: Request, res: Response) {
 
     try {
       const followers = await prisma.followers.findMany({
-        // where: { followerId: req.user?.userID },
-        where: { userId: req.user?.userID },
+        where: { followerId: req.user?.userID },
+        // where: { userId: req.user?.userID },
         select: {
           id: true,
           // afichier les informations du user
@@ -1212,29 +1215,29 @@ static async debloquerUsers(req: Request, res: Response) {
           error: "Vous devez être connecté pour effectuer cette action.",
         });
       }
-  
+
       // Vérifier que l'utilisateur connecté est un tailleur
       const connectedUser = await prisma.users.findUnique({
         where: { id: connectedUserId },
       });
-  
-      if (!connectedUser || connectedUser.role !== 'tailleur') {
+
+      if (!connectedUser || connectedUser.role !== "tailleur") {
         return res.status(403).json({
           error: "Vous n'êtes pas autorisé à effectuer cette action.",
         });
       }
-  
+
       // Vérifier que l'utilisateur cible existe
       const user = await prisma.users.findUnique({
         where: { id: Number(userId) },
       });
-  
+
       if (!user) {
         return res.status(404).json({ error: "Utilisateur non trouvé." });
       }
-  
+
       const measurements = req.body;
-  
+
       const fieldsToFloat = [
         "cou",
         "longueurPantallon",
@@ -1248,19 +1251,19 @@ static async debloquerUsers(req: Request, res: Response) {
         "tourPoignet",
         "ceinture",
       ];
-  
+
       for (const field of fieldsToFloat) {
         if (measurements[field]) {
           measurements[field] = parseFloat(measurements[field]);
         }
       }
-  
+
       // Mettre à jour les mesures de l'utilisateur
       const updatedUser = await prisma.mesures.update({
         where: { UserID: Number(userId) },
         data: measurements,
       });
-  
+
       return res.status(200).json({
         message: "Mesures mises à jour avec succès.",
       });
@@ -1269,10 +1272,10 @@ static async debloquerUsers(req: Request, res: Response) {
       return res.status(500).json({ error: "Erreur interne du serveur." });
     }
   }
-  
+
   //addMesure
- //addMesure
-// Add or update measurements
+  //addMesure
+  // Add or update measurements
 
   //addMesure
   // Add or update measurements
@@ -1390,10 +1393,7 @@ static async debloquerUsers(req: Request, res: Response) {
       console.error(error);
       return res.status(500).json({ error: "Erreur interne du serveur." });
     }
-  } 
-
-
-  
+  }
 
   static async acheterBadge(req: Request, res: Response) {
     const userId = req.user?.userID;
@@ -1872,17 +1872,15 @@ static  getBalance = async (req: Request, res: Response): Promise<void> => {
 
   static async getConnectedUser(req: Request, res: Response) {
     try {
-
       const userId = req.user!.userID;
 
       console.log(userId);
-      
+
       if (!userId) {
         return res.status(401).json({
           message: "Vous devez vous connecter pour effectuer cette action",
         });
       }
-
 
       res.status(200).json(userId);
     } catch (err) {

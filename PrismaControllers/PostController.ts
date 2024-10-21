@@ -143,20 +143,21 @@ export default class PostController {
   //         });
 
           
-  //         return {
-  //           ...post,
-  //           likeCount,  // Ajoute le nombre de likes au post
-  //           comments: post.Comments,  // Les commentaires sont déjà inclus
-  //         };
-  //       })
-  //     );
+          return {
+            ...post,
+            likeCount,  // Ajoute le nombre de likes au post
+            // comments: post.Comments,  // Les commentaires sont déjà inclus
+          };
+        })
+      );
 
-  //     res.status(200).json(postsWithLikesAndComments);
+      res.status(200).json(postsWithLikesAndComments);
 
-  //   } catch (error) {
-  //     res.status(500).json({ error: "Erreur interne du serveur" });
-  //   }
-  // }
+    } catch (error) {
+      res.status(500).json({ error: "Erreur interne du serveur" });
+    }
+  }
+
 
   static async getPostById(req: Request, res: Response) {
     const { postId } = req.params;
