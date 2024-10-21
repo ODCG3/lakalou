@@ -20,8 +20,9 @@ export default class ArticleController {
             if (!userId || !type || !prix || !libelle || !image) {
                 return res.status(400).json({ error: "Tous les champs sont obligatoires" });
             }
-            if (prix <= 0) {
-                return res.status(400).json({ error: "Le prix doit être supérieur à 0" });
+            const parsedPrix = parseFloat(prix);
+            if (isNaN(parsedPrix) || parsedPrix <= 0) {
+                return res.status(400).json({ error: "Le prix doit être un nombre supérieur à 0" });
             }
             if (!validateImageExtension(image)) {
                 return res.status(400).json({ error: "L'extension de l'image n'est pas valide" });
@@ -46,15 +47,17 @@ export default class ArticleController {
                 if (!Number.isInteger(quantite) || quantite < 0) {
                     return res.status(400).json({ error: "La quantité doit être un entier supérieur à 0" });
                 }
-                if (quantite <= 0) {
-                    return res.status(400).json({ error: "La quantité doit être supérieure à 0" });
+                const parsedQuantite = parseInt(quantite, 10);
+                if (isNaN(parsedQuantite) || parsedQuantite <= 0) {
+                    return res.status(400).json({ error: "La quantité doit être un entier supérieur à 0" });
                 }
+                parseInt(quantite, 10);
                 const newArticle = yield prisma.articles.create({
                     data: {
                         image,
-                        libelle,
-                        prix,
-                        quantite,
+                        libelle: libelle,
+                        prix: parseFloat(prix),
+                        quantite: parseInt(quantite, 10),
                         type
                     }
                 });
@@ -68,7 +71,26 @@ export default class ArticleController {
     static getArticles(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const articles = yield prisma.articles.findMany();
+                // Extraire les filtres des paramètres de requête
+                const { type, libelle, prix } = req.query;
+                // Construire l'objet de filtre dynamiquement
+                const filters = {};
+                if (type) {
+                    filters.type = type;
+                }
+                if (libelle) {
+                    filters.libelle = { contains: libelle }; // Filtrage partiel du libellé
+                }
+                if (prix) {
+                    const parsedPrix = parseFloat(prix);
+                    if (!isNaN(parsedPrix)) {
+                        filters.prix = { lte: parsedPrix }; // Filtrer les articles dont le prix est inférieur ou égal à la valeur fournie
+                    }
+                }
+                // Requête pour obtenir les articles avec les filtres
+                const articles = yield prisma.articles.findMany({
+                    where: filters,
+                });
                 res.status(200).json(articles);
             }
             catch (error) {
